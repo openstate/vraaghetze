@@ -1,1 +1,57 @@
 @import 'tailwindcss';
+
+@plugin '@iconify/tailwind4' {
+	prefixes: 'mdi';
+}
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+@theme {
+	--font-sans: 'Geist Variable', sans-serif;
+	--font-serif: 'Manuale Variable', serif;
+	--font-mono: 'Geist Mono Variable', monospace;
+
+	/* Neutral */
+	--color-osf-neutral-900: #141414;
+	--color-osf-neutral-100: #ededed;
+	--color-osf-neutral-50: #ffffff;
+
+	/* Shocking Pink */
+	--color-osf-shocking-pink: #ff29b4;
+
+	/* Medium Red Violet */
+	--color-osf-violet-900: #3d1535;
+	--color-osf-violet-800: #5c1f50;
+	--color-osf-violet-700: #792b69;
+	--color-osf-violet-600: #973884;
+	--color-osf-violet-500: #a83992;
+	--color-osf-violet-400: #a9629b;
+	--color-osf-violet-300: #d183c2;
+	--color-osf-violet-100: #fde2f8;
+	--color-osf-violet-50: #ffeef9;
+
+	/* Clear Blue */
+	--color-osf-blue-900: #07244b;
+	--color-osf-blue-800: #0a3670;
+	--color-osf-blue-700: #0f4ea4;
+	--color-osf-blue-200: #bcd6f9;
+	--color-osf-blue-50: #eff6fe;
+
+	/* Canvas Off-white */
+	--color-osf-canvas-600: #59534c;
+	--color-osf-canvas-500: #6e675e;
+	--color-osf-canvas-400: #8f867b;
+	--color-osf-canvas-200: #e1dad0;
+	--color-osf-canvas-100: #f4f0eb;
+	--color-osf-canvas-50: #f8f5f2;
+}
+
+:root {
+	background-color: var(--color-osf-neutral-50);
+	color: var(--color-osf-violet-900);
+}
+
+*::selection {
+	background: var(--color-osf-shocking-pink);
+	color: var(--color-osf-neutral-50);
+}
