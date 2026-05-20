@@ -4,11 +4,13 @@ import { account, session, user } from './auth.schema';
 
 // --- TABLES ---
 
+export type FractionRole = 'member' | 'chair';
+
 export const thread = pgTable('thread', {
 	id: text().primaryKey(),
 	userId: text()
-		.notNull()
-		.references(() => user.id),
+		.references(() => user.id)
+		.notNull(),
 	title: text().notNull(),
 	createdAt: timestamp().defaultNow().notNull(),
 	updatedAt: timestamp()
@@ -23,11 +25,12 @@ export type PostSource = 'web' | 'email';
 export const post = pgTable('post', {
 	id: text().primaryKey(),
 	threadId: text()
-		.notNull()
-		.references(() => thread.id, { onDelete: 'cascade' }),
+		.references(() => thread.id, { onDelete: 'cascade' })
+		.notNull(),
 	userId: text()
-		.notNull()
-		.references(() => user.id),
+		.references(() => user.id)
+		.notNull(),
+	fractionSnapshotId: text().references(() => fraction.id),
 	assigneeId: text().references(() => user.id),
 	body: text().notNull(),
 	status: text().$type<ModerationStatus>().default('pending').notNull(),
@@ -42,59 +45,57 @@ export const post = pgTable('post', {
 export const moderationAction = pgTable('moderation_action', {
 	id: text().primaryKey(),
 	moderatorId: text()
-		.notNull()
-		.references(() => user.id),
+		.references(() => user.id)
+		.notNull(),
 	postId: text()
-		.notNull()
-		.references(() => post.id),
+		.references(() => post.id)
+		.notNull(),
 	action: text().$type<ModerationStatus>().notNull(),
 	rejectionReason: text(),
 	rejectionNote: text(),
 	createdAt: timestamp().defaultNow().notNull()
 });
 
-export const politicianProfile = pgTable('politician_profile', {
+export const politician = pgTable('politician', {
+	id: text().primaryKey(),
 	userId: text()
-		.primaryKey()
-		.references(() => user.id, { onDelete: 'cascade' }),
-	externalId: text().notNull().unique(),
+		.unique()
+		.references(() => user.id, { onDelete: 'cascade' })
+		.notNull(),
 	isActive: boolean().default(true).notNull(),
-	createdAt: timestamp().defaultNow().notNull(),
+	fractionId: text()
+		.references(() => fraction.id)
+		.notNull(),
+	fractionRole: text().$type<FractionRole>().notNull(),
+createdAt: timestamp().defaultNow().notNull(),
 	updatedAt: timestamp()
 		.defaultNow()
 		.$onUpdate(() => new Date())
 		.notNull()
 });
 
-export type FractionRole = 'member' | 'chair';
-
-export const politicianFraction = pgTable('politician_fraction', {
+export const fraction = pgTable('fraction', {
 	id: text().primaryKey(),
-	politicianUserId: text()
-		.notNull()
-		.references(() => politicianProfile.userId, { onDelete: 'cascade' }),
-	externalId: text().unique(),
 	name: text().notNull(),
 	abbreviation: text(),
-	role: text().$type<FractionRole>().default('member').notNull(),
-	createdAt: timestamp().defaultNow().notNull(),
-	endedAt: timestamp()
+	isActive: boolean().default(true).notNull()
 });
 
 // --- RELATIONS ---
 
-export const politicianProfileRelations = relations(politicianProfile, ({ one, many }) => ({
-	user: one(user, {
-		fields: [politicianProfile.userId],
-		references: [user.id]
-	}),
-	fractionMemberships: many(politicianFraction)
+export const fractionRelations = relations(fraction, ({ many }) => ({
+	politicians: many(politician),
+	posts: many(post)
 }));
 
-export const politicianFractionRelations = relations(politicianFraction, ({ one }) => ({
-	politician: one(politicianProfile, {
-		fields: [politicianFraction.politicianUserId],
-		references: [politicianProfile.userId]
+export const politicianProfileRelations = relations(politician, ({ one }) => ({
+	user: one(user, {
+		fields: [politician.userId],
+		references: [user.id]
+	}),
+	fraction: one(fraction, {
+		fields: [politician.fractionId],
+		references: [fraction.id]
 	})
 }));
 
@@ -114,6 +115,10 @@ export const postRelations = relations(post, ({ one, many }) => ({
 	user: one(user, {
 		fields: [post.userId],
 		references: [user.id]
+	}),
+	fraction: one(fraction, {
+		fields: [post.fractionSnapshotId],
+		references: [fraction.id]
 	}),
 	assignee: one(user, {
 		fields: [post.assigneeId],
@@ -136,13 +141,15 @@ export const moderationActionRelations = relations(moderationAction, ({ one }) =
 
 // This object overrides the automatically generated one in auth.schema.ts,
 // so that we can add our application specific relations to it. Drizzle is working
-// on a `defineRelationsPart` API, this is in beta as of 2026-04-15.
+// on a `defineRelationsPart` API, this is in beta as of 2026-04-15. I am waiting
+// on better-auth to update to the new API before I can clean this up. See:
+// https://github.com/better-auth/better-auth/pull/9489
 export const userRelations = relations(user, ({ one, many }) => ({
 	sessions: many(session),
 	accounts: many(account),
-	politicianProfile: one(politicianProfile, {
+	politicianProfile: one(politician, {
 		fields: [user.id],
-		references: [politicianProfile.userId]
+		references: [politician.userId]
 	}),
 	threads: many(thread),
 	posts: many(post),

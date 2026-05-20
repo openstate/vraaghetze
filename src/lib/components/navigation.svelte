@@ -19,7 +19,7 @@
 
 		<div class="flex justify-center gap-16">
 			<a href={resolve('/')}>Vragen & Antwoorden</a>
-			<a href={resolve('/')}>Kamerleden</a>
+			<a href={resolve('/kamerleden')}>Kamerleden</a>
 			<a href={resolve('/')}>Over ons</a>
 		</div>
 
