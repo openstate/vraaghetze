@@ -23,7 +23,7 @@
 			<a href={resolve('/')}>Over ons</a>
 		</div>
 
-		<Button variant="secondary" icon="mdi--account-circle-outline" class="ml-auto">
+		<Button href="/inloggen" variant="secondary" icon="mdi--account-circle-outline" class="ml-auto">
 			Jouw vragen
 		</Button>
 	</nav>

@@ -1,17 +1,23 @@
 import { betterAuth } from 'better-auth/minimal';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { admin, magicLink } from 'better-auth/plugins';
+import { db } from './db';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
-import { admin } from 'better-auth/plugins/admin';
 import { getRequestEvent } from '$app/server';
-import { db } from '$lib/server/db';
+import { sendEmail } from './email';
 
 export const auth = betterAuth({
 	baseURL: process.env.ORIGIN,
 	secret: process.env.BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'pg' }),
-	emailAndPassword: { enabled: true },
+	advanced: { database: { generateId: () => crypto.randomUUID() } },
 	plugins: [
-		admin(), // adds roles and permissions management
-		sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array
+		admin(),
+		sveltekitCookies(getRequestEvent),
+		magicLink({
+			sendMagicLink: async ({ email, url }) => {
+				await sendEmail({ to: email, subject: 'Your sign-in link', text: `Sign in here: ${url}` });
+			}
+		})
 	]
 });
