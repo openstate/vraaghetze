@@ -34,7 +34,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     networks:
-      # - nginx-load-balancer
+      - nginx-load-balancer
       - vraaghetze
     env_file: ./.env
     depends_on:
@@ -42,7 +42,7 @@ services:
         condition: service_completed_successfully
 networks:
   vraaghetze:
-  # nginx-load-balancer:
-    # name: docker_nginx-load-balancer
+  nginx-load-balancer:
+    name: docker_nginx-load-balancer
 volumes:
   db:
