@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres
+    restart: unless-stopped
+    networks:
+      - vraaghetze
+    env_file: ./.env
+    volumes:
+      - db:/var/lib/postgresql/data/
+  node:
+    working_dir: /opt/vraaghetze
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - nginx-load-balancer
+      - vraaghetze
+    env_file: ./.env
+networks:
+  vraaghetze:
+  nginx-load-balancer:
+    name: docker_nginx-load-balancer
+volumes:
+  db:
