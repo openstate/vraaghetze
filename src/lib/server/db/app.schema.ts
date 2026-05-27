@@ -58,6 +58,7 @@ export const moderationAction = pgTable('moderation_action', {
 
 export const politician = pgTable('politician', {
 	id: text().primaryKey(),
+	slug: text().unique().notNull(),
 	userId: text()
 		.unique()
 		.references(() => user.id, { onDelete: 'cascade' })

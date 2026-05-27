@@ -7,7 +7,13 @@ import { syncAvatars } from './avatar';
 
 export async function syncPoliticians() {
 	const [existing, fetched] = await Promise.all([
-		db.select({ id: schema.politician.id, userId: schema.politician.userId }).from(schema.politician),
+		db
+			.select({
+				id: schema.politician.id,
+				userId: schema.politician.userId,
+				slug: schema.politician.slug
+			})
+			.from(schema.politician),
 		fetchPoliticians()
 	]);
 

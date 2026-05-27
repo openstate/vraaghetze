@@ -8,6 +8,13 @@
       "when": 1779875221790,
       "tag": "0000_yellow_wind_dancer",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779884127276,
+      "tag": "0001_add_politician_slug",
+      "breakpoints": true
     }
   ]
 }

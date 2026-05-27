@@ -1,20 +1,22 @@
 import type { schema } from '../db';
 import type { Persoon } from './data';
+import { slugifyUnique } from '../slug';
 
 export type Politician = {
 	user: Pick<typeof schema.user.$inferInsert, 'id' | 'name' | 'email' | 'emailVerified' | 'role'>;
 	politician: Pick<
 		typeof schema.politician.$inferInsert,
-		'id' | 'userId' | 'isActive' | 'fractionId' | 'fractionRole'
+		'id' | 'slug' | 'userId' | 'isActive' | 'fractionId' | 'fractionRole'
 	>;
 	fraction: typeof schema.fraction.$inferInsert;
 };
 
 export function transformPoliticians(
-	existing: { id: string; userId: string }[],
+	existing: { id: string; userId: string; slug: string }[],
 	fetched: Persoon[]
 ) {
-	const userIdMap = new Map(existing.map((p) => [p.id, p.userId]));
+	const priorById = new Map(existing.map((prior) => [prior.id, prior]));
+	const takenSlugs = new Set(existing.map((prior) => prior.slug));
 
 	return fetched.flatMap((person) => {
 		const name = [person.Roepnaam, person.Tussenvoegsel, person.Achternaam]
@@ -39,7 +41,9 @@ export function transformPoliticians(
 		}
 
 		const fractionId = fractionPerson.FractieZetel.Fractie.Id;
-		const userId = userIdMap.get(person.Id) ?? crypto.randomUUID();
+		const prior = priorById.get(person.Id);
+		const userId = prior?.userId ?? crypto.randomUUID();
+		const slug = prior?.slug ?? slugifyUnique(name, takenSlugs);
 
 		return [
 			{
@@ -52,6 +56,7 @@ export function transformPoliticians(
 				},
 				politician: {
 					id: person.Id,
+					slug,
 					userId,
 					isActive: true,
 					fractionId,
