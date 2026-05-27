@@ -1,10 +1,22 @@
-import type { Handle } from '@sveltejs/kit';
-import { building } from '$app/environment';
+import type { Handle, ServerInit } from '@sveltejs/kit';
+import { building, dev } from '$app/environment';
 import { auth } from '$lib/server/auth';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { env } from '$env/dynamic/private';
 import { timingSafeEqual } from 'node:crypto';
+import { Cron } from 'croner';
+import { syncPoliticians } from '$lib/server/sync';
+
+export const init: ServerInit = () => {
+	if (dev || building) return;
+
+	const syncJob = new Cron('0 4 * * *', () =>
+		syncPoliticians().catch((error) => console.error('Politician sync failed:', error))
+	);
+
+	syncJob.trigger();
+};
 
 const handleBasicAuth: Handle = async ({ event, resolve }) => {
 	if (!env.BASIC_AUTH_USER || !env.BASIC_AUTH_PASSWORD) return resolve(event);
