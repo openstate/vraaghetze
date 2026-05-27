@@ -1,13 +1,14 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 
 export async function load() {
 	const politicians = await db
 		.select({
 			id: schema.politician.id,
+			slug: schema.politician.slug,
 			fractionRole: schema.politician.fractionRole,
 			name: schema.user.name,
-			image: schema.user.image,
+			hasImage: sql<boolean>`${schema.user.image} is not null`,
 			fraction: schema.fraction.abbreviation,
 			fractionName: schema.fraction.name
 		})

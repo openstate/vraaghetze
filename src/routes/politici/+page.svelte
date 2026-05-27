@@ -9,13 +9,17 @@
 
 	<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
 		{#each data.politicians as politician (politician.id)}
-			<div
-				class="group flex flex-col items-center rounded bg-osf-canvas-100 p-5 text-center"
+			<a
+				href={resolve('/politici/[slug]', { slug: politician.slug })}
+				class="group flex flex-col items-center rounded bg-osf-canvas-100 p-5 text-center transition-colors hover:bg-osf-canvas-200"
 			>
-				{#if politician.image}
+				{#if politician.hasImage}
 					<img
-						src={politician.image}
+						src={resolve('/politici/[slug]/foto', { slug: politician.slug })}
 						alt={politician.name}
+						width="64"
+						height="64"
+						loading="lazy"
 						class="mb-3 size-16 rounded-full object-cover"
 					/>
 				{:else}
@@ -31,7 +35,7 @@
 					{politician.fraction ?? politician.fractionName}
 					{#if politician.fractionRole === 'chair'}&nbsp;·&nbsp;Fractievoorzitter{/if}
 				</p>
-			</div>
+			</a>
 		{/each}
 	</div>
 </main>
