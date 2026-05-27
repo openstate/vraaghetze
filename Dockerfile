@@ -12,4 +12,6 @@ WORKDIR /opt/vraaghetze
 COPY --from=builder /opt/vraaghetze/build ./build
 COPY --from=builder /opt/vraaghetze/node_modules ./node_modules
 COPY --from=builder /opt/vraaghetze/package.json ./
+COPY --from=builder /opt/vraaghetze/drizzle.config.ts ./
+COPY --from=builder /opt/vraaghetze/drizzle ./drizzle
 CMD [ "node", "build" ]

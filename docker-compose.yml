@@ -7,19 +7,42 @@ services:
     env_file: ./.env
     volumes:
       - db:/var/lib/postgresql/data/
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  migrate:
+    image: vraaghetze
+    working_dir: /opt/vraaghetze
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ['node_modules/.bin/drizzle-kit', 'migrate']
+    restart: 'no'
+    networks:
+      - vraaghetze
+    env_file: ./.env
+    depends_on:
+      db:
+        condition: service_healthy
   node:
+    image: vraaghetze
     working_dir: /opt/vraaghetze
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
     networks:
-      - nginx-load-balancer
+      # - nginx-load-balancer
       - vraaghetze
     env_file: ./.env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 networks:
   vraaghetze:
-  nginx-load-balancer:
-    name: docker_nginx-load-balancer
+  # nginx-load-balancer:
+    # name: docker_nginx-load-balancer
 volumes:
   db:
