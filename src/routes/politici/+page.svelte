@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import Page from '$lib/components/page.svelte';
 
 	let { data } = $props();
 </script>
 
-<main class="mx-auto max-w-7xl px-6 py-12">
+<Page width="wide">
 	<h1 class="mb-10 font-serif text-4xl font-[450]">Kamerleden</h1>
 
 	<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -38,4 +39,4 @@
 			</a>
 		{/each}
 	</div>
-</main>
+</Page>

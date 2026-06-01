@@ -1,24 +1,18 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import Button from '$lib/components/button.svelte';
+	import Page from '$lib/components/page.svelte';
+	import QuestionCard from '$lib/components/question-card.svelte';
 
 	let { data } = $props();
-	const { politician } = $derived(data);
 </script>
 
-<main class="mx-auto max-w-3xl px-6 py-12">
-	<a
-		href={resolve('/politici')}
-		class="mb-8 inline-flex items-center gap-1 text-sm text-osf-canvas-500 hover:text-osf-canvas-600"
-	>
-		<span class="iconify size-4 mdi--arrow-left"></span>
-		Alle Kamerleden
-	</a>
-
+<Page>
 	<div class="flex flex-col items-center gap-6 text-center sm:flex-row sm:text-left">
-		{#if politician.hasImage}
+		{#if data.politician.hasImage}
 			<img
-				src={resolve('/politici/[slug]/foto', { slug: politician.slug })}
-				alt={politician.name}
+				src={resolve('/politici/[slug]/foto', { slug: data.politician.slug })}
+				alt={data.politician.name}
 				width="128"
 				height="128"
 				class="size-32 rounded-full object-cover"
@@ -27,17 +21,43 @@
 			<div
 				class="flex size-32 items-center justify-center rounded-full bg-osf-canvas-100 font-mono text-5xl text-osf-violet-500"
 			>
-				{politician.name.slice(0, 1)}
+				{data.politician.name.slice(0, 1)}
 			</div>
 		{/if}
 
 		<div>
-			<h1 class="font-serif text-4xl font-[450]">{politician.name}</h1>
+			<h1 class="font-serif text-4xl font-[450]">{data.politician.name}</h1>
 			<p class="mt-2 text-osf-canvas-500">
-				{politician.fractionName}
-				{#if politician.fraction && politician.fractionName !== politician.fraction}({politician.fraction}){/if}
-				{#if politician.fractionRole === 'chair'}· Fractievoorzitter{/if}
+				{data.politician.fractionName}
+				{#if data.politician.fraction && data.politician.fractionName !== data.politician.fraction}({data
+						.politician.fraction}){/if}
+				{#if data.politician.fractionRole === 'chair'}· Fractievoorzitter{/if}
 			</p>
+
+			<Button
+				href={`/vragen/stellen?aan=${data.politician.slug}`}
+				variant="primary"
+				icon="mdi--arrow-right"
+				class="mt-4"
+			>
+				Stel je vraag
+			</Button>
 		</div>
 	</div>
-</main>
+
+	<section class="mt-12">
+		<h2 class="mb-4 font-serif text-2xl font-[450]">Vragen aan {data.politician.name}</h2>
+
+		{#if data.questions.length === 0}
+			<p class="text-osf-canvas-500">Er zijn nog geen vragen aan {data.politician.name} gesteld.</p>
+		{:else}
+			<ul class="grid gap-3">
+				{#each data.questions as question (question.slug)}
+					<li>
+						<QuestionCard {question} />
+					</li>
+				{/each}
+			</ul>
+		{/if}
+	</section>
+</Page>

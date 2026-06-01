@@ -1,19 +1,12 @@
-import { eq } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
-import { db, schema } from '$lib/server/db';
+import * as politicians from '$lib/server/politicians';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ params, request }) => {
 	if (request.headers.get('sec-fetch-site') === 'cross-site') error(403, 'Verboden');
 
-	const [row] = await db
-		.select({ image: schema.user.image })
-		.from(schema.politician)
-		.innerJoin(schema.user, eq(schema.politician.userId, schema.user.id))
-		.where(eq(schema.politician.slug, params.slug))
-		.limit(1);
-
-	const match = row?.image && /^data:([^;]+);base64,(.+)$/s.exec(row.image);
+	const image = await politicians.photoBySlug(params.slug);
+	const match = image && /^data:([^;]+);base64,(.+)$/s.exec(image);
 	if (!match) error(404, 'Geen foto gevonden');
 
 	const [, contentType, base64] = match;

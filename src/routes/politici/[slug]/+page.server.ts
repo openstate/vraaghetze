@@ -1,25 +1,14 @@
-import { eq, sql } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
-import { db, schema } from '$lib/server/db';
+import * as politicians from '$lib/server/politicians';
+import * as questions from '$lib/server/questions';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params }) => {
-	const [politician] = await db
-		.select({
-			slug: schema.politician.slug,
-			name: schema.user.name,
-			fractionRole: schema.politician.fractionRole,
-			hasImage: sql<boolean>`${schema.user.image} is not null`,
-			fraction: schema.fraction.abbreviation,
-			fractionName: schema.fraction.name
-		})
-		.from(schema.politician)
-		.innerJoin(schema.user, eq(schema.politician.userId, schema.user.id))
-		.innerJoin(schema.fraction, eq(schema.politician.fractionId, schema.fraction.id))
-		.where(eq(schema.politician.slug, params.slug))
-		.limit(1);
-
+export const load: PageServerLoad = async ({ params, locals }) => {
+	const politician = await politicians.bySlug(params.slug);
 	if (!politician) error(404, 'Politicus niet gevonden');
 
-	return { politician };
+	return {
+		politician,
+		questions: await questions.listForPolitician(params.slug, locals.user?.id ?? null)
+	};
 };
