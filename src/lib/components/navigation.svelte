@@ -9,7 +9,10 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<header {...props} class={['bg-osf-neutral-50 dark:bg-osf-violet-900 dark:text-osf-violet-50', props.class]}>
+<header
+	{...props}
+	class={['bg-osf-neutral-50 dark:bg-osf-violet-900 dark:text-osf-violet-50', props.class]}
+>
 	<nav
 		class="mx-auto grid max-w-7xl grid-cols-[1fr_2fr_1fr] items-center justify-between px-6 py-5"
 	>
@@ -18,12 +21,17 @@
 		</h1>
 
 		<div class="flex justify-center gap-16">
-			<a href={resolve('/')}>Vragen & Antwoorden</a>
+			<a href={resolve('/vragen')}>Vragen & Antwoorden</a>
 			<a href={resolve('/politici')}>Kamerleden</a>
 			<a href={resolve('/')}>Over ons</a>
 		</div>
 
-		<Button href="/inloggen" variant="secondary" icon="mdi--account-circle-outline" class="ml-auto">
+		<Button
+			href={resolve('/profiel')}
+			variant="secondary"
+			icon="mdi--account-circle-outline"
+			class="ml-auto"
+		>
 			Jouw vragen
 		</Button>
 	</nav>

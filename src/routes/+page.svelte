@@ -1,10 +1,11 @@
 <script lang="ts">
 	import Button from '$lib/components/button.svelte';
+	import Page from '$lib/components/page.svelte';
 	import { questions } from '$lib/dummy';
 </script>
 
 <div data-theme="dark" class="bg-osf-violet-900 text-osf-violet-50">
-	<div class="mx-auto max-w-7xl px-4 pt-22 pb-32">
+	<div class="mx-auto max-w-7xl px-6 pt-22 pb-32">
 		<p
 			class="mx-auto mb-8 max-w-lg text-center font-serif text-6xl leading-[1.1] font-[450] text-balance"
 		>
@@ -16,17 +17,17 @@
 			ontdek wat er speelt.
 		</p>
 
-		<Button href="/vraag/stellen" variant="primary" icon="mdi--arrow-right" class="mx-auto">
+		<Button href="/vragen/stellen" variant="primary" icon="mdi--arrow-right" class="mx-auto">
 			Stel je vraag
 		</Button>
 	</div>
 </div>
 
-<main class="mx-auto max-w-7xl px-6 py-6">
-	<section class="my-16">
-		<h2 class="mb-8 font-serif text-3xl">Recente antwoorden</h2>
+<Page width="wide">
+	<section>
+		<h2 class="mb-8 font-serif text-2xl font-[450]">Recente antwoorden</h2>
 
-		<div class="grid grid-cols-2 gap-4">
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 			{#each questions as question, i (i)}
 				<article class="flex flex-col rounded bg-osf-canvas-100 p-5">
 					<h3 class="grow leading-tight font-medium">
@@ -49,4 +50,4 @@
 			{/each}
 		</div>
 	</section>
-</main>
+</Page>
