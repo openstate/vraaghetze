@@ -15,6 +15,13 @@
       "when": 1779884127276,
       "tag": "0001_add_politician_slug",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779905203449,
+      "tag": "0002_messy_warstar",
+      "breakpoints": true
     }
   ]
 }

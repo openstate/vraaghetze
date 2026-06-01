@@ -21,3 +21,12 @@ export const auth = betterAuth({
 		})
 	]
 });
+
+export async function sendSignInLink(email: string, callbackURL: string) {
+	const { request } = getRequestEvent();
+	try {
+		await auth.api.signInMagicLink({ headers: request.headers, body: { email, callbackURL } });
+	} catch (cause) {
+		console.error('Magic link send failed:', cause);
+	}
+}

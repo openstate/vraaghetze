@@ -12,6 +12,7 @@ export const thread = pgTable('thread', {
 		.references(() => user.id)
 		.notNull(),
 	title: text().notNull(),
+	slug: text().unique().notNull(),
 	createdAt: timestamp().defaultNow().notNull(),
 	updatedAt: timestamp()
 		.defaultNow()
