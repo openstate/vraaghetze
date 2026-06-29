@@ -7,8 +7,8 @@
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
 @theme {
+	--font-serif: 'Azurio', serif;
 	--font-sans: 'Geist Variable', sans-serif;
-	--font-serif: 'Manuale Variable', serif;
 	--font-mono: 'Geist Mono Variable', monospace;
 
 	/* Neutral */
@@ -54,4 +54,12 @@
 *::selection {
 	background: var(--color-osf-shocking-pink);
 	color: var(--color-osf-neutral-50);
+}
+
+@font-face {
+	font-family: 'Azurio';
+	src: url('/fonts/azurio.woff2') format('woff2');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
 }

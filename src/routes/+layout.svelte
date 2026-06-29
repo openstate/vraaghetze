@@ -1,5 +1,4 @@
 <script lang="ts">
-	import '@fontsource-variable/manuale/wght.css';
 	import '@fontsource-variable/geist-mono/wght.css';
 	import '@fontsource-variable/geist/wght.css';
 	import './layout.css';
