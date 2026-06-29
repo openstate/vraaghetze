@@ -16,7 +16,7 @@ export const auth = betterAuth({
 		sveltekitCookies(getRequestEvent),
 		magicLink({
 			sendMagicLink: async ({ email, url }) => {
-				await sendEmail({ to: email, subject: 'Your sign-in link', text: `Sign in here: ${url}` });
+				await sendEmail({ to: email, subject: 'Je inloglink voor VraagHetZe', text: `Log hier in: ${url}` });
 			}
 		})
 	]

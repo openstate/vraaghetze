@@ -18,7 +18,8 @@ export async function sendEmail({ to, subject, text }: EmailOptions) {
 		},
 		body: JSON.stringify({
 			personalizations: [{ to: [{ email: to }] }],
-			from: { email: process.env.SENDGRID_FROM },
+			from: { name: 'VraagHetZe', email: `noreply@${process.env.EMAIL_DOMAIN}` },
+			reply_to: { email: process.env.EMAIL_INBOX },
 			subject,
 			content: [{ type: 'text/plain', value: text }]
 		})
