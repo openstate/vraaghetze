@@ -3,7 +3,7 @@
 
 	type Props = ButtonRootProps & {
 		variant: 'primary' | 'secondary';
-		icon: string;
+		icon?: string;
 	};
 
 	let { variant = 'primary', icon, class: className = '', children, ...rest }: Props = $props();
@@ -18,19 +18,23 @@
 <Button.Root
 	{...rest}
 	class={[
-		'group grid w-fit cursor-pointer grid-cols-[0_auto_2.75rem] items-center font-mono motion-safe:transition-[grid] motion-safe:duration-200 motion-safe:ease-in-out motion-safe:hover:grid-cols-[2.75rem_auto_0] motion-reduce:hover:grid-cols-[0_auto_2.75rem]',
+		'group grid w-fit cursor-pointer items-center font-mono',
+		icon !== undefined &&
+			'grid-cols-[0_auto_2.75rem] motion-safe:transition-[grid] motion-safe:duration-200 motion-safe:ease-in-out motion-safe:hover:grid-cols-[2.75rem_auto_0] motion-reduce:hover:grid-cols-[0_auto_2.75rem]',
 		className
 	]}
 >
-	<span
-		aria-hidden={true}
-		class={[
-			'mr-1 flex size-10 origin-left scale-0 items-center justify-center rounded-full group-hover:scale-100 motion-safe:duration-200 motion-safe:ease-in-out motion-reduce:group-hover:scale-0',
-			dynamicClass
-		]}
-	>
-		<span class={['iconify', 'size-4.5', icon]}></span>
-	</span>
+	{#if icon !== undefined}
+		<span
+			aria-hidden={true}
+			class={[
+				'mr-1 flex size-10 origin-left scale-0 items-center justify-center rounded-full group-hover:scale-100 motion-safe:duration-200 motion-safe:ease-in-out motion-reduce:group-hover:scale-0',
+				dynamicClass
+			]}
+		>
+			<span class={['iconify', 'size-4.5', icon]}></span>
+		</span>
+	{/if}
 
 	<span
 		class={['flex h-10 items-center rounded-sm px-4.5 text-sm leading-0 font-medium', dynamicClass]}
@@ -38,13 +42,15 @@
 		{@render children?.()}
 	</span>
 
-	<span
-		aria-hidden={true}
-		class={[
-			'ml-1 flex size-10 origin-left items-center justify-center rounded-full group-hover:scale-0 motion-safe:transition-[scale] motion-safe:duration-200 motion-safe:ease-in-out motion-reduce:group-hover:scale-100',
-			dynamicClass
-		]}
-	>
-		<span class={['iconify', 'size-4.5', icon]}></span>
-	</span>
+	{#if icon !== undefined}
+		<span
+			aria-hidden={true}
+			class={[
+				'ml-1 flex size-10 origin-left items-center justify-center rounded-full group-hover:scale-0 motion-safe:transition-[scale] motion-safe:duration-200 motion-safe:ease-in-out motion-reduce:group-hover:scale-100',
+				dynamicClass
+			]}
+		>
+			<span class={['iconify', 'size-4.5', icon]}></span>
+		</span>
+	{/if}
 </Button.Root>

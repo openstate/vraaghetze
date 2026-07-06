@@ -21,8 +21,8 @@
 	{#if sentEmail}
 		<h1 class="mb-4 font-serif text-4xl font-[450]">Bijna klaar!</h1>
 		<p class="text-osf-canvas-600">
-			We hebben een link naar <strong>{sentEmail}</strong> gestuurd. Klik erop om je e-mailadres te bevestigen
-			en je vraag te bekijken.
+			We hebben een link naar <strong>{sentEmail}</strong> gestuurd. Klik erop om je vraag te bevestigen
+			en te bekijken.
 		</p>
 	{:else}
 		<h1 class="mb-8 font-serif text-4xl font-[450]">

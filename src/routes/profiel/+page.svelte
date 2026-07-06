@@ -20,7 +20,7 @@
 <Page>
 	<div class="mb-8 flex flex-wrap items-center justify-between gap-4">
 		<h1 class="font-serif text-4xl font-[450]">Jouw vragen</h1>
-		<Button onclick={signOut} variant="secondary" icon="mdi--logout">Uitloggen</Button>
+		<Button onclick={signOut} variant="secondary">Uitloggen</Button>
 	</div>
 
 	{#if questions.length === 0}
@@ -29,7 +29,7 @@
 		<ul class="grid gap-3">
 			{#each questions as question (question.slug)}
 				<li>
-					<QuestionCard {question} statusDisplay="always" />
+					<QuestionCard {question} statusDisplay="always" showVerification />
 				</li>
 			{/each}
 		</ul>

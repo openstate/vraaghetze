@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, notExists, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db, schema } from '$lib/server/db';
 import { slugify } from '$lib/server/slug';
@@ -81,6 +81,7 @@ export function listForUser(userId: string) {
 			title: schema.thread.title,
 			createdAt: schema.thread.createdAt,
 			status: schema.post.status,
+			verifiedAt: schema.post.verifiedAt,
 			politicianName: politicianUser.name,
 			politicianSlug: schema.politician.slug,
 			fraction: schema.fraction.abbreviation,
@@ -209,9 +210,62 @@ export function create({ name, email, title, body, politicianId, currentUserId }
 			userId: askerId,
 			assigneeId: politician.userId,
 			fractionSnapshotId: politician.fractionId,
-			body
+			body,
+			verifiedAt: currentUserId ? new Date() : null
 		});
 
 		return candidate;
 	});
+}
+
+export async function pendingConfirmation(slug: string, userId: string) {
+	const rows = await db
+		.select({ verifiedAt: schema.post.verifiedAt })
+		.from(schema.thread)
+		.innerJoin(schema.post, eq(schema.post.threadId, schema.thread.id))
+		.where(
+			and(
+				eq(schema.thread.slug, slug),
+				eq(schema.thread.userId, userId),
+				eq(schema.post.userId, userId)
+			)
+		);
+
+	if (rows.length === 0) return null; // not the owner / no such thread
+
+	return rows.some((row) => row.verifiedAt === null);
+}
+
+export function disownThread(slug: string, userId: string) {
+	return db.delete(schema.thread).where(
+		and(
+			eq(schema.thread.slug, slug),
+			eq(schema.thread.userId, userId),
+			notExists(
+				db
+					.select({ id: schema.post.id })
+					.from(schema.post)
+					.where(and(eq(schema.post.threadId, schema.thread.id), isNotNull(schema.post.verifiedAt)))
+			)
+		)
+	);
+}
+
+export function confirmAuthorship(slug: string, userId: string) {
+	return db
+		.update(schema.post)
+		.set({ verifiedAt: new Date() })
+		.where(
+			and(
+				eq(schema.post.userId, userId),
+				isNull(schema.post.verifiedAt),
+				inArray(
+					schema.post.threadId,
+					db
+						.select({ id: schema.thread.id })
+						.from(schema.thread)
+						.where(and(eq(schema.thread.slug, slug), eq(schema.thread.userId, userId)))
+				)
+			)
+		);
 }

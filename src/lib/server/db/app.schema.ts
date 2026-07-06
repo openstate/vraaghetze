@@ -36,6 +36,7 @@ export const post = pgTable('post', {
 	body: text().notNull(),
 	status: text().$type<ModerationStatus>().default('pending').notNull(),
 	source: text().$type<PostSource>().default('web').notNull(),
+	verifiedAt: timestamp(),
 	createdAt: timestamp().defaultNow().notNull(),
 	updatedAt: timestamp()
 		.defaultNow()
@@ -69,7 +70,7 @@ export const politician = pgTable('politician', {
 		.references(() => fraction.id)
 		.notNull(),
 	fractionRole: text().$type<FractionRole>().notNull(),
-createdAt: timestamp().defaultNow().notNull(),
+	createdAt: timestamp().defaultNow().notNull(),
 	updatedAt: timestamp()
 		.defaultNow()
 		.$onUpdate(() => new Date())

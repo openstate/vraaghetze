@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import Button from '$lib/components/button.svelte';
 	import Page from '$lib/components/page.svelte';
 
 	let { data } = $props();
@@ -12,6 +14,27 @@
 </script>
 
 <Page>
+	{#if data.banner === 'needs-confirm'}
+		<div class="mb-4 grid gap-3 rounded border border-osf-violet-500 bg-osf-violet-50 p-5">
+			<p class="text-sm text-osf-canvas-600">
+				Heb jij deze vraag gesteld? Bevestig dat <strong>{data.thread.title}</strong> van jou is, dan
+				kan een moderator hem beoordelen.
+			</p>
+			<form method="POST" action="?/bevestigen" use:enhance class="flex flex-wrap gap-2">
+				<Button type="submit" name="keuze" value="ja" variant="primary">
+					Ja, dit was ik
+				</Button>
+				<Button type="submit" name="keuze" value="nee" variant="secondary">
+					Nee, dit was ik niet
+				</Button>
+			</form>
+		</div>
+	{:else if data.banner === 'verified'}
+		<div class="mb-4 rounded border border-osf-violet-500 bg-osf-violet-50 p-5">
+			<p class="text-sm text-osf-canvas-600">Je vraag is bevestigd en wacht nu op moderatie.</p>
+		</div>
+	{/if}
+
 	<div class="grid gap-4">
 		{#each data.posts as post, index (post.id)}
 			<article class="rounded border border-osf-canvas-200 p-5">

@@ -27,14 +27,15 @@ export const actions = {
 		const slug = await questions.create({ ...result.data, currentUserId });
 
 		if (!slug) {
-			const issues: FormIssues<typeof schema> = {
-				politicianId: ['Dit Kamerlid bestaat niet of is niet langer actief.']
-			};
-			return fail(400, { issues });
+			return fail(400, {
+				issues: { politicianId: ['Dit Kamerlid bestaat niet of is niet langer actief.'] }
+			});
 		}
 
 		if (!currentUserId) {
-			await sendSignInLink(result.data.email, `${url.origin}/vragen/${slug}`);
+			const callback = new URL(`/vragen/${slug}`, url.origin);
+			callback.searchParams.set('doel', 'bevestigen');
+			await sendSignInLink(result.data.email, callback.toString());
 
 			return { email: result.data.email };
 		}

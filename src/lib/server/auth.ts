@@ -16,7 +16,23 @@ export const auth = betterAuth({
 		sveltekitCookies(getRequestEvent),
 		magicLink({
 			sendMagicLink: async ({ email, url }) => {
-				await sendEmail({ to: email, subject: 'Je inloglink voor VraagHetZe', text: `Log hier in: ${url}` });
+				const link = new URL(url);
+				const callbackURL = link.searchParams.get('callbackURL');
+				const isQuestionConfirmation =
+					!!callbackURL &&
+					new URL(callbackURL, link.origin).searchParams.get('doel') === 'bevestigen';
+
+				const { subject, text } = isQuestionConfirmation
+					? {
+							subject: 'Bevestig je vraag op VraagHetZe',
+							text: `Met dit e-mailadres is een vraag gesteld op VraagHetZe. Was jij dat? Bevestig je vraag via deze link: ${url}`
+						}
+					: {
+							subject: 'Je inloglink voor VraagHetZe',
+							text: `Log hier in: ${url}`
+						};
+
+				await sendEmail({ to: email, subject, text });
 			}
 		})
 	]

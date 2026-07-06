@@ -1,5 +1,5 @@
 import type { Handle, ServerInit } from '@sveltejs/kit';
-import { building, dev } from '$app/environment';
+import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { sequence } from '@sveltejs/kit/hooks';
@@ -9,7 +9,7 @@ import { Cron } from 'croner';
 import { syncPoliticians } from '$lib/server/sync';
 
 export const init: ServerInit = () => {
-	if (dev || building) return;
+	if (building) return;
 
 	const syncJob = new Cron('0 4 * * *', () =>
 		syncPoliticians().catch((error) => console.error('Politician sync failed:', error))

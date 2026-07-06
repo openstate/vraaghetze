@@ -16,7 +16,7 @@
 	<nav
 		class="mx-auto grid max-w-7xl grid-cols-[1fr_2fr_1fr] items-center justify-between px-6 py-5"
 	>
-		<h1 class="font-serif text-3xl font-[450]">
+		<h1 class="font-serif text-2xl font-[450]">
 			<a href={resolve('/')}><span class="text-osf-shocking-pink">Vraag</span>HetZe</a>
 		</h1>
 
