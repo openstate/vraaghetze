@@ -3,7 +3,7 @@ import sharp from 'sharp';
 import { db, schema } from '../db';
 import type { Politician } from './transform';
 
-const AVATAR_SIZE = 128;
+const AVATAR_SIZE = 256;
 const ODATA_BASE_URL = 'https://gegevensmagazijn.tweedekamer.nl/OData/v4/2.0';
 const CONCURRENCY = 4;
 
