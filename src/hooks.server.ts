@@ -24,9 +24,11 @@ const FORM_CONTENT_TYPES = [
 	'text/plain'
 ];
 
+// The inbound parse webhook is authenticated by its own token instead.
+const isInboundWebhook = (url: URL) => url.pathname.startsWith('/api/sendgrid/');
+
 const handleCsrf: Handle = async ({ event, resolve }) => {
-	// exempt inbound parse webhook
-	if (event.url.pathname.startsWith('/api/sendgrid/')) return resolve(event);
+	if (isInboundWebhook(event.url)) return resolve(event);
 
 	const contentType = event.request.headers.get('content-type')?.split(';')[0].trim() ?? '';
 	const isFormSubmission =
@@ -41,6 +43,7 @@ const handleCsrf: Handle = async ({ event, resolve }) => {
 
 const handleBasicAuth: Handle = async ({ event, resolve }) => {
 	if (!env.BASIC_AUTH_USER || !env.BASIC_AUTH_PASSWORD) return resolve(event);
+	if (isInboundWebhook(event.url)) return resolve(event);
 
 	const header = event.request.headers.get('authorization');
 	if (header?.startsWith('Basic ')) {
