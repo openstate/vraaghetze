@@ -8,6 +8,7 @@ const config = {
 	},
 	kit: {
 		adapter: adapter(),
+		csrf: { checkOrigin: false },
 		typescript: {
 			config: (config) => ({
 				...config,

@@ -1,4 +1,4 @@
-import type { Handle, ServerInit } from '@sveltejs/kit';
+import { error, type Handle, type ServerInit } from '@sveltejs/kit';
 import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
@@ -16,6 +16,27 @@ export const init: ServerInit = () => {
 	);
 
 	syncJob.trigger();
+};
+
+const FORM_CONTENT_TYPES = [
+	'application/x-www-form-urlencoded',
+	'multipart/form-data',
+	'text/plain'
+];
+
+const handleCsrf: Handle = async ({ event, resolve }) => {
+	// exempt inbound parse webhook
+	if (event.url.pathname.startsWith('/api/sendgrid/')) return resolve(event);
+
+	const contentType = event.request.headers.get('content-type')?.split(';')[0].trim() ?? '';
+	const isFormSubmission =
+		['POST', 'PUT', 'PATCH', 'DELETE'].includes(event.request.method) &&
+		FORM_CONTENT_TYPES.includes(contentType.toLowerCase());
+
+	if (isFormSubmission && event.request.headers.get('origin') !== event.url.origin)
+		error(403, `Cross-site ${event.request.method} form submissions are forbidden`);
+
+	return resolve(event);
 };
 
 const handleBasicAuth: Handle = async ({ event, resolve }) => {
@@ -46,4 +67,4 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	return svelteKitHandler({ event, resolve, auth, building });
 };
 
-export const handle = sequence(handleBasicAuth, handleBetterAuth);
+export const handle = sequence(handleCsrf, handleBasicAuth, handleBetterAuth);
