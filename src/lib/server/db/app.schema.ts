@@ -1,62 +1,68 @@
-import { relations } from 'drizzle-orm';
-import { pgTable, text, boolean, timestamp } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
+import { pgTable, text, boolean, timestamp, check } from 'drizzle-orm/pg-core';
 import { account, session, user } from './auth.schema';
 
 // --- TABLES ---
 
 export type FractionRole = 'member' | 'chair';
 
-export const thread = pgTable('thread', {
-	id: text().primaryKey(),
-	userId: text()
-		.references(() => user.id)
-		.notNull(),
-	title: text().notNull(),
-	slug: text().unique().notNull(),
-	createdAt: timestamp().defaultNow().notNull(),
-	updatedAt: timestamp()
-		.defaultNow()
-		.$onUpdate(() => new Date())
-		.notNull()
-});
-
 export type ModerationStatus = 'pending' | 'approved' | 'rejected';
-export type PostSource = 'web' | 'email';
 
-export const post = pgTable('post', {
+const postColumns = {
 	id: text().primaryKey(),
-	threadId: text()
-		.references(() => thread.id, { onDelete: 'cascade' })
-		.notNull(),
 	userId: text()
 		.references(() => user.id)
 		.notNull(),
-	fractionSnapshotId: text().references(() => fraction.id),
-	assigneeId: text().references(() => user.id),
 	body: text().notNull(),
 	status: text().$type<ModerationStatus>().default('pending').notNull(),
-	source: text().$type<PostSource>().default('web').notNull(),
-	verifiedAt: timestamp(),
 	createdAt: timestamp().defaultNow().notNull(),
 	updatedAt: timestamp()
 		.defaultNow()
 		.$onUpdate(() => new Date())
 		.notNull()
-});
+};
 
-export const moderationAction = pgTable('moderation_action', {
-	id: text().primaryKey(),
-	moderatorId: text()
+export const question = pgTable('question', {
+	...postColumns,
+	title: text().notNull(),
+	slug: text().unique().notNull(),
+	assigneeId: text()
 		.references(() => user.id)
 		.notNull(),
-	postId: text()
-		.references(() => post.id)
-		.notNull(),
-	action: text().$type<ModerationStatus>().notNull(),
-	rejectionReason: text(),
-	rejectionNote: text(),
-	createdAt: timestamp().defaultNow().notNull()
+	// snapshot of the assignee's fraction, so later party switches don't rewrite history
+	assigneeFractionId: text().references(() => fraction.id),
+	verifiedAt: timestamp()
 });
+
+export const answer = pgTable('answer', {
+	...postColumns,
+	questionId: text()
+		.references(() => question.id, { onDelete: 'cascade' })
+		.notNull()
+});
+
+export const moderationAction = pgTable(
+	'moderation_action',
+	{
+		id: text().primaryKey(),
+		moderatorId: text()
+			.references(() => user.id)
+			.notNull(),
+		questionId: text().references(() => question.id),
+		answerId: text().references(() => answer.id),
+		action: text().$type<ModerationStatus>().notNull(),
+		rejectionReason: text(),
+		rejectionNote: text(),
+		createdAt: timestamp().defaultNow().notNull()
+	},
+	(table) => [
+		// a moderation action targets either a question or an answer, never both
+		check(
+			'moderation_action_target',
+			sql`(${table.questionId} is null) != (${table.answerId} is null)`
+		)
+	]
+);
 
 export const politician = pgTable('politician', {
 	id: text().primaryKey(),
@@ -88,7 +94,7 @@ export const fraction = pgTable('fraction', {
 
 export const fractionRelations = relations(fraction, ({ many }) => ({
 	politicians: many(politician),
-	posts: many(post)
+	questions: many(question)
 }));
 
 export const politicianProfileRelations = relations(politician, ({ one }) => ({
@@ -102,39 +108,44 @@ export const politicianProfileRelations = relations(politician, ({ one }) => ({
 	})
 }));
 
-export const threadRelations = relations(thread, ({ one, many }) => ({
+export const questionRelations = relations(question, ({ one, many }) => ({
+	answer: one(answer),
 	user: one(user, {
-		fields: [thread.userId],
-		references: [user.id]
-	}),
-	posts: many(post)
-}));
-
-export const postRelations = relations(post, ({ one, many }) => ({
-	thread: one(thread, {
-		fields: [post.threadId],
-		references: [thread.id]
-	}),
-	user: one(user, {
-		fields: [post.userId],
+		fields: [question.userId],
 		references: [user.id]
 	}),
 	fraction: one(fraction, {
-		fields: [post.fractionSnapshotId],
+		fields: [question.assigneeFractionId],
 		references: [fraction.id]
 	}),
 	assignee: one(user, {
-		fields: [post.assigneeId],
+		fields: [question.assigneeId],
 		references: [user.id],
-		relationName: 'assignedPosts'
+		relationName: 'assignedQuestions'
+	}),
+	moderationActions: many(moderationAction)
+}));
+
+export const answerRelations = relations(answer, ({ one, many }) => ({
+	question: one(question, {
+		fields: [answer.questionId],
+		references: [question.id]
+	}),
+	user: one(user, {
+		fields: [answer.userId],
+		references: [user.id]
 	}),
 	moderationActions: many(moderationAction)
 }));
 
 export const moderationActionRelations = relations(moderationAction, ({ one }) => ({
-	post: one(post, {
-		fields: [moderationAction.postId],
-		references: [post.id]
+	question: one(question, {
+		fields: [moderationAction.questionId],
+		references: [question.id]
+	}),
+	answer: one(answer, {
+		fields: [moderationAction.answerId],
+		references: [answer.id]
 	}),
 	moderator: one(user, {
 		fields: [moderationAction.moderatorId],
@@ -154,8 +165,8 @@ export const userRelations = relations(user, ({ one, many }) => ({
 		fields: [user.id],
 		references: [politician.userId]
 	}),
-	threads: many(thread),
-	posts: many(post),
-	assignedPosts: many(post, { relationName: 'assignedPosts' }),
+	questions: many(question),
+	answers: many(answer),
+	assignedQuestions: many(question, { relationName: 'assignedQuestions' }),
 	moderationActions: many(moderationAction)
 }));

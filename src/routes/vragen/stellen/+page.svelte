@@ -8,6 +8,7 @@
 
 	const sentEmail = $derived(form && 'email' in form ? form.email : null);
 	const issues = $derived(form && 'issues' in form ? form.issues : undefined);
+	const errorMessage = $derived(form && 'error' in form ? form.error : null);
 
 	const selectedPolitician = $derived(
 		data.politicians.find((politician) => politician.slug === page.url.searchParams.get('aan'))
@@ -24,12 +25,18 @@
 			We hebben een link naar <strong>{sentEmail}</strong> gestuurd. Klik erop om je vraag te bevestigen
 			en te bekijken.
 		</p>
+	{:else if !data.mayAsk}
+		<h1 class="mb-4 font-serif text-4xl font-[450]">Stel een vraag</h1>
+		<p class="text-osf-canvas-600">Met dit account kun je geen vragen stellen.</p>
 	{:else}
 		<h1 class="mb-8 font-serif text-4xl font-[450]">
 			Stel een vraag {#if selectedPolitician}aan {selectedPolitician.name}{/if}
 		</h1>
 
 		<form method="POST" use:enhance class="grid gap-6">
+			{#if errorMessage}
+				<p class="text-sm text-osf-shocking-pink">{errorMessage}</p>
+			{/if}
 			{#if data.user}
 				<input type="hidden" name="name" value={data.user.name} />
 				<input type="hidden" name="email" value={data.user.email} />

@@ -52,7 +52,7 @@ export function transformPoliticians(
 					name,
 					email,
 					emailVerified: true,
-					role: 'user'
+					role: 'politician'
 				},
 				politician: {
 					id: person.Id,

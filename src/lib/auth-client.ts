@@ -1,6 +1,7 @@
 import { createAuthClient } from 'better-auth/svelte';
-import { magicLinkClient } from 'better-auth/client/plugins';
+import { adminClient, magicLinkClient } from 'better-auth/client/plugins';
+import { ac, roles } from '$lib/permissions';
 
 export const authClient = createAuthClient({
-	plugins: [magicLinkClient()]
+	plugins: [magicLinkClient(), adminClient({ ac, roles })]
 });

@@ -1,154 +1,116 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, notExists, or, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db, schema } from '$lib/server/db';
-import { slugify } from '$lib/server/slug';
+import { slugifyUniqueQuestion } from '$lib/server/slug';
+import { hasPermission } from '$lib/permissions';
 
-const RESERVED_SLUGS = ['stellen'];
+const politicianUser = alias(schema.user, 'politicianUser');
+
+// approved rows for everyone, a signed-in user also sees their own regardless of status
+const isVisibleTo = (
+	table: typeof schema.question | typeof schema.answer,
+	viewerId: string | null
+) => or(eq(table.status, 'approved'), viewerId ? eq(table.userId, viewerId) : undefined);
 
 export function list(viewerId: string | null) {
-	const politicianUser = alias(schema.user, 'politicianUser');
-
-	return (
-		db
-			.select({
-				slug: schema.thread.slug,
-				title: schema.thread.title,
-				createdAt: schema.thread.createdAt,
-				status: schema.post.status,
-				authorName: schema.user.name,
-				politicianName: politicianUser.name,
-				politicianSlug: schema.politician.slug,
-				fraction: schema.fraction.abbreviation,
-				fractionName: schema.fraction.name
-			})
-			.from(schema.thread)
-			.innerJoin(schema.user, eq(schema.thread.userId, schema.user.id))
-			.innerJoin(
-				schema.post,
-				and(eq(schema.post.threadId, schema.thread.id), isNotNull(schema.post.assigneeId))
-			)
-			.innerJoin(politicianUser, eq(schema.post.assigneeId, politicianUser.id))
-			.innerJoin(schema.politician, eq(schema.post.assigneeId, schema.politician.userId))
-			.leftJoin(schema.fraction, eq(schema.post.fractionSnapshotId, schema.fraction.id))
-			// Public sees approved questions; a signed-in user also sees their own still-pending
-			// ones, so a question they just asked doesn't vanish from the lists.
-			.where(
-				or(
-					eq(schema.post.status, 'approved'),
-					viewerId
-						? and(eq(schema.thread.userId, viewerId), eq(schema.post.status, 'pending'))
-						: undefined
-				)
-			)
-			.orderBy(desc(schema.thread.createdAt))
-	);
-}
-
-export function listForPolitician(slug: string, viewerId: string | null) {
-	return (
-		db
-			.selectDistinct({
-				slug: schema.thread.slug,
-				title: schema.thread.title,
-				createdAt: schema.thread.createdAt,
-				status: schema.post.status
-			})
-			.from(schema.thread)
-			.innerJoin(schema.post, eq(schema.post.threadId, schema.thread.id))
-			.innerJoin(schema.politician, eq(schema.post.assigneeId, schema.politician.userId))
-			// Approved questions for everyone; a signed-in user also sees their own pending ones.
-			.where(
-				and(
-					eq(schema.politician.slug, slug),
-					or(
-						eq(schema.post.status, 'approved'),
-						viewerId
-							? and(eq(schema.thread.userId, viewerId), eq(schema.post.status, 'pending'))
-							: undefined
-					)
-				)
-			)
-			.orderBy(desc(schema.thread.createdAt))
-	);
-}
-
-export function listForUser(userId: string) {
-	const politicianUser = alias(schema.user, 'politicianUser');
-
 	return db
 		.select({
-			slug: schema.thread.slug,
-			title: schema.thread.title,
-			createdAt: schema.thread.createdAt,
-			status: schema.post.status,
-			verifiedAt: schema.post.verifiedAt,
+			slug: schema.question.slug,
+			title: schema.question.title,
+			createdAt: schema.question.createdAt,
+			status: schema.question.status,
+			authorName: schema.user.name,
 			politicianName: politicianUser.name,
 			politicianSlug: schema.politician.slug,
 			fraction: schema.fraction.abbreviation,
 			fractionName: schema.fraction.name
 		})
-		.from(schema.thread)
-		.innerJoin(
-			schema.post,
-			and(eq(schema.post.threadId, schema.thread.id), isNotNull(schema.post.assigneeId))
-		)
-		.innerJoin(politicianUser, eq(schema.post.assigneeId, politicianUser.id))
-		.innerJoin(schema.politician, eq(schema.post.assigneeId, schema.politician.userId))
-		.leftJoin(schema.fraction, eq(schema.post.fractionSnapshotId, schema.fraction.id))
-		.where(eq(schema.thread.userId, userId))
-		.orderBy(desc(schema.thread.createdAt));
+		.from(schema.question)
+		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
+		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
+		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
+		.where(isVisibleTo(schema.question, viewerId))
+		.orderBy(desc(schema.question.createdAt));
+}
+
+export function listForPolitician(slug: string, viewerId: string | null) {
+	return db
+		.select({
+			slug: schema.question.slug,
+			title: schema.question.title,
+			createdAt: schema.question.createdAt,
+			status: schema.question.status
+		})
+		.from(schema.question)
+		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
+		.where(and(eq(schema.politician.slug, slug), isVisibleTo(schema.question, viewerId)))
+		.orderBy(desc(schema.question.createdAt));
+}
+
+export function listForUser(userId: string) {
+	return (
+		db
+			.select({
+				slug: schema.question.slug,
+				title: schema.question.title,
+				createdAt: schema.question.createdAt,
+				status: schema.question.status,
+				verifiedAt: schema.question.verifiedAt,
+				politicianName: politicianUser.name,
+				politicianSlug: schema.politician.slug,
+				fraction: schema.fraction.abbreviation,
+				fractionName: schema.fraction.name
+			})
+			.from(schema.question)
+			.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+			.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
+			.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
+			// no status filter: the owner sees all their own questions, verified or not
+			.where(eq(schema.question.userId, userId))
+			.orderBy(desc(schema.question.createdAt))
+	);
 }
 
 export async function bySlug(slug: string, viewerId: string | null) {
-	const [thread] = await db
+	const [question] = await db
 		.select({
-			id: schema.thread.id,
-			title: schema.thread.title,
-			createdAt: schema.thread.createdAt,
-			authorName: schema.user.name
-		})
-		.from(schema.thread)
-		.innerJoin(schema.user, eq(schema.thread.userId, schema.user.id))
-		.where(eq(schema.thread.slug, slug))
-		.limit(1);
-
-	if (!thread) return null;
-
-	const assignee = alias(schema.user, 'assignee');
-
-	const posts = await db
-		.select({
-			id: schema.post.id,
-			body: schema.post.body,
-			status: schema.post.status,
-			source: schema.post.source,
-			createdAt: schema.post.createdAt,
+			id: schema.question.id,
+			title: schema.question.title,
+			body: schema.question.body,
+			status: schema.question.status,
+			createdAt: schema.question.createdAt,
 			authorName: schema.user.name,
-			assigneeName: assignee.name,
+			assigneeName: politicianUser.name,
 			assigneeSlug: schema.politician.slug,
 			fraction: schema.fraction.abbreviation,
 			fractionName: schema.fraction.name
 		})
-		.from(schema.post)
-		.innerJoin(schema.user, eq(schema.post.userId, schema.user.id))
-		.leftJoin(assignee, eq(schema.post.assigneeId, assignee.id))
-		.leftJoin(schema.politician, eq(schema.post.assigneeId, schema.politician.userId))
-		.leftJoin(schema.fraction, eq(schema.post.fractionSnapshotId, schema.fraction.id))
-		// Approved questions for everyone; a signed-in user also sees their own pending ones.
-		.where(
-			and(
-				eq(schema.post.threadId, thread.id),
-				or(
-					eq(schema.post.status, 'approved'),
-					viewerId ? eq(schema.post.userId, viewerId) : undefined
-				)
-			)
-		)
-		.orderBy(asc(schema.post.createdAt));
+		.from(schema.question)
+		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
+		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
+		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
+		.where(and(eq(schema.question.slug, slug), isVisibleTo(schema.question, viewerId)))
+		.limit(1);
 
-	if (posts.length === 0) return null;
+	// the question doesn't exist or the viewer can't see it, which is indistinguishable on purpose
+	if (!question) return null;
 
-	return { thread, posts };
+	const [answer] = await db
+		.select({
+			id: schema.answer.id,
+			body: schema.answer.body,
+			status: schema.answer.status,
+			createdAt: schema.answer.createdAt,
+			authorName: schema.user.name
+		})
+		.from(schema.answer)
+		.innerJoin(schema.user, eq(schema.answer.userId, schema.user.id))
+		.where(and(eq(schema.answer.questionId, question.id), isVisibleTo(schema.answer, viewerId)))
+		.limit(1);
+
+	return { question, answer: answer ?? null };
 }
 
 type CreateQuestion = {
@@ -162,110 +124,89 @@ type CreateQuestion = {
 
 export function create({ name, email, title, body, politicianId, currentUserId }: CreateQuestion) {
 	return db.transaction(async (tx) => {
+		// questions can only be addressed to currently active politicians
 		const [politician] = await tx
-			.select({
-				userId: schema.politician.userId,
-				fractionId: schema.politician.fractionId
-			})
+			.select({ userId: schema.politician.userId, fractionId: schema.politician.fractionId })
 			.from(schema.politician)
 			.where(and(eq(schema.politician.id, politicianId), eq(schema.politician.isActive, true)))
 			.limit(1);
 
-		if (!politician) return null;
+		if (!politician) return { error: 'unknown-politician' as const };
 
-		let askerId: string;
-		if (currentUserId) {
-			askerId = currentUserId;
-		} else {
+		let userId = currentUserId;
+
+		// non-signed-in asker: find *or* create a user by email
+		if (!userId) {
 			const [existing] = await tx
-				.select({ id: schema.user.id })
+				.select({ id: schema.user.id, role: schema.user.role })
 				.from(schema.user)
 				.where(eq(schema.user.email, email))
 				.limit(1);
 
-			if (existing) {
-				askerId = existing.id;
+			if (!hasPermission(existing, { question: ['ask'] })) {
+				// user exists for email but is not allowed to ask questions, so error
+				return { error: 'forbidden-asker' as const };
+			} else if (existing) {
+				// user exists for email and is allowed to ask questions, so link unverified question to that user
+				userId = existing.id;
 			} else {
-				askerId = crypto.randomUUID();
-				await tx.insert(schema.user).values({ id: askerId, name, email });
+				// user doesn't exist for email, so create a new user
+				userId = crypto.randomUUID();
+				await tx.insert(schema.user).values({ id: userId, name, email });
 			}
 		}
 
-		const base = slugify(title) || 'vraag';
-		const taken = await tx
-			.select({ slug: schema.thread.slug })
-			.from(schema.thread)
-			.where(or(eq(schema.thread.slug, base), sql`${schema.thread.slug} ~ ${`^${base}-[0-9]+$`}`));
-		const used = new Set([...RESERVED_SLUGS, ...taken.map((row) => row.slug)]);
-		let candidate = base;
-		for (let suffix = 2; used.has(candidate); suffix++) candidate = `${base}-${suffix}`;
+		const slug = await slugifyUniqueQuestion(tx, title);
 
-		const threadId = crypto.randomUUID();
-		await tx
-			.insert(schema.thread)
-			.values({ id: threadId, userId: askerId, title, slug: candidate });
-		await tx.insert(schema.post).values({
+		await tx.insert(schema.question).values({
 			id: crypto.randomUUID(),
-			threadId,
-			userId: askerId,
+			userId,
+			title,
+			slug,
 			assigneeId: politician.userId,
-			fractionSnapshotId: politician.fractionId,
+			assigneeFractionId: politician.fractionId,
 			body,
+			// signed-in askers are verified immediately, otherwise we need to confirm authorship via e-mail link
 			verifiedAt: currentUserId ? new Date() : null
 		});
 
-		return candidate;
+		return { slug };
 	});
 }
 
 export async function pendingConfirmation(slug: string, userId: string) {
-	const rows = await db
-		.select({ verifiedAt: schema.post.verifiedAt })
-		.from(schema.thread)
-		.innerJoin(schema.post, eq(schema.post.threadId, schema.thread.id))
-		.where(
-			and(
-				eq(schema.thread.slug, slug),
-				eq(schema.thread.userId, userId),
-				eq(schema.post.userId, userId)
-			)
-		);
+	const [question] = await db
+		.select({ verifiedAt: schema.question.verifiedAt })
+		.from(schema.question)
+		.where(and(eq(schema.question.slug, slug), eq(schema.question.userId, userId)))
+		.limit(1);
 
-	if (rows.length === 0) return null; // not the owner / no such thread
+	if (!question) return null; // not the owner / no such question
 
-	return rows.some((row) => row.verifiedAt === null);
+	return question.verifiedAt === null;
 }
 
-export function disownThread(slug: string, userId: string) {
-	return db.delete(schema.thread).where(
-		and(
-			eq(schema.thread.slug, slug),
-			eq(schema.thread.userId, userId),
-			notExists(
-				db
-					.select({ id: schema.post.id })
-					.from(schema.post)
-					.where(and(eq(schema.post.threadId, schema.thread.id), isNotNull(schema.post.verifiedAt)))
-			)
-		)
-	);
-}
-
-export function confirmAuthorship(slug: string, userId: string) {
+export function claimQuestion(slug: string, userId: string) {
 	return db
-		.update(schema.post)
+		.update(schema.question)
 		.set({ verifiedAt: new Date() })
 		.where(
 			and(
-				eq(schema.post.userId, userId),
-				isNull(schema.post.verifiedAt),
-				inArray(
-					schema.post.threadId,
-					db
-						.select({ id: schema.thread.id })
-						.from(schema.thread)
-						.where(and(eq(schema.thread.slug, slug), eq(schema.thread.userId, userId)))
-				)
+				eq(schema.question.slug, slug),
+				eq(schema.question.userId, userId),
+				isNull(schema.question.verifiedAt)
+			)
+		);
+}
+
+export function disownQuestion(slug: string, userId: string) {
+	return db
+		.delete(schema.question)
+		.where(
+			and(
+				eq(schema.question.slug, slug),
+				eq(schema.question.userId, userId),
+				isNull(schema.question.verifiedAt)
 			)
 		);
 }

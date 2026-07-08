@@ -5,6 +5,7 @@ import { db } from './db';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
 import { sendEmail } from './email';
+import { ac, defaultRole, roles } from '$lib/permissions';
 
 export const auth = betterAuth({
 	baseURL: process.env.ORIGIN,
@@ -12,7 +13,7 @@ export const auth = betterAuth({
 	database: drizzleAdapter(db, { provider: 'pg' }),
 	advanced: { database: { generateId: () => crypto.randomUUID() } },
 	plugins: [
-		admin(),
+		admin({ ac, roles, defaultRole }),
 		sveltekitCookies(getRequestEvent),
 		magicLink({
 			sendMagicLink: async ({ email, url }) => {

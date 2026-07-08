@@ -30,11 +30,11 @@ export const actions = {
 		if (!parsed.success) return fail(400, { error: true });
 
 		if (parsed.data.keuze === 'nee') {
-			await questions.disownThread(params.slug, locals.user.id);
+			await questions.disownQuestion(params.slug, locals.user.id);
 			redirect(303, '/');
 		}
 
-		await questions.confirmAuthorship(params.slug, locals.user.id);
+		await questions.claimQuestion(params.slug, locals.user.id);
 		return { confirmed: true };
 	}
 } satisfies Actions;
