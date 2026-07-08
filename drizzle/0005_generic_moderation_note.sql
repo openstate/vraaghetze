@@ -1,0 +1,1 @@
+ALTER TABLE "moderation_action" RENAME COLUMN "rejection_note" TO "note";

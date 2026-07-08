@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import type { Snippet } from 'svelte';
 
 	type Question = {
 		slug: string;
 		title: string;
+		body?: string | null;
 		createdAt: Date;
 		status?: string;
 		verifiedAt?: Date | null;
@@ -18,10 +20,19 @@
 		statusDisplay?: 'pending' | 'always';
 		/** Show whether the question is confirmed to belong to this account (profile only). */
 		showVerification?: boolean;
+		/** Render a plain card instead of a link, e.g. when it contains action forms. */
+		link?: boolean;
 		question: Question;
+		children?: Snippet;
 	};
 
-	let { question, statusDisplay = 'pending', showVerification = false }: Props = $props();
+	let {
+		question,
+		statusDisplay = 'pending',
+		showVerification = false,
+		link = true,
+		children
+	}: Props = $props();
 
 	const statusLabel: Record<string, string> = {
 		pending: 'Wacht op moderatie',
@@ -47,10 +58,7 @@
 	});
 </script>
 
-<a
-	href={resolve('/vragen/[slug]', { slug: question.slug })}
-	class="block rounded border border-osf-canvas-200 p-4 transition-colors hover:bg-osf-canvas-100"
->
+{#snippet content()}
 	<div class="flex flex-wrap items-start justify-between gap-2">
 		<p class="font-medium">{question.title}</p>
 		<div class="flex flex-wrap items-center gap-1.5">
@@ -70,4 +78,23 @@
 		</div>
 	</div>
 	<p class="mt-1 text-sm text-osf-canvas-500">{meta.join(' · ')}</p>
-</a>
+	{#if question.body}
+		<p class="mt-2 whitespace-pre-wrap">{question.body}</p>
+	{/if}
+	{#if children}
+		<div class="mt-4">{@render children()}</div>
+	{/if}
+{/snippet}
+
+{#if link}
+	<a
+		href={resolve('/vragen/[slug]', { slug: question.slug })}
+		class="block rounded border border-osf-canvas-200 p-4 transition-colors hover:bg-osf-canvas-100"
+	>
+		{@render content()}
+	</a>
+{:else}
+	<article class="rounded border border-osf-canvas-200 p-4">
+		{@render content()}
+	</article>
+{/if}

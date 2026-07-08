@@ -2,6 +2,8 @@
 	import Button from '$lib/components/button.svelte';
 	import favicon from '$lib/assets/favicon.svg';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+	import { hasPermission } from '$lib/permissions';
 	import type { SvelteHTMLElements } from 'svelte/elements';
 
 	const props: SvelteHTMLElements['header'] = $props();
@@ -24,6 +26,9 @@
 			<a href={resolve('/vragen')}>Vragen & Antwoorden</a>
 			<a href={resolve('/politici')}>Kamerleden</a>
 			<a href={resolve('/')}>Over ons</a>
+			{#if hasPermission(page.data.user, { question: ['moderate'] })}
+				<a href={resolve('/moderatie')}>Moderatie</a>
+			{/if}
 		</div>
 
 		<Button

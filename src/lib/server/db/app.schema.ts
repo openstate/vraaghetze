@@ -51,8 +51,10 @@ export const moderationAction = pgTable(
 		questionId: text().references(() => question.id),
 		answerId: text().references(() => answer.id),
 		action: text().$type<ModerationStatus>().notNull(),
+		// reason sent to the user
 		rejectionReason: text(),
-		rejectionNote: text(),
+		// internal free-text note from the moderator
+		note: text(),
 		createdAt: timestamp().defaultNow().notNull()
 	},
 	(table) => [
