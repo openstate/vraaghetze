@@ -1,6 +1,16 @@
 import { relations, sql } from 'drizzle-orm';
-import { pgTable, text, boolean, timestamp, integer, check, index } from 'drizzle-orm/pg-core';
+import {
+	pgTable,
+	text,
+	boolean,
+	timestamp,
+	integer,
+	jsonb,
+	check,
+	index
+} from 'drizzle-orm/pg-core';
 import { account, session, user } from './auth.schema';
+import type { InboundEmail } from '../inbox/parse';
 
 // --- TABLES ---
 
@@ -97,6 +107,23 @@ export const outbox = pgTable(
 	(table) => [index('outbox_sweep_idx').on(table.status, table.nextAttemptAt)]
 );
 
+export type InboxStatus = 'received' | 'processed' | 'review' | 'failed';
+
+export const inbox = pgTable('inbox', {
+	id: text().primaryKey(),
+	dedupKey: text().unique(),
+	fromAddress: text().notNull(),
+	token: text(),
+	subject: text(),
+	dkimVerified: boolean().default(false).notNull(),
+	payload: jsonb().$type<InboundEmail>().notNull(),
+	status: text().$type<InboxStatus>().default('received').notNull(),
+	reason: text(),
+	answerId: text().references(() => answer.id),
+	receivedAt: timestamp().defaultNow().notNull(),
+	processedAt: timestamp()
+});
+
 export const politician = pgTable('politician', {
 	id: text().primaryKey(),
 	slug: text().unique().notNull(),
@@ -164,6 +191,13 @@ export const outboxRelations = relations(outbox, ({ one }) => ({
 	question: one(question, {
 		fields: [outbox.questionId],
 		references: [question.id]
+	})
+}));
+
+export const inboxRelations = relations(inbox, ({ one }) => ({
+	answer: one(answer, {
+		fields: [inbox.answerId],
+		references: [answer.id]
 	})
 }));
 

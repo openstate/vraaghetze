@@ -58,6 +58,7 @@
 		"croner": "^10.0.1",
 		"drizzle-kit": "^0.31.10",
 		"drizzle-orm": "^0.45.2",
+		"email-reply-parser": "^2.3.5",
 		"sharp": "^0.34.5"
 	}
 }

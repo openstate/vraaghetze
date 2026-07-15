@@ -17,6 +17,9 @@ importers:
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@prisma/client@5.22.0)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(kysely@0.28.17)(pg@8.21.0)(postgres@3.4.9)
+      email-reply-parser:
+        specifier: ^2.3.5
+        version: 2.3.5
       sharp:
         specifier: ^0.34.5
         version: 0.34.5
@@ -2156,6 +2159,15 @@ packages:
 
   electron-to-chromium@1.5.364:
     resolution: {integrity: sha512-G/dYE3+AYhyHwzTwg8UbnXf7zqMERYh7l2jJ3QujhFsH8agSYwtnGAR2aZ7f0AakIKJXd5En/Hre4igIUrdlYw==}
+
+  email-reply-parser@2.3.5:
+    resolution: {integrity: sha512-0giLt6y7TKHrd+X1jxblFiDqGeeQmXalGLBkqjyBBl9O0gT19r2da2zMqNa1wHs3uoMZVesjNPny8+g0YtI5fw==}
+    engines: {node: '>= 20.0.0'}
+    peerDependencies:
+      re2: 1.22.1
+    peerDependenciesMeta:
+      re2:
+        optional: true
 
   end-of-stream@1.4.5:
     resolution: {integrity: sha512-ooEGc6HP26xXq/N+GCGOT0JKCLDGrq2bQUZrQ7gyrJiZANJ/8YDTxTpQBXGMn+WbIQXNVpyWymm7KYVICQnyOg==}
@@ -4773,6 +4785,8 @@ snapshots:
       postgres: 3.4.9
 
   electron-to-chromium@1.5.364: {}
+
+  email-reply-parser@2.3.5: {}
 
   end-of-stream@1.4.5:
     dependencies:
