@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
-import { pgTable, text, boolean, timestamp, check } from 'drizzle-orm/pg-core';
+import { pgTable, text, boolean, timestamp, integer, check, index } from 'drizzle-orm/pg-core';
 import { account, session, user } from './auth.schema';
 
 // --- TABLES ---
@@ -31,7 +31,9 @@ export const question = pgTable('question', {
 		.notNull(),
 	// snapshot of the assignee's fraction, so later party switches don't rewrite history
 	assigneeFractionId: text().references(() => fraction.id),
-	verifiedAt: timestamp()
+	verifiedAt: timestamp(),
+	// routing token for the politician's reply, generated at approval
+	emailToken: text().unique()
 });
 
 export const answer = pgTable('answer', {
@@ -64,6 +66,35 @@ export const moderationAction = pgTable(
 			sql`(${table.questionId} is null) != (${table.answerId} is null)`
 		)
 	]
+);
+
+export type OutboxKind =
+	| 'question-notification'
+	| 'moderation-notification'
+	| 'answer-notification'
+	| 'magic-link';
+
+export type OutboxStatus = 'queued' | 'sending' | 'sent' | 'failed';
+
+export const outbox = pgTable(
+	'outbox',
+	{
+		id: text().primaryKey(),
+		kind: text().$type<OutboxKind>().notNull(),
+		questionId: text().references(() => question.id, { onDelete: 'cascade' }),
+		recipient: text().notNull(),
+		replyTo: text(),
+		subject: text().notNull(),
+		body: text().notNull(),
+		status: text().$type<OutboxStatus>().default('queued').notNull(),
+		attempts: integer().default(0).notNull(),
+		lastError: text(),
+		expiresAt: timestamp(),
+		nextAttemptAt: timestamp().defaultNow().notNull(),
+		sentAt: timestamp(),
+		createdAt: timestamp().defaultNow().notNull()
+	},
+	(table) => [index('outbox_sweep_idx').on(table.status, table.nextAttemptAt)]
 );
 
 export const politician = pgTable('politician', {
@@ -125,7 +156,15 @@ export const questionRelations = relations(question, ({ one, many }) => ({
 		references: [user.id],
 		relationName: 'assignedQuestions'
 	}),
-	moderationActions: many(moderationAction)
+	moderationActions: many(moderationAction),
+	outboxMails: many(outbox)
+}));
+
+export const outboxRelations = relations(outbox, ({ one }) => ({
+	question: one(question, {
+		fields: [outbox.questionId],
+		references: [question.id]
+	})
 }));
 
 export const answerRelations = relations(answer, ({ one, many }) => ({

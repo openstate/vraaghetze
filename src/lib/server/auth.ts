@@ -4,8 +4,10 @@ import { admin, magicLink } from 'better-auth/plugins';
 import { db } from './db';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
-import { sendEmail } from './email';
+import { sendMail } from './outbox';
 import { ac, defaultRole, roles } from '$lib/permissions';
+
+const MAGIC_LINK_EXPIRY_SECONDS = 30 * 60;
 
 export const auth = betterAuth({
 	baseURL: process.env.ORIGIN,
@@ -16,6 +18,7 @@ export const auth = betterAuth({
 		admin({ ac, roles, defaultRole }),
 		sveltekitCookies(getRequestEvent),
 		magicLink({
+			expiresIn: MAGIC_LINK_EXPIRY_SECONDS,
 			sendMagicLink: async ({ email, url }) => {
 				const link = new URL(url);
 				const callbackURL = link.searchParams.get('callbackURL');
@@ -33,7 +36,13 @@ export const auth = betterAuth({
 							text: `Log hier in: ${url}`
 						};
 
-				await sendEmail({ to: email, subject, text });
+				await sendMail({
+					kind: 'magic-link',
+					recipient: email,
+					subject,
+					body: text,
+					expiresAt: new Date(Date.now() + MAGIC_LINK_EXPIRY_SECONDS * 1000)
+				});
 			}
 		})
 	]

@@ -14,3 +14,5 @@ export const schema = { ...authSchema, ...appSchema }; // do not change order
 export const casing = 'snake_case';
 
 export const db = drizzle(client, { schema, casing });
+
+export type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];

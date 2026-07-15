@@ -1,5 +1,5 @@
 import { or, eq, sql } from 'drizzle-orm/sql';
-import { schema, type db } from './db';
+import { schema, type Transaction } from './db';
 
 export function slugify(value: string) {
 	return value
@@ -19,7 +19,6 @@ export function slugifyUnique(name: string, taken: Set<string>) {
 	return slug;
 }
 
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const reservedSlugs = ['stellen'] as const;
 
 export async function slugifyUniqueQuestion(tx: Transaction, title: string) {

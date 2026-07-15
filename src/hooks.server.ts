@@ -7,6 +7,7 @@ import { env } from '$env/dynamic/private';
 import { timingSafeEqual } from 'node:crypto';
 import { Cron } from 'croner';
 import { syncPoliticians } from '$lib/server/sync';
+import { deliverOutbox } from '$lib/server/outbox';
 
 export const init: ServerInit = () => {
 	if (building) return;
@@ -15,7 +16,12 @@ export const init: ServerInit = () => {
 		syncPoliticians().catch((error) => console.error('Politician sync failed:', error))
 	);
 
+	const deliveryJob = new Cron('*/5 * * * *', () => {
+		deliverOutbox().catch((error) => console.error('Outbox delivery failed:', error));
+	});
+
 	syncJob.trigger();
+	deliveryJob.trigger();
 };
 
 const FORM_CONTENT_TYPES = [
@@ -41,6 +47,7 @@ const handleCsrf: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
+// can be removed after launch
 const handleBasicAuth: Handle = async ({ event, resolve }) => {
 	if (!env.BASIC_AUTH_USER || !env.BASIC_AUTH_PASSWORD) return resolve(event);
 	if (isInboundWebhook(event.url)) return resolve(event);

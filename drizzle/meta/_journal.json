@@ -43,6 +43,13 @@
       "when": 1783543919372,
       "tag": "0005_generic_moderation_note",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783544403108,
+      "tag": "0006_outbox",
+      "breakpoints": true
     }
   ]
 }

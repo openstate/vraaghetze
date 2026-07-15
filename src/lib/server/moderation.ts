@@ -1,6 +1,7 @@
 import { and, asc, eq, isNotNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db, schema } from '$lib/server/db';
+import { enqueueApprovalMails, enqueueRejectionMail } from '$lib/server/mails';
 
 const politicianUser = alias(schema.user, 'politicianUser');
 
@@ -38,9 +39,13 @@ export function moderate({ questionId, moderatorId, action, note }: Moderation) 
 	return db.transaction(async (tx) => {
 		// the guard makes double-clicks and concurrent moderators a no-op instead of a
 		// double action, and ensures only verified questions are ever approved/rejected
-		const updated = await tx
+		const [question] = await tx
 			.update(schema.question)
-			.set({ status: action })
+			.set(
+				action === 'approved'
+					? { status: action, emailToken: crypto.randomUUID() }
+					: { status: action }
+			)
 			.where(
 				and(
 					eq(schema.question.id, questionId),
@@ -48,9 +53,17 @@ export function moderate({ questionId, moderatorId, action, note }: Moderation) 
 					isNotNull(schema.question.verifiedAt)
 				)
 			)
-			.returning({ id: schema.question.id });
+			.returning({
+				id: schema.question.id,
+				title: schema.question.title,
+				body: schema.question.body,
+				slug: schema.question.slug,
+				userId: schema.question.userId,
+				assigneeId: schema.question.assigneeId,
+				emailToken: schema.question.emailToken
+			});
 
-		if (updated.length === 0) return { error: 'already-handled' as const };
+		if (!question) return { error: 'already-handled' as const };
 
 		await tx.insert(schema.moderationAction).values({
 			id: crypto.randomUUID(),
@@ -59,6 +72,10 @@ export function moderate({ questionId, moderatorId, action, note }: Moderation) 
 			action,
 			note
 		});
+
+		// enqueue notification emails to asker/politician on the moderated question
+		if (action === 'approved') await enqueueApprovalMails(tx, question);
+		else await enqueueRejectionMail(tx, question);
 
 		return { action };
 	});
