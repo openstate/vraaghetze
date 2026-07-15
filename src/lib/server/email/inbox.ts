@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db, schema } from '$lib/server/db';
-import { enqueueAnswerMail, resolveMailAddress } from '$lib/server/mails';
+import { enqueueAnswerMail, resolveMailAddress } from './templates';
 import {
 	dedupKey,
 	extractAddress,
@@ -10,7 +10,7 @@ import {
 	isAutoReply,
 	isSenderVerified,
 	type InboundEmail
-} from './parse';
+} from './parse-inbound';
 
 const politicianUser = alias(schema.user, 'politicianUser');
 

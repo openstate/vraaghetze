@@ -1,7 +1,7 @@
 import { and, asc, eq, isNotNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db, schema } from '$lib/server/db';
-import { enqueueApprovalMails, enqueueRejectionMail } from '$lib/server/mails';
+import { enqueueApprovalMails, enqueueRejectionMail } from '$lib/server/email/templates';
 
 const politicianUser = alias(schema.user, 'politicianUser');
 

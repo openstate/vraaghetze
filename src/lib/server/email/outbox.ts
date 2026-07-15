@@ -1,8 +1,8 @@
 import { and, eq, inArray, lt, lte, sql } from 'drizzle-orm';
 import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
-import { db, schema, type Transaction } from './db';
-import type { OutboxKind } from './db/app.schema';
+import { db, schema, type Transaction } from '../db';
+import type { OutboxKind } from '../db/app.schema';
 
 const MAX_ATTEMPTS = 8;
 const CLAIM_BATCH_SIZE = 10;

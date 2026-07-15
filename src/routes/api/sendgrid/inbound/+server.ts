@@ -1,8 +1,8 @@
 import { error } from '@sveltejs/kit';
 import { INBOUND_MAIL_TOKEN } from '$env/static/private';
-import { safeEquals, validateForm } from '$lib/server/forms';
-import { inboundEmailSchema } from '$lib/server/inbox/parse';
-import { receiveInboundEmail } from '$lib/server/inbox/process';
+import { safeEquals, validateForm } from '$lib/server/utils/forms';
+import { inboundEmailSchema } from '$lib/server/email/parse-inbound';
+import { receiveInboundEmail } from '$lib/server/email/inbox';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request, url }) => {

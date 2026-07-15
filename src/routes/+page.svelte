@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Button from '$lib/components/button.svelte';
 	import Page from '$lib/components/page.svelte';
-	import { questions } from '$lib/dummy';
+	import { questions } from './dummy';
 </script>
 
 <div data-theme="dark" class="bg-osf-violet-900 text-osf-violet-50">

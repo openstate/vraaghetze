@@ -1,7 +1,7 @@
-import { and, desc, eq, isNull, or } from 'drizzle-orm';
+import { and, desc, eq, isNull, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { db, schema } from '$lib/server/db';
-import { slugifyUniqueQuestion } from '$lib/server/slug';
+import { db, schema, type Transaction } from '$lib/server/db';
+import { slugify, slugifyUnique } from '$lib/server/utils/slug';
 import { hasPermission } from '$lib/permissions';
 
 const politicianUser = alias(schema.user, 'politicianUser');
@@ -111,6 +111,23 @@ export async function bySlug(slug: string, viewerId: string | null) {
 		.limit(1);
 
 	return { question, answer: answer ?? null };
+}
+
+const reservedSlugs = ['stellen'] as const;
+
+async function slugifyUniqueQuestion(tx: Transaction, title: string) {
+	const base = slugify(title) || 'vraag';
+
+	const existing = await tx
+		.select({ slug: schema.question.slug })
+		.from(schema.question)
+		.where(
+			or(eq(schema.question.slug, base), sql`${schema.question.slug} ~ ${`^${base}-[0-9]+$`}`)
+		);
+
+	const taken = new Set<string>([...reservedSlugs, ...existing.map((row) => row.slug)]);
+
+	return slugifyUnique(base, taken);
 }
 
 type CreateQuestion = {

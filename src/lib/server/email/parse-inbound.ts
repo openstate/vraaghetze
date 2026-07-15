@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import EmailReplyParser from 'email-reply-parser';
-import { jsonString } from '$lib/server/forms';
+import { jsonString } from '$lib/server/utils/forms';
 
 // https://www.twilio.com/docs/sendgrid/for-developers/parsing-email/setting-up-the-inbound-parse-webhook
 export const inboundEmailSchema = z.object({

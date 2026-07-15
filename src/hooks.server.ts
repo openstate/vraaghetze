@@ -7,7 +7,7 @@ import { env } from '$env/dynamic/private';
 import { timingSafeEqual } from 'node:crypto';
 import { Cron } from 'croner';
 import { syncPoliticians } from '$lib/server/sync';
-import { deliverOutbox } from '$lib/server/outbox';
+import { deliverOutbox } from '$lib/server/email/outbox';
 
 export const init: ServerInit = () => {
 	if (building) return;

@@ -1,6 +1,6 @@
 import type { schema } from '../db';
 import type { Persoon } from './data';
-import { slugifyUnique } from '../slug';
+import { slugifyUnique } from '../utils/slug';
 
 export type Politician = {
 	user: Pick<typeof schema.user.$inferInsert, 'id' | 'name' | 'email' | 'emailVerified' | 'role'>;

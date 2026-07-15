@@ -1,11 +1,34 @@
 import { eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { schema, type Transaction } from '$lib/server/db';
-import { enqueueMail } from '$lib/server/outbox';
+import { enqueueMail, sendMail } from './outbox';
 
 // pre-launch safety: when DIVERSION_EMAIL is set, all politician-facing mail goes to
 // that address and replies from it are accepted as if from the assigned politician
 export const resolveMailAddress = (address: string) => env.DIVERSION_EMAIL || address;
+
+type MagicLink = {
+	recipient: string;
+	url: string;
+	purpose: 'confirm' | 'login';
+	expiresAt: Date;
+};
+
+// sends the sign-in link, worded as a question confirmation when sent from the ask flow
+export function sendMagicLinkMail({ recipient, url, purpose, expiresAt }: MagicLink) {
+	const { subject, body } =
+		purpose === 'confirm'
+			? {
+					subject: 'Bevestig je vraag op VraagHetZe',
+					body: `Met dit e-mailadres is een vraag gesteld op VraagHetZe. Was jij dat? Bevestig je vraag via deze link: ${url}`
+				}
+			: {
+					subject: 'Je inloglink voor VraagHetZe',
+					body: `Log hier in: ${url}`
+				};
+
+	return sendMail({ kind: 'magic-link', recipient, subject, body, expiresAt });
+}
 
 type ModeratedQuestion = {
 	id: string;
@@ -17,7 +40,7 @@ type ModeratedQuestion = {
 	emailToken: string | null;
 };
 
-// sends a notification to the politician and a confirmation to the asker
+// enqueues a notification to the politician and a confirmation to the asker
 export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQuestion) {
 	const [asker] = await tx
 		.select({ name: schema.user.name, email: schema.user.email })
@@ -69,7 +92,7 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 	});
 }
 
-// sends a rejection notice to the asker, no mail to the politician
+// enqueues a rejection notice to the asker, no mail to the politician
 export async function enqueueRejectionMail(tx: Transaction, question: ModeratedQuestion) {
 	const [asker] = await tx
 		.select({ name: schema.user.name, email: schema.user.email })
@@ -103,7 +126,7 @@ type AnsweredQuestion = {
 	politicianName: string;
 };
 
-// notifies the asker that their question received a public answer
+// enqueues a notification to the asker that their question received a public answer
 export function enqueueAnswerMail(tx: Transaction, question: AnsweredQuestion) {
 	const body = [
 		`Beste ${question.askerName},`,

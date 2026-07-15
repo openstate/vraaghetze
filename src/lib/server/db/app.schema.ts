@@ -10,7 +10,7 @@ import {
 	index
 } from 'drizzle-orm/pg-core';
 import { account, session, user } from './auth.schema';
-import type { InboundEmail } from '../inbox/parse';
+import type { InboundEmail } from '../email/parse-inbound';
 
 // --- TABLES ---
 

@@ -1,7 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import * as moderation from '$lib/server/moderation';
-import { validateForm } from '$lib/server/forms';
+import { validateForm } from '$lib/server/utils/forms';
 import { hasPermission } from '$lib/permissions';
 import type { Actions, PageServerLoad } from './$types';
 

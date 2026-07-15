@@ -4,7 +4,7 @@ import { admin, magicLink } from 'better-auth/plugins';
 import { db } from './db';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
-import { sendMail } from './outbox';
+import { sendMagicLinkMail } from './email/templates';
 import { ac, defaultRole, roles } from '$lib/permissions';
 
 const MAGIC_LINK_EXPIRY_SECONDS = 30 * 60;
@@ -21,26 +21,12 @@ export const auth = betterAuth({
 			expiresIn: MAGIC_LINK_EXPIRY_SECONDS,
 			sendMagicLink: async ({ email, url }) => {
 				const link = new URL(url);
-				const callbackURL = link.searchParams.get('callbackURL');
-				const isQuestionConfirmation =
-					!!callbackURL &&
-					new URL(callbackURL, link.origin).searchParams.get('doel') === 'bevestigen';
+				const callbackURL = new URL(link.searchParams.get('callbackURL') ?? '', link.origin);
 
-				const { subject, text } = isQuestionConfirmation
-					? {
-							subject: 'Bevestig je vraag op VraagHetZe',
-							text: `Met dit e-mailadres is een vraag gesteld op VraagHetZe. Was jij dat? Bevestig je vraag via deze link: ${url}`
-						}
-					: {
-							subject: 'Je inloglink voor VraagHetZe',
-							text: `Log hier in: ${url}`
-						};
-
-				await sendMail({
-					kind: 'magic-link',
+				await sendMagicLinkMail({
 					recipient: email,
-					subject,
-					body: text,
+					url,
+					purpose: callbackURL.searchParams.get('doel') === 'bevestigen' ? 'confirm' : 'login',
 					expiresAt: new Date(Date.now() + MAGIC_LINK_EXPIRY_SECONDS * 1000)
 				});
 			}

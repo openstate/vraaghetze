@@ -3,7 +3,7 @@ import { z } from 'zod';
 import * as politicians from '$lib/server/politicians';
 import * as questions from '$lib/server/questions';
 import { sendSignInLink } from '$lib/server/auth';
-import { validateForm, type FormIssues } from '$lib/server/forms';
+import { validateForm, type FormIssues } from '$lib/server/utils/forms';
 import { hasPermission } from '$lib/permissions';
 import type { Actions, PageServerLoad } from './$types';
 
