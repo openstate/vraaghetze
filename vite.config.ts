@@ -1,5 +1,14 @@
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
-export default defineConfig({ plugins: [tailwindcss(), sveltekit()] });
+export default defineConfig({
+	plugins: [tailwindcss(), sveltekit()],
+	test: {
+		include: ['src/**/*.test.ts'],
+		environment: 'node',
+		globalSetup: './vitest.setup.ts',
+		// test files share one test database, so they must not interleave
+		fileParallelism: false
+	}
+});

@@ -48,7 +48,7 @@ export function dedupKey(email: InboundEmail) {
 
 export function isAutoReply(headers: string) {
 	return (
-		/^auto-submitted:\s*(?!no\b)/im.test(headers) ||
+		/^auto-submitted:(?!\s*no\b)/im.test(headers) ||
 		/^x-auto(?:reply|respond)\b/im.test(headers) ||
 		/^precedence:\s*(?:auto_reply|bulk|junk)\b/im.test(headers)
 	);

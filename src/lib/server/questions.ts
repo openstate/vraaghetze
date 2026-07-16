@@ -203,21 +203,19 @@ export async function pendingConfirmation(slug: string, userId: string) {
 	return question.verifiedAt === null;
 }
 
-export function claimQuestion(slug: string, userId: string) {
-	return db
+export async function claimQuestion(slug: string, userId: string) {
+	const claimed = await db
 		.update(schema.question)
-		.set({ verifiedAt: new Date() })
-		.where(
-			and(
-				eq(schema.question.slug, slug),
-				eq(schema.question.userId, userId),
-				isNull(schema.question.verifiedAt)
-			)
-		);
+		// coalesce keeps the original timestamp, so re-confirming stays idempotent
+		.set({ verifiedAt: sql`coalesce(${schema.question.verifiedAt}, now())` })
+		.where(and(eq(schema.question.slug, slug), eq(schema.question.userId, userId)))
+		.returning({ id: schema.question.id });
+
+	return claimed.length > 0;
 }
 
-export function disownQuestion(slug: string, userId: string) {
-	return db
+export async function disownQuestion(slug: string, userId: string) {
+	const disowned = await db
 		.delete(schema.question)
 		.where(
 			and(
@@ -225,5 +223,8 @@ export function disownQuestion(slug: string, userId: string) {
 				eq(schema.question.userId, userId),
 				isNull(schema.question.verifiedAt)
 			)
-		);
+		)
+		.returning({ id: schema.question.id });
+
+	return disowned.length > 0;
 }

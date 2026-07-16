@@ -8,11 +8,16 @@ const config = {
 	},
 	kit: {
 		adapter: adapter(),
-		csrf: { checkOrigin: false },
+		csrf: { trustedOrigins: ['*'] },
 		typescript: {
 			config: (config) => ({
 				...config,
-				include: [...config.include, '../drizzle.config.ts', '../scripts/**/*.ts']
+				include: [
+					...config.include,
+					'../drizzle.config.ts',
+					'../scripts/**/*.ts',
+					'../vitest.setup.ts'
+				]
 			})
 		}
 	}

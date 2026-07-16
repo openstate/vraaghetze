@@ -1,4 +1,4 @@
-import { and, asc, eq, isNotNull } from 'drizzle-orm';
+import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db, schema } from '$lib/server/db';
 import { enqueueApprovalMails, enqueueRejectionMail } from '$lib/server/email/templates';
@@ -63,7 +63,23 @@ export function moderate({ questionId, moderatorId, action, note }: Moderation) 
 				emailToken: schema.question.emailToken
 			});
 
-		if (!question) return { error: 'already-handled' as const };
+		if (!question) {
+			// tell an unverified question apart from an already moderated one, so the
+			// moderator isn't told a never-handled question was already handled
+			const [unverified] = await tx
+				.select({ id: schema.question.id })
+				.from(schema.question)
+				.where(
+					and(
+						eq(schema.question.id, questionId),
+						eq(schema.question.status, 'pending'),
+						isNull(schema.question.verifiedAt)
+					)
+				)
+				.limit(1);
+
+			return { error: unverified ? ('not-verified' as const) : ('already-handled' as const) };
+		}
 
 		await tx.insert(schema.moderationAction).values({
 			id: crypto.randomUUID(),

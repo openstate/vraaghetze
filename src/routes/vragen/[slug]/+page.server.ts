@@ -30,11 +30,14 @@ export const actions = {
 		if (!parsed.success) return fail(400, { error: true });
 
 		if (parsed.data.keuze === 'nee') {
-			await questions.disownQuestion(params.slug, locals.user.id);
+			const disowned = await questions.disownQuestion(params.slug, locals.user.id);
+			if (!disowned) error(404, 'Vraag niet gevonden');
 			redirect(303, '/');
 		}
 
-		await questions.claimQuestion(params.slug, locals.user.id);
+		const claimed = await questions.claimQuestion(params.slug, locals.user.id);
+		if (!claimed) error(404, 'Vraag niet gevonden');
+
 		return { confirmed: true };
 	}
 } satisfies Actions;

@@ -1,5 +1,11 @@
 {
 	"files.associations": {
 		"*.css": "tailwindcss"
+	},
+	"explorer.fileNesting.enabled": true,
+	"explorer.fileNesting.patterns": {
+		"*.ts": "${capture}.test.ts",
+		"+page.server.ts": "page.server.test.ts",
+		"+server.ts": "server.test.ts"
 	}
 }

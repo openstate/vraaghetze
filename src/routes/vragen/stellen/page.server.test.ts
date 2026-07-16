@@ -1,0 +1,180 @@
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { eq } from 'drizzle-orm';
+import { db, schema } from '$lib/server/db';
+import * as page from './+page.server';
+
+const sendSignInLink = vi.hoisted(() => vi.fn());
+vi.mock('$lib/server/auth', () => ({ sendSignInLink }));
+
+async function createUser(name: string, overrides: Partial<typeof schema.user.$inferInsert> = {}) {
+	const id = crypto.randomUUID();
+
+	const [created] = await db
+		.insert(schema.user)
+		.values({ id, name, email: `${id}@test.example`, emailVerified: true, ...overrides })
+		.returning();
+
+	return created;
+}
+
+async function createPolitician(overrides: Partial<typeof schema.politician.$inferInsert> = {}) {
+	const politicianUser = await createUser('Jan Jansen', { role: 'politician' });
+
+	const fractionId = crypto.randomUUID();
+	await db
+		.insert(schema.fraction)
+		.values({ id: fractionId, name: 'Testfractie', abbreviation: 'TF' });
+
+	const id = crypto.randomUUID();
+	const [politician] = await db
+		.insert(schema.politician)
+		.values({
+			id,
+			slug: `jan-jansen-${id}`,
+			userId: politicianUser.id,
+			fractionId,
+			fractionRole: 'member',
+			...overrides
+		})
+		.returning();
+
+	return { politician, politicianUser };
+}
+
+async function getQuestionBySlug(slug: string) {
+	const [question] = await db.select().from(schema.question).where(eq(schema.question.slug, slug));
+	return question;
+}
+
+function makeActionEvent(
+	user: typeof schema.user.$inferSelect | null,
+	fields: Record<string, string> = {}
+) {
+	const formData = new FormData();
+	for (const [name, value] of Object.entries(fields)) formData.set(name, value);
+
+	return {
+		locals: { user: user ?? undefined },
+		url: new URL('http://localhost/vragen/stellen'),
+		request: new Request('http://localhost/vragen/stellen', { method: 'POST', body: formData })
+	} as unknown as Parameters<typeof page.actions.default>[0];
+}
+
+const questionFields = {
+	name: 'Vera Vraagsteller',
+	title: 'Wat vindt u van de toeslagen?',
+	body: 'Graag een toelichting.'
+} as const;
+
+beforeEach(async () => {
+	sendSignInLink.mockClear();
+
+	await db.transaction(async (tx) => {
+		await tx.delete(schema.moderationAction);
+		await tx.delete(schema.inbox);
+		await tx.delete(schema.question);
+		await tx.delete(schema.user);
+		await tx.delete(schema.fraction);
+	});
+});
+
+describe('default action', () => {
+	test('creates the question and redirects a signed-in asker', async () => {
+		const { politician } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const event = makeActionEvent(asker, {
+			...questionFields,
+			email: asker.email,
+			politicianId: politician.id
+		});
+
+		await expect(page.actions.default(event)).rejects.toMatchObject({
+			status: 303,
+			location: '/vragen/wat-vindt-u-van-de-toeslagen'
+		});
+
+		const question = await getQuestionBySlug('wat-vindt-u-van-de-toeslagen');
+		expect(question).toMatchObject({ userId: asker.id, status: 'pending' });
+		expect(question.verifiedAt).not.toBeNull();
+		expect(sendSignInLink).not.toHaveBeenCalled();
+	});
+
+	test('sends a confirmation link for an anonymous asker', async () => {
+		const { politician } = await createPolitician();
+		const email = `nieuw-${crypto.randomUUID()}@test.example`;
+		const event = makeActionEvent(null, { ...questionFields, email, politicianId: politician.id });
+
+		const result = await page.actions.default(event);
+
+		expect(result).toEqual({ email });
+		const question = await getQuestionBySlug('wat-vindt-u-van-de-toeslagen');
+		expect(question.verifiedAt).toBeNull();
+		expect(sendSignInLink).toHaveBeenCalledWith(
+			email,
+			'http://localhost/vragen/wat-vindt-u-van-de-toeslagen?doel=bevestigen'
+		);
+	});
+
+	test('masks a forbidden asker email exactly like a sent confirmation', async () => {
+		const { politician } = await createPolitician();
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const event = makeActionEvent(null, {
+			...questionFields,
+			email: moderator.email,
+			politicianId: politician.id
+		});
+
+		const result = await page.actions.default(event);
+
+		// indistinguishable from the genuine anonymous response, so moderator
+		// e-mailaddresses cannot be enumerated through the ask form
+		expect(result).toEqual({ email: moderator.email });
+		expect(await db.select().from(schema.question)).toHaveLength(0);
+		expect(sendSignInLink).not.toHaveBeenCalled();
+	});
+
+	test('refuses a signed-in user without ask permission', async () => {
+		const { politician, politicianUser } = await createPolitician();
+		const event = makeActionEvent(politicianUser, {
+			...questionFields,
+			email: politicianUser.email,
+			politicianId: politician.id
+		});
+
+		const result = await page.actions.default(event);
+
+		expect(result).toMatchObject({ status: 403 });
+		expect(await db.select().from(schema.question)).toHaveLength(0);
+	});
+
+	test('rejects an inactive politician with a field issue', async () => {
+		const { politician } = await createPolitician({ isActive: false });
+		const asker = await createUser('Vera Vraagsteller');
+		const event = makeActionEvent(asker, {
+			...questionFields,
+			email: asker.email,
+			politicianId: politician.id
+		});
+
+		const result = await page.actions.default(event);
+
+		expect(result).toMatchObject({
+			status: 400,
+			data: { issues: { politicianId: expect.anything() } }
+		});
+		expect(await db.select().from(schema.question)).toHaveLength(0);
+	});
+
+	test('fails on an invalid form', async () => {
+		const asker = await createUser('Vera Vraagsteller');
+		const event = makeActionEvent(asker, { email: 'geen-email' });
+
+		const result = await page.actions.default(event);
+
+		expect(result).toMatchObject({
+			status: 400,
+			data: { issues: { email: expect.anything(), title: expect.anything() } }
+		});
+		expect(sendSignInLink).not.toHaveBeenCalled();
+	});
+});

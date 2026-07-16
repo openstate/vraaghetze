@@ -12,6 +12,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
+		"test": "vitest run",
+		"test:watch": "vitest",
 		"format": "prettier --write .",
 		"db:start": "docker compose -f docker-compose.dev.yml up",
 		"db:push": "drizzle-kit push",
@@ -51,6 +53,7 @@
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.60.0",
 		"vite": "^8.0.14",
+		"vitest": "^4.1.10",
 		"zod": "^4.4.3"
 	},
 	"dependencies": {

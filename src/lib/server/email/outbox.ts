@@ -29,9 +29,9 @@ export async function enqueueMail({ transaction, ...mail }: OutgoingMailOptions)
 export async function sendMail(mail: OutgoingMailOptions) {
 	const mailId = await enqueueMail(mail);
 
-	const sent = await deliverBatch([mailId]).catch((cause) => {
+	const { sent } = await deliverBatch([mailId]).catch((cause) => {
 		console.error('Outbox delivery failed:', cause);
-		return 0;
+		return { claimed: 0, sent: 0 };
 	});
 
 	return sent > 0;
@@ -41,7 +41,7 @@ export async function sendMail(mail: OutgoingMailOptions) {
 const backoff = sql`now() + least(pow(2, ${schema.outbox.attempts}) * interval '5 minutes', interval '4 hours')`;
 
 async function deliverBatch(filterMailIds: string[] = []) {
-	const claimed = await db.transaction(async (tx) => {
+	const { claimed, mails } = await db.transaction(async (tx) => {
 		const now = new Date();
 
 		const candidates = await tx
@@ -75,9 +75,9 @@ async function deliverBatch(filterMailIds: string[] = []) {
 				);
 		}
 
-		if (deliverable.length === 0) return [];
+		if (deliverable.length === 0) return { claimed: candidates.length, mails: [] };
 
-		return tx
+		const mails = await tx
 			.update(schema.outbox)
 			.set({
 				status: 'sending',
@@ -91,9 +91,13 @@ async function deliverBatch(filterMailIds: string[] = []) {
 				)
 			)
 			.returning();
+
+		return { claimed: candidates.length, mails };
 	});
 
-	for (const mail of claimed) {
+	let sent = 0;
+
+	for (const mail of mails) {
 		try {
 			await postEmail({
 				to: mail.recipient,
@@ -105,27 +109,33 @@ async function deliverBatch(filterMailIds: string[] = []) {
 				.update(schema.outbox)
 				.set({ status: 'sent', sentAt: new Date() })
 				.where(eq(schema.outbox.id, mail.id));
+			sent += 1;
 		} catch (cause) {
 			const lastError = cause instanceof Error ? cause.message : String(cause);
-			// on a retryable failure the row stays 'sending' and is re-picked once its
-			// nextAttemptAt passes; after the attempts limit it fails.
+			// on a retryable failure the row goes back to 'queued' and is re-picked once its
+			// nextAttemptAt passes; after the attempts limit it fails. rows left 'sending' by
+			// a crash mid-send recover the same way, since the claim includes both statuses.
 			await db
 				.update(schema.outbox)
-				.set(mail.attempts >= MAX_ATTEMPTS ? { status: 'failed', lastError } : { lastError })
+				.set(
+					mail.attempts >= MAX_ATTEMPTS
+						? { status: 'failed', lastError }
+						: { status: 'queued', lastError }
+				)
 				.where(eq(schema.outbox.id, mail.id));
 		}
 	}
 
-	return claimed.length;
+	return { claimed, sent };
 }
 
 export async function deliverOutbox() {
 	let delivered = 0;
-	let batchSize;
+	let batch;
 	do {
-		batchSize = await deliverBatch();
-		delivered += batchSize;
-	} while (batchSize === CLAIM_BATCH_SIZE);
+		batch = await deliverBatch();
+		delivered += batch.sent;
+	} while (batch.claimed === CLAIM_BATCH_SIZE);
 	return delivered;
 }
 

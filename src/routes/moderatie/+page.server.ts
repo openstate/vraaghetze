@@ -36,7 +36,13 @@ export const actions = {
 			note: result.data.note || undefined
 		});
 
-		if ('error' in outcome) return fail(409, { error: 'Deze vraag is al behandeld.' });
+		if ('error' in outcome)
+			return fail(409, {
+				error:
+					outcome.error === 'not-verified'
+						? 'Deze vraag is nog niet bevestigd door de vraagsteller.'
+						: 'Deze vraag is al behandeld.'
+			});
 		return { moderated: result.data.questionId };
 	}
 } satisfies Actions;
