@@ -49,15 +49,15 @@ async function processMail(mail: InboxRow) {
 	const email = mail.payload;
 
 	if (!mail.token) {
-		return settle(mail, 'review', 'geen antwoordtoken in adres');
+		return settle(mail, 'ignored', 'geen antwoordtoken in adres');
 	}
 
 	if (isAutoReply(email.headers) || email.envelope.from === '') {
-		return settle(mail, 'review', 'automatisch antwoord');
+		return settle(mail, 'ignored', 'automatisch antwoord');
 	}
 
 	if (!mail.dkimVerified) {
-		return settle(mail, 'review', 'afzender niet geverifieerd');
+		return settle(mail, 'ignored', 'afzender niet geverifieerd');
 	}
 
 	const [question] = await db
@@ -79,7 +79,7 @@ async function processMail(mail: InboxRow) {
 		.limit(1);
 
 	if (!question || question.status !== 'approved') {
-		return settle(mail, 'review', 'token onbekend of vraag niet goedgekeurd');
+		return settle(mail, 'ignored', 'token onbekend of vraag niet goedgekeurd');
 	}
 
 	const [publishedAnswer] = await db
@@ -89,17 +89,17 @@ async function processMail(mail: InboxRow) {
 		.limit(1);
 
 	if (publishedAnswer) {
-		return settle(mail, 'review', 'vraag is al beantwoord');
+		return settle(mail, 'ignored', 'vraag is al beantwoord');
 	}
 
 	if (mail.fromAddress !== resolveMailAddress(question.politicianEmail).toLowerCase()) {
-		return settle(mail, 'review', 'afzender is niet het Kamerlid');
+		return settle(mail, 'ignored', 'afzender is niet het Kamerlid');
 	}
 
 	const replyText = extractReplyText(email.text);
 
 	if (!replyText) {
-		return settle(mail, 'review', 'leeg antwoord');
+		return settle(mail, 'ignored', 'leeg antwoord');
 	}
 
 	await db.transaction(async (tx) => {
@@ -123,7 +123,7 @@ async function processMail(mail: InboxRow) {
 	});
 }
 
-function settle(mail: InboxRow, status: 'review' | 'failed', reason: string) {
+function settle(mail: InboxRow, status: 'ignored' | 'failed', reason: string) {
 	return db
 		.update(schema.inbox)
 		.set({ status, reason, processedAt: new Date() })

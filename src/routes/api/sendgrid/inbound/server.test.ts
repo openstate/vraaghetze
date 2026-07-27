@@ -76,7 +76,7 @@ describe('POST', () => {
 			.select()
 			.from(schema.inbox)
 			.where(eq(schema.inbox.fromAddress, sender));
-		expect(stored).toMatchObject({ status: 'review' });
+		expect(stored).toMatchObject({ status: 'ignored' });
 	});
 
 	test('acknowledges an invalid payload without storing it', async () => {

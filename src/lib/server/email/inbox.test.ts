@@ -139,17 +139,17 @@ describe('receiveInboundEmail', () => {
 		expect(answers).toHaveLength(1);
 	});
 
-	test('holds mail without an answer token for review', async () => {
+	test('ignores mail without an answer token', async () => {
 		const { politician } = await createQuestion();
 
 		await receiveInboundEmail(makeEmail(politician.email, null));
 
 		const stored = await getInboxRow(politician.email);
-		expect(stored.status).toBe('review');
+		expect(stored.status).toBe('ignored');
 		expect(stored.answerId).toBeNull();
 	});
 
-	test('holds auto-replies for review', async () => {
+	test('ignores auto-replies', async () => {
 		const { question, politician } = await createQuestion();
 		const email = makeEmail(politician.email, question.emailToken, {
 			headers: 'Precedence: bulk'
@@ -158,11 +158,11 @@ describe('receiveInboundEmail', () => {
 		await receiveInboundEmail(email);
 
 		const stored = await getInboxRow(politician.email);
-		expect(stored.status).toBe('review');
+		expect(stored.status).toBe('ignored');
 		expect(stored.answerId).toBeNull();
 	});
 
-	test('holds bounces with an empty envelope sender for review', async () => {
+	test('ignores bounces with an empty envelope sender', async () => {
 		const { question, politician } = await createQuestion();
 		const email = makeEmail(politician.email, question.emailToken);
 		email.envelope = { ...email.envelope, from: '' };
@@ -170,11 +170,11 @@ describe('receiveInboundEmail', () => {
 		await receiveInboundEmail(email);
 
 		const stored = await getInboxRow(politician.email);
-		expect(stored.status).toBe('review');
+		expect(stored.status).toBe('ignored');
 		expect(stored.answerId).toBeNull();
 	});
 
-	test('holds mail from an unverified sender for review', async () => {
+	test('ignores mail from an unverified sender', async () => {
 		const { question, politician } = await createQuestion();
 		const email = makeEmail(politician.email, question.emailToken, {
 			dkim: '{@test.example : fail}'
@@ -183,31 +183,31 @@ describe('receiveInboundEmail', () => {
 		await receiveInboundEmail(email);
 
 		const stored = await getInboxRow(politician.email);
-		expect(stored.status).toBe('review');
+		expect(stored.status).toBe('ignored');
 		expect(stored.answerId).toBeNull();
 	});
 
-	test('holds mail with an unknown token for review', async () => {
+	test('ignores mail with an unknown token', async () => {
 		const sender = `${crypto.randomUUID()}@test.example`;
 
 		await receiveInboundEmail(makeEmail(sender, crypto.randomUUID()));
 
 		const stored = await getInboxRow(sender);
-		expect(stored.status).toBe('review');
+		expect(stored.status).toBe('ignored');
 		expect(stored.answerId).toBeNull();
 	});
 
-	test('holds replies to a question that is not approved for review', async () => {
+	test('ignores replies to a question that is not approved', async () => {
 		const { question, politician } = await createQuestion({ status: 'pending' });
 
 		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
 
 		const stored = await getInboxRow(politician.email);
-		expect(stored.status).toBe('review');
+		expect(stored.status).toBe('ignored');
 		expect(stored.answerId).toBeNull();
 	});
 
-	test('holds replies to an already answered question for review', async () => {
+	test('ignores replies to an already answered question', async () => {
 		const { question, politician } = await createQuestion();
 		await db.insert(schema.answer).values({
 			id: crypto.randomUUID(),
@@ -220,29 +220,29 @@ describe('receiveInboundEmail', () => {
 		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
 
 		const stored = await getInboxRow(politician.email);
-		expect(stored.status).toBe('review');
+		expect(stored.status).toBe('ignored');
 		expect(stored.answerId).toBeNull();
 	});
 
-	test('holds mail from someone other than the assigned politician for review', async () => {
+	test('ignores mail from someone other than the assigned politician', async () => {
 		const { question } = await createQuestion();
 		const stranger = await createUser('Sjaak Stranger');
 
 		await receiveInboundEmail(makeEmail(stranger.email, question.emailToken));
 
 		const stored = await getInboxRow(stranger.email);
-		expect(stored.status).toBe('review');
+		expect(stored.status).toBe('ignored');
 		expect(stored.answerId).toBeNull();
 	});
 
-	test('holds mail with an empty reply text for review', async () => {
+	test('ignores mail with an empty reply text', async () => {
 		const { question, politician } = await createQuestion();
 		const email = makeEmail(politician.email, question.emailToken, { text: '' });
 
 		await receiveInboundEmail(email);
 
 		const stored = await getInboxRow(politician.email);
-		expect(stored.status).toBe('review');
+		expect(stored.status).toBe('ignored');
 		expect(stored.answerId).toBeNull();
 	});
 
