@@ -1,0 +1,44 @@
+<script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+	import { Tabs } from 'bits-ui';
+	import Page from '$lib/components/page.svelte';
+
+	let { children } = $props();
+
+	const tabs = [
+		{ value: 'wachtrij', label: 'Wachtrij', href: resolve('/moderatie/wachtrij') },
+		{ value: 'vragen', label: 'Vragen', href: resolve('/moderatie/vragen') },
+		{ value: 'inbox', label: 'Inbox', href: resolve('/moderatie/inbox') },
+		{ value: 'outbox', label: 'Outbox', href: resolve('/moderatie/outbox') }
+	];
+
+	const currentTab = $derived(page.url.pathname.split('/')[2] ?? 'wachtrij');
+</script>
+
+<Page width="wide">
+	<h1 class="mb-8 font-serif text-4xl font-[450]">Moderatie</h1>
+
+	<Tabs.Root
+		value={currentTab}
+		onValueChange={(value) =>
+			goto(tabs.find((tab) => tab.value === value)?.href ?? tabs[0].href, {
+				keepFocus: true,
+				noScroll: true
+			})}
+	>
+		<Tabs.List class="mb-8 flex w-fit gap-1 rounded bg-osf-canvas-100 p-1 dark:bg-osf-violet-800">
+			{#each tabs as tab (tab.value)}
+				<Tabs.Trigger
+					value={tab.value}
+					class="cursor-pointer rounded-sm px-4 py-1.5 font-mono text-sm font-medium data-[state=active]:bg-osf-violet-900 data-[state=active]:text-osf-canvas-50 dark:data-[state=active]:bg-osf-neutral-50 dark:data-[state=active]:text-osf-violet-900"
+				>
+					{tab.label}
+				</Tabs.Trigger>
+			{/each}
+		</Tabs.List>
+	</Tabs.Root>
+
+	{@render children()}
+</Page>

@@ -1,9 +1,10 @@
-import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm';
+import { and, asc, count, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { error } from '@sveltejs/kit';
 import { db, schema } from '$lib/server/db';
 import { enqueueApprovalMails, enqueueRejectionMail } from '$lib/server/email/templates';
 import { hasPermission } from '$lib/permissions';
+import type { Pagination } from '$lib/pagination';
 
 const politicianUser = alias(schema.user, 'politicianUser');
 
@@ -33,6 +34,82 @@ export function listQueue() {
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
 		.where(and(eq(schema.question.status, 'pending'), isNotNull(schema.question.verifiedAt)))
 		.orderBy(asc(schema.question.createdAt));
+}
+
+export function listQuestions({ page, perPage }: Pagination) {
+	return db.transaction(async (tx) => {
+		const rows = await tx
+			.select({
+				id: schema.question.id,
+				title: schema.question.title,
+				body: schema.question.body,
+				slug: schema.question.slug,
+				status: schema.question.status,
+				authorName: schema.user.name,
+				politicianName: politicianUser.name,
+				politicianSlug: schema.politician.slug,
+				createdAt: schema.question.createdAt,
+				answeredAt: schema.answer.createdAt
+			})
+			.from(schema.question)
+			.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
+			.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+			.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
+			.leftJoin(schema.answer, eq(schema.answer.questionId, schema.question.id))
+			.orderBy(desc(schema.question.createdAt))
+			.limit(perPage)
+			.offset((page - 1) * perPage);
+
+		const [{ total }] = await tx.select({ total: count() }).from(schema.question);
+
+		return { rows, total };
+	});
+}
+
+export function listInbox({ page, perPage }: Pagination) {
+	return db.transaction(async (tx) => {
+		const rows = await tx
+			.select({
+				id: schema.inbox.id,
+				fromAddress: schema.inbox.fromAddress,
+				subject: schema.inbox.subject,
+				body: sql<string | null>`${schema.inbox.payload}->>'text'`,
+				status: schema.inbox.status,
+				reason: schema.inbox.reason,
+				receivedAt: schema.inbox.receivedAt
+			})
+			.from(schema.inbox)
+			.orderBy(desc(schema.inbox.receivedAt))
+			.limit(perPage)
+			.offset((page - 1) * perPage);
+
+		const [{ total }] = await tx.select({ total: count() }).from(schema.inbox);
+
+		return { rows, total };
+	});
+}
+
+export function listOutbox({ page, perPage }: Pagination) {
+	return db.transaction(async (tx) => {
+		const rows = await tx
+			.select({
+				id: schema.outbox.id,
+				kind: schema.outbox.kind,
+				recipient: schema.outbox.recipient,
+				subject: schema.outbox.subject,
+				body: schema.outbox.body,
+				status: schema.outbox.status,
+				createdAt: schema.outbox.createdAt
+			})
+			.from(schema.outbox)
+			.orderBy(desc(schema.outbox.createdAt))
+			.limit(perPage)
+			.offset((page - 1) * perPage);
+
+		const [{ total }] = await tx.select({ total: count() }).from(schema.outbox);
+
+		return { rows, total };
+	});
 }
 
 type Moderation = {
