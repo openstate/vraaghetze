@@ -8,6 +8,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { Cron } from 'croner';
 import { syncPoliticians } from '$lib/server/sync';
 import { deliverOutbox } from '$lib/server/email/outbox';
+import { authorizeModerator } from '$lib/server/moderation';
 
 export const init: ServerInit = () => {
 	if (building) return;
@@ -77,4 +78,11 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	return svelteKitHandler({ event, resolve, auth, building });
 };
 
-export const handle = sequence(handleCsrf, handleBasicAuth, handleBetterAuth);
+const isModerationRoute = (routeId: string | null) => /^\/moderatie(\/|$)/.test(routeId ?? '');
+
+export const handleAuthorization: Handle = async ({ event, resolve }) => {
+	if (isModerationRoute(event.route.id)) authorizeModerator(event.locals.user);
+	return resolve(event);
+};
+
+export const handle = sequence(handleCsrf, handleBasicAuth, handleBetterAuth, handleAuthorization);

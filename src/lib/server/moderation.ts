@@ -1,9 +1,16 @@
 import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
+import { error } from '@sveltejs/kit';
 import { db, schema } from '$lib/server/db';
 import { enqueueApprovalMails, enqueueRejectionMail } from '$lib/server/email/templates';
+import { hasPermission } from '$lib/permissions';
 
 const politicianUser = alias(schema.user, 'politicianUser');
+
+// require user to have the "moderate" permission, otherwise returns 403 page
+export function authorizeModerator(user: App.Locals['user']) {
+	if (!hasPermission(user, { question: ['moderate'] })) error(403, 'Geen toegang');
+}
 
 // only verified questions enter the queue; unverified ones get their own list with a
 // manual-verify action in a later phase
