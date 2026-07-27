@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import type { Snippet } from 'svelte';
+	import { formatDate } from '$lib/components/date-time.svelte';
 
 	type Question = {
 		slug: string;
@@ -53,7 +54,7 @@
 		const recipient = question.politicianName
 			? `aan ${question.politicianName}${fraction ? `\u00A0(${fraction})` : ''}`
 			: null;
-		const date = new Date(question.createdAt).toLocaleDateString('nl-NL');
+		const date = formatDate(question.createdAt);
 		return [question.authorName, recipient, date].filter((part) => part !== null);
 	});
 </script>

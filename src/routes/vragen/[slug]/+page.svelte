@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import Button from '$lib/components/button.svelte';
+	import DateTime from '$lib/components/date-time.svelte';
 	import Page from '$lib/components/page.svelte';
 
 	let { data } = $props();
@@ -47,7 +48,7 @@
 					>
 					{#if fractionLabel}({fractionLabel}){/if}
 				</span>
-				<span>·&nbsp;{new Date(data.question.createdAt).toLocaleDateString('nl-NL')}</span>
+				<span>·&nbsp;<DateTime value={data.question.createdAt} /></span>
 				<span
 					class="ml-auto rounded-full bg-osf-canvas-100 px-2 py-0.5 text-xs text-osf-canvas-500"
 				>
@@ -66,7 +67,7 @@
 			<article class="rounded border border-osf-canvas-200 p-5">
 				<header class="mb-3 flex flex-wrap items-center gap-2 text-sm text-osf-canvas-500">
 					<span class="font-medium text-osf-canvas-600">{data.answer.authorName}</span>
-					<span>·&nbsp;{new Date(data.answer.createdAt).toLocaleDateString('nl-NL')}</span>
+					<span>·&nbsp;<DateTime value={data.answer.createdAt} /></span>
 					<span
 						class="ml-auto rounded-full bg-osf-canvas-100 px-2 py-0.5 text-xs text-osf-canvas-500"
 					>
