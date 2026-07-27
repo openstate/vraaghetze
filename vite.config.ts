@@ -8,7 +8,7 @@ export default defineConfig({
 		include: ['src/**/*.test.ts'],
 		environment: 'node',
 		globalSetup: './vitest.setup.ts',
-		// test files share one test database, so they must not interleave
-		fileParallelism: false
+		setupFiles: './vitest.worker.ts',
+		maxWorkers: 8
 	}
 });

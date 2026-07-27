@@ -16,7 +16,8 @@ const config = {
 					...config.include,
 					'../drizzle.config.ts',
 					'../scripts/**/*.ts',
-					'../vitest.setup.ts'
+					'../vitest.setup.ts',
+					'../vitest.worker.ts'
 				]
 			})
 		}

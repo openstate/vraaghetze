@@ -6,6 +6,7 @@
 	"explorer.fileNesting.patterns": {
 		"*.ts": "${capture}.test.ts",
 		"+page.server.ts": "page.server.test.ts",
-		"+server.ts": "server.test.ts"
+		"+server.ts": "server.test.ts",
+		"vitest.setup.ts": "vitest.worker.ts"
 	}
 }
