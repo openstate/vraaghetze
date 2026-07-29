@@ -5,5 +5,8 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) redirect(307, '/inloggen');
 
-	return { questions: await questions.listForUser(locals.user.id) };
+	return {
+		questions: await questions.listForUser(locals.user.id),
+		meta: { title: 'Jouw vragen' }
+	};
 };

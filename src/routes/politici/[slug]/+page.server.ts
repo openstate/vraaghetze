@@ -9,6 +9,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	return {
 		politician,
-		questions: await questions.listForPolitician(params.slug, locals.user?.id ?? null)
+		questions: await questions.listForPolitician(params.slug, locals.user?.id ?? null),
+		meta: { title: politician.name }
 	};
 };

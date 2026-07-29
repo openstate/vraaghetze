@@ -17,7 +17,11 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 			? 'verified'
 			: null;
 
-	return { ...result, banner };
+	return {
+		...result,
+		banner,
+		meta: { title: result.question.title }
+	};
 };
 
 const choiceSchema = z.object({ keuze: z.enum(['ja', 'nee']) });

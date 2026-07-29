@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/button.svelte';
-	import favicon from '$lib/assets/favicon.svg';
+	import logo from '$lib/assets/logo.svg?raw';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { hasPermission } from '$lib/permissions';
@@ -9,8 +9,6 @@
 	const props: SvelteHTMLElements['header'] = $props();
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
-
 <header
 	{...props}
 	class={['bg-osf-neutral-50 dark:bg-osf-violet-900 dark:text-osf-violet-50', props.class]}
@@ -18,8 +16,12 @@
 	<nav
 		class="mx-auto grid max-w-7xl grid-cols-[1fr_2fr_1fr] items-center justify-between px-6 py-5"
 	>
-		<h1 class="font-serif text-2xl font-[450]">
-			<a href={resolve('/')}><span class="text-osf-shocking-pink">Vraag</span>HetZe</a>
+		<h1>
+			<a href={resolve('/')} class="block w-fit [&>svg]:h-5.5 [&>svg]:w-auto">
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+				{@html logo}
+				<span class="sr-only">VraagHetZe</span>
+			</a>
 		</h1>
 
 		<div class="flex justify-center gap-16">

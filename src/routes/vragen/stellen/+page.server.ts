@@ -17,7 +17,8 @@ const schema = z.object({
 
 export const load: PageServerLoad = async ({ locals }) => ({
 	politicians: await politicians.listActive(),
-	mayAsk: hasPermission(locals.user, { question: ['ask'] })
+	mayAsk: hasPermission(locals.user, { question: ['ask'] }),
+	meta: { title: 'Stel een vraag' }
 });
 
 export const actions = {

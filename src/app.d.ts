@@ -14,6 +14,7 @@ declare global {
 
 		interface PageData {
 			user?: User;
+			meta?: { title: string };
 		}
 
 		// interface Error {}
