@@ -22,11 +22,12 @@
 
 	<Tabs.Root
 		value={currentTab}
-		onValueChange={(value) =>
-			goto(tabs.find((tab) => tab.value === value)?.href ?? tabs[0].href, {
-				keepFocus: true,
-				noScroll: true
-			})}
+		onValueChange={(value) => {
+			const href = tabs.find((tab) => tab.value === value)?.href ?? tabs[0].href;
+			const perPage = page.url.searchParams.get('per');
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			goto(perPage ? `${href}?per=${perPage}` : href, { keepFocus: true, noScroll: true });
+		}}
 	>
 		<Tabs.List class="mb-8 flex w-fit gap-1 rounded bg-osf-canvas-100 p-1 dark:bg-osf-violet-800">
 			{#each tabs as tab (tab.value)}

@@ -9,10 +9,8 @@
 	let { count, page, perPage }: Props = $props();
 
 	function navigate(params: Record<string, string>) {
-		const search = new URLSearchParams(params);
-		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const url = new URL(pageState.url);
-		url.search = search.toString();
+		for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		goto(url, { keepFocus: true, noScroll: true });
 	}
