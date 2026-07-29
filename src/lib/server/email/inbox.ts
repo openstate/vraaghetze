@@ -49,15 +49,15 @@ async function processMail(mail: InboxRow) {
 	const email = mail.payload;
 
 	if (!mail.token) {
-		return settle(mail, 'ignored', 'geen antwoordtoken in adres');
+		return settle(mail, 'ignored', 'Geen antwoordtoken in adres');
 	}
 
 	if (isAutoReply(email.headers) || email.envelope.from === '') {
-		return settle(mail, 'ignored', 'automatisch antwoord');
+		return settle(mail, 'ignored', 'Automatisch antwoord');
 	}
 
 	if (!mail.dkimVerified) {
-		return settle(mail, 'ignored', 'afzender niet geverifieerd');
+		return settle(mail, 'ignored', 'Afzender niet geverifieerd');
 	}
 
 	const [question] = await db
@@ -78,8 +78,12 @@ async function processMail(mail: InboxRow) {
 		.where(eq(schema.question.emailToken, mail.token))
 		.limit(1);
 
-	if (!question || question.status !== 'approved') {
-		return settle(mail, 'ignored', 'token onbekend of vraag niet goedgekeurd');
+	if (!question) {
+		return settle(mail, 'ignored', 'Vraag onbekend');
+	}
+
+	if (question.status !== 'approved') {
+		return settle(mail, 'ignored', 'Vraag niet goedgekeurd');
 	}
 
 	const [publishedAnswer] = await db
@@ -89,17 +93,17 @@ async function processMail(mail: InboxRow) {
 		.limit(1);
 
 	if (publishedAnswer) {
-		return settle(mail, 'ignored', 'vraag is al beantwoord');
+		return settle(mail, 'ignored', 'Vraag al beantwoord');
 	}
 
 	if (mail.fromAddress !== resolveMailAddress(question.politicianEmail).toLowerCase()) {
-		return settle(mail, 'ignored', 'afzender is niet het Kamerlid');
+		return settle(mail, 'ignored', 'Afzender is niet het Kamerlid');
 	}
 
 	const replyText = extractReplyText(email.text);
 
 	if (!replyText) {
-		return settle(mail, 'ignored', 'leeg antwoord');
+		return settle(mail, 'ignored', 'Leeg antwoord');
 	}
 
 	await db.transaction(async (tx) => {

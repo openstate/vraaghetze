@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { createColumnHelper, renderComponent, renderSnippet } from '@tanstack/svelte-table';
-	import ContentDialog from '$lib/components/content-dialog.svelte';
+	import DetailsDialog, { type Detail } from '$lib/components/details-dialog.svelte';
 	import DataTable, { features } from '$lib/components/data-table.svelte';
 	import DateTime from '$lib/components/date-time.svelte';
 	import StatusPill, { moderationStatusPills } from '$lib/components/status-pill.svelte';
@@ -14,8 +14,18 @@
 	const helper = createColumnHelper<typeof features, Row>();
 
 	const columns = helper.columns([
+		helper.display({
+			id: 'details',
+			header: '',
+			meta: { class: 'w-14' },
+			cell: (cell) =>
+				renderComponent(DetailsDialog, {
+					title: dialogTitles[cell.row.original.status],
+					details: details(cell.row.original)
+				})
+		}),
 		helper.accessor('title', {
-			header: 'Titel',
+			header: 'Vraag',
 			cell: (cell) => renderSnippet(titleLink, cell.row.original)
 		}),
 		helper.accessor('authorName', {
@@ -41,18 +51,30 @@
 			header: 'Beantwoord',
 			meta: { class: 'w-44' },
 			cell: (cell) => renderSnippet(answeredCell, cell.row.original)
-		}),
-		helper.display({
-			id: 'content',
-			header: '',
-			meta: { class: 'w-14' },
-			cell: (cell) =>
-				renderComponent(ContentDialog, {
-					title: cell.row.original.title,
-					body: cell.row.original.body
-				})
 		})
 	]);
+
+	const dialogTitles = {
+		pending: 'Ongemodereerde vraag',
+		approved: 'Goedgekeurde vraag',
+		rejected: 'Afgewezen vraag'
+	} satisfies Record<Row['status'], string>;
+
+	function details(row: Row) {
+		return [
+			['Vraag', row.title],
+			['Context', row.body || '—'],
+			['Vraagsteller', row.authorName],
+			['Kamerlid', row.politicianName],
+			['Aangemaakt op', row.createdAt],
+			['Moderatiestatus', moderationStatusPills[row.status].label],
+			['Moderatiereden', row.rejectionReason],
+			['Moderatienotitie', row.note],
+			['Gemodereerd op', row.moderatedAt],
+			['Gemodereerd door', row.moderatorName],
+			['Beantwoord op', row.answeredAt]
+		] satisfies Detail[];
+	}
 </script>
 
 {#snippet titleLink(row: Row)}

@@ -7,6 +7,7 @@ import { hasPermission } from '$lib/permissions';
 import type { Pagination } from '$lib/pagination';
 
 const politicianUser = alias(schema.user, 'politicianUser');
+const moderatorUser = alias(schema.user, 'moderatorUser');
 
 // require user to have the "moderate" permission, otherwise returns 403 page
 export function authorizeModerator(user: App.Locals['user']) {
@@ -49,13 +50,19 @@ export function listQuestions({ page, perPage }: Pagination) {
 				politicianName: politicianUser.name,
 				politicianSlug: schema.politician.slug,
 				createdAt: schema.question.createdAt,
-				answeredAt: schema.answer.createdAt
+				answeredAt: schema.answer.createdAt,
+				moderatorName: moderatorUser.name,
+				moderatedAt: schema.moderationAction.createdAt,
+				rejectionReason: schema.moderationAction.rejectionReason,
+				note: schema.moderationAction.note
 			})
 			.from(schema.question)
 			.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 			.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 			.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
 			.leftJoin(schema.answer, eq(schema.answer.questionId, schema.question.id))
+			.leftJoin(schema.moderationAction, eq(schema.moderationAction.questionId, schema.question.id))
+			.leftJoin(moderatorUser, eq(schema.moderationAction.moderatorId, moderatorUser.id))
 			.orderBy(desc(schema.question.createdAt))
 			.limit(perPage)
 			.offset((page - 1) * perPage);
@@ -76,7 +83,8 @@ export function listInbox({ page, perPage }: Pagination) {
 				body: sql<string | null>`${schema.inbox.payload}->>'text'`,
 				status: schema.inbox.status,
 				reason: schema.inbox.reason,
-				receivedAt: schema.inbox.receivedAt
+				receivedAt: schema.inbox.receivedAt,
+				processedAt: schema.inbox.processedAt
 			})
 			.from(schema.inbox)
 			.orderBy(desc(schema.inbox.receivedAt))
@@ -96,9 +104,13 @@ export function listOutbox({ page, perPage }: Pagination) {
 				id: schema.outbox.id,
 				kind: schema.outbox.kind,
 				recipient: schema.outbox.recipient,
+				replyTo: schema.outbox.replyTo,
 				subject: schema.outbox.subject,
 				body: schema.outbox.body,
 				status: schema.outbox.status,
+				attempts: schema.outbox.attempts,
+				lastError: schema.outbox.lastError,
+				sentAt: schema.outbox.sentAt,
 				createdAt: schema.outbox.createdAt
 			})
 			.from(schema.outbox)
