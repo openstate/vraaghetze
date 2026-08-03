@@ -26,10 +26,12 @@
 	{#if questions.length === 0}
 		<p class="text-osf-canvas-500">Je hebt nog geen vragen gesteld.</p>
 	{:else}
+		<!-- TODO: unverified questions are still indistinguishable from verified ones,
+		 		 once a design exists reselect verifiedAt in questions.listForUser and mark them -->
 		<ul class="grid gap-3">
 			{#each questions as question (question.slug)}
 				<li>
-					<QuestionCard {question} statusDisplay="always" showVerification />
+					<QuestionCard {question} />
 				</li>
 			{/each}
 		</ul>

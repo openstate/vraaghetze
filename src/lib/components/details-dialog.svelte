@@ -4,7 +4,7 @@
 
 <script lang="ts">
 	import { Dialog } from 'bits-ui';
-	import { formatDateTime } from '$lib/components/date-time.svelte';
+	import { formatDateTime } from '$lib/date-time';
 
 	type Props = { title: string; details: Detail[] };
 

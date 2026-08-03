@@ -26,12 +26,14 @@ export function listQueue() {
 			createdAt: schema.question.createdAt,
 			authorName: schema.user.name,
 			politicianName: politicianUser.name,
+			politicianSlug: schema.politician.slug,
 			fraction: schema.fraction.abbreviation,
 			fractionName: schema.fraction.name
 		})
 		.from(schema.question)
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
 		.where(and(eq(schema.question.status, 'pending'), isNotNull(schema.question.verifiedAt)))
 		.orderBy(asc(schema.question.createdAt));

@@ -1,19 +1,111 @@
-import { and, desc, eq, isNull, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, isNull, notExists, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db, schema, type Transaction } from '$lib/server/db';
 import { slugify, slugifyUnique } from '$lib/server/utils/slug';
 import { hasPermission } from '$lib/permissions';
 
 const politicianUser = alias(schema.user, 'politicianUser');
+const newerAnswer = alias(schema.answer, 'newerAnswer');
 
 // approved rows for everyone, a signed-in user also sees their own regardless of status
 const isVisibleTo = (
-	table: typeof schema.question | typeof schema.answer,
+	table: typeof schema.question | typeof schema.answer | typeof newerAnswer,
 	viewerId: string | null
 ) => or(eq(table.status, 'approved'), viewerId ? eq(table.userId, viewerId) : undefined);
 
-export function list(viewerId: string | null) {
-	return db
+// a question can carry more than one answer: a politician may follow up while an earlier reply
+// still waits for moderation, or after it was rejected. Only the newest one the viewer may see
+// is joined, otherwise the question comes back once per answer and every count is off.
+const latestAnswer = (viewerId: string | null) =>
+	and(
+		eq(schema.answer.questionId, schema.question.id),
+		isVisibleTo(schema.answer, viewerId),
+		notExists(
+			db
+				.select({ newer: sql`1` })
+				.from(newerAnswer)
+				.where(
+					and(
+						eq(newerAnswer.questionId, schema.question.id),
+						isVisibleTo(newerAnswer, viewerId),
+						gt(newerAnswer.createdAt, schema.answer.createdAt)
+					)
+				)
+		)
+	);
+
+const answerColumns = {
+	answerBody: schema.answer.body,
+	answerCreatedAt: schema.answer.createdAt
+};
+
+type AnswerRow = {
+	answerBody: string | null;
+	answerCreatedAt: Date | null;
+};
+
+// fold the flat left-joined answer columns into a nested object, null when unanswered
+const nestAnswer = <Row extends AnswerRow>(rows: Row[]) =>
+	rows.map(({ answerBody, answerCreatedAt, ...question }) => ({
+		...question,
+		answer:
+			answerBody === null || answerCreatedAt === null
+				? null
+				: { body: answerBody, createdAt: answerCreatedAt }
+	}));
+
+export async function list(viewerId: string | null) {
+	const rows = await db
+		.select({
+			slug: schema.question.slug,
+			title: schema.question.title,
+			createdAt: schema.question.createdAt,
+			authorName: schema.user.name,
+			politicianName: politicianUser.name,
+			politicianSlug: schema.politician.slug,
+			fraction: schema.fraction.abbreviation,
+			fractionName: schema.fraction.name,
+			...answerColumns
+		})
+		.from(schema.question)
+		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
+		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
+		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
+		.leftJoin(schema.answer, latestAnswer(viewerId))
+		.where(isVisibleTo(schema.question, viewerId))
+		.orderBy(desc(schema.question.createdAt));
+
+	return nestAnswer(rows);
+}
+
+export async function listForPolitician(slug: string, viewerId: string | null) {
+	const rows = await db
+		.select({
+			slug: schema.question.slug,
+			title: schema.question.title,
+			createdAt: schema.question.createdAt,
+			authorName: schema.user.name,
+			politicianName: politicianUser.name,
+			politicianSlug: schema.politician.slug,
+			fraction: schema.fraction.abbreviation,
+			fractionName: schema.fraction.name,
+			...answerColumns
+		})
+		.from(schema.question)
+		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
+		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
+		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
+		.leftJoin(schema.answer, latestAnswer(viewerId))
+		.where(and(eq(schema.politician.slug, slug), isVisibleTo(schema.question, viewerId)))
+		.orderBy(desc(schema.question.createdAt));
+
+	return nestAnswer(rows);
+}
+
+export async function listForUser(userId: string) {
+	const rows = await db
 		.select({
 			slug: schema.question.slug,
 			title: schema.question.title,
@@ -23,53 +115,20 @@ export function list(viewerId: string | null) {
 			politicianName: politicianUser.name,
 			politicianSlug: schema.politician.slug,
 			fraction: schema.fraction.abbreviation,
-			fractionName: schema.fraction.name
+			fractionName: schema.fraction.name,
+			...answerColumns
 		})
 		.from(schema.question)
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
-		.where(isVisibleTo(schema.question, viewerId))
+		.leftJoin(schema.answer, latestAnswer(userId))
+		// no status filter: the owner sees all their own questions, verified or not
+		.where(eq(schema.question.userId, userId))
 		.orderBy(desc(schema.question.createdAt));
-}
 
-export function listForPolitician(slug: string, viewerId: string | null) {
-	return db
-		.select({
-			slug: schema.question.slug,
-			title: schema.question.title,
-			createdAt: schema.question.createdAt,
-			status: schema.question.status
-		})
-		.from(schema.question)
-		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
-		.where(and(eq(schema.politician.slug, slug), isVisibleTo(schema.question, viewerId)))
-		.orderBy(desc(schema.question.createdAt));
-}
-
-export function listForUser(userId: string) {
-	return (
-		db
-			.select({
-				slug: schema.question.slug,
-				title: schema.question.title,
-				createdAt: schema.question.createdAt,
-				status: schema.question.status,
-				verifiedAt: schema.question.verifiedAt,
-				politicianName: politicianUser.name,
-				politicianSlug: schema.politician.slug,
-				fraction: schema.fraction.abbreviation,
-				fractionName: schema.fraction.name
-			})
-			.from(schema.question)
-			.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
-			.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
-			.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
-			// no status filter: the owner sees all their own questions, verified or not
-			.where(eq(schema.question.userId, userId))
-			.orderBy(desc(schema.question.createdAt))
-	);
+	return nestAnswer(rows);
 }
 
 export async function bySlug(slug: string, viewerId: string | null) {
@@ -108,6 +167,8 @@ export async function bySlug(slug: string, viewerId: string | null) {
 		.from(schema.answer)
 		.innerJoin(schema.user, eq(schema.answer.userId, schema.user.id))
 		.where(and(eq(schema.answer.questionId, question.id), isVisibleTo(schema.answer, viewerId)))
+		// a follow-up reply supersedes the one before it
+		.orderBy(desc(schema.answer.createdAt))
 		.limit(1);
 
 	return { question, answer: answer ?? null };

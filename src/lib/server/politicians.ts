@@ -1,4 +1,4 @@
-import { asc, eq, sql } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 
 export function listActive() {
@@ -8,7 +8,6 @@ export function listActive() {
 			slug: schema.politician.slug,
 			fractionRole: schema.politician.fractionRole,
 			name: schema.user.name,
-			hasImage: sql<boolean>`${schema.user.image} is not null`,
 			fraction: schema.fraction.abbreviation,
 			fractionName: schema.fraction.name
 		})
@@ -26,7 +25,6 @@ export async function bySlug(slug: string) {
 			userId: schema.politician.userId,
 			name: schema.user.name,
 			fractionRole: schema.politician.fractionRole,
-			hasImage: sql<boolean>`${schema.user.image} is not null`,
 			fraction: schema.fraction.abbreviation,
 			fractionName: schema.fraction.name
 		})

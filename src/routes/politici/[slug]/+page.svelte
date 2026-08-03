@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import Avatar from '$lib/components/avatar.svelte';
 	import Button from '$lib/components/button.svelte';
 	import Page from '$lib/components/page.svelte';
 	import QuestionCard from '$lib/components/question-card.svelte';
@@ -9,21 +10,11 @@
 
 <Page>
 	<div class="flex flex-col items-center gap-6 text-center sm:flex-row sm:text-left">
-		{#if data.politician.hasImage}
-			<img
-				src={resolve('/politici/[slug]/foto', { slug: data.politician.slug })}
-				alt={data.politician.name}
-				width="128"
-				height="128"
-				class="size-32 rounded-full object-cover"
-			/>
-		{:else}
-			<div
-				class="flex size-32 items-center justify-center rounded-full bg-osf-canvas-100 font-mono text-5xl text-osf-violet-500"
-			>
-				{data.politician.name.slice(0, 1)}
-			</div>
-		{/if}
+		<Avatar
+			class="size-32 text-5xl"
+			name={data.politician.name}
+			src={resolve('/politici/[slug]/foto', { slug: data.politician.slug })}
+		/>
 
 		<div>
 			<h1 class="font-serif text-4xl font-[450]">{data.politician.name}</h1>

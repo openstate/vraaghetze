@@ -25,6 +25,21 @@ async function createUser(name: string, overrides: Partial<typeof schema.user.$i
 async function createQuestion(overrides: Partial<typeof schema.question.$inferInsert> = {}) {
 	const asker = await createUser('Vera Vraagsteller');
 	const politician = await createUser('Jan Jansen');
+
+	const fractionId = crypto.randomUUID();
+	await db
+		.insert(schema.fraction)
+		.values({ id: fractionId, name: 'Testfractie', abbreviation: 'TF' });
+
+	const politicianId = crypto.randomUUID();
+	await db.insert(schema.politician).values({
+		id: politicianId,
+		slug: `jan-jansen-${politicianId}`,
+		userId: politician.id,
+		fractionId,
+		fractionRole: 'member'
+	});
+
 	const id = crypto.randomUUID();
 
 	const [question] = await db

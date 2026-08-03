@@ -64,7 +64,7 @@
 
 			<label class="grid gap-1.5">
 				<span class="text-sm font-medium">Je vraag</span>
-				<input name="title" required class={inputClass} />
+				<input name="title" required maxlength={200} class={inputClass} />
 				{#if issues?.title}
 					<span class="text-sm text-osf-shocking-pink">
 						{issues.title[0]}
@@ -74,7 +74,7 @@
 
 			<label class="grid gap-1.5">
 				<span class="text-sm font-medium">Voeg context toe (optioneel)</span>
-				<textarea name="body" rows="6" class={inputClass}></textarea>
+				<textarea name="body" rows="6" maxlength={1000} class={inputClass}></textarea>
 			</label>
 
 			{#if selectedPolitician}

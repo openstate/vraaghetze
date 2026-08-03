@@ -10,8 +10,12 @@ import type { Actions, PageServerLoad } from './$types';
 const schema = z.object({
 	name: z.string().trim().min(1, 'Vul je volledige naam in.'),
 	email: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.')),
-	title: z.string().trim().min(1, 'Stel je vraag.'),
-	body: z.string().trim().default(''),
+	title: z
+		.string()
+		.trim()
+		.min(1, 'Stel je vraag.')
+		.max(200, 'Houd je vraag korter dan 200 tekens.'),
+	body: z.string().trim().max(1000, 'Houd je context korter dan 1000 tekens.').default(''),
 	politicianId: z.string().min(1, 'Kies een Kamerlid.')
 });
 

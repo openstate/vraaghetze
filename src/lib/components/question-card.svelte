@@ -1,101 +1,85 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import type { Snippet } from 'svelte';
-	import { formatDate } from '$lib/components/date-time.svelte';
+	import Avatar from '$lib/components/avatar.svelte';
+	import { formatDateLong } from '$lib/date-time';
 
 	type Question = {
 		slug: string;
 		title: string;
-		body?: string | null;
 		createdAt: Date;
-		status?: string;
-		verifiedAt?: Date | null;
-		authorName?: string;
-		politicianName?: string;
-		fraction?: string | null;
-		fractionName?: string | null;
+		status?: 'pending' | 'approved' | 'rejected';
+		authorName: string;
+		politicianName: string;
+		politicianSlug: string;
+		fraction: string | null;
+		fractionName: string | null;
+		answer: { body: string; createdAt: Date } | null;
 	};
 
-	type Props = {
-		/** Show the moderation pill only when pending (default), or for every status. */
-		statusDisplay?: 'pending' | 'always';
-		/** Show whether the question is confirmed to belong to this account (profile only). */
-		showVerification?: boolean;
-		/** Render a plain card instead of a link, e.g. when it contains action forms. */
-		link?: boolean;
-		question: Question;
-		children?: Snippet;
-	};
+	let { question }: { question: Question } = $props();
 
-	let {
-		question,
-		statusDisplay = 'pending',
-		showVerification = false,
-		link = true,
-		children
-	}: Props = $props();
-
-	const statusLabel: Record<string, string> = {
-		pending: 'Wacht op moderatie',
-		approved: 'Goedgekeurd',
-		rejected: 'Afgewezen'
-	};
-
-	const statusText = $derived(
-		question.status !== undefined && (statusDisplay === 'always' || question.status === 'pending')
-			? (statusLabel[question.status] ?? question.status)
-			: null
+	const recipientLabel = $derived(
+		question.status === 'pending'
+			? 'Wacht op moderatie, gesteld aan'
+			: question.status === 'rejected'
+				? 'Afgewezen, was gesteld aan'
+				: question.answer
+					? 'Antwoord van'
+					: 'Wacht op antwoord van'
 	);
 
-	const isVerified = $derived(question.verifiedAt != null);
-
-	const meta = $derived.by(() => {
-		const fraction = question.fraction ?? question.fractionName;
-		const recipient = question.politicianName
-			? `aan ${question.politicianName}${fraction ? `\u00A0(${fraction})` : ''}`
-			: null;
-		const date = formatDate(question.createdAt);
-		return [question.authorName, recipient, date].filter((part) => part !== null);
-	});
+	const fractionLabel = $derived(question.fraction ?? question.fractionName);
+	const questionHref = $derived(resolve('/vragen/[slug]', { slug: question.slug }));
+	const politicianHref = $derived(resolve('/politici/[slug]', { slug: question.politicianSlug }));
 </script>
 
-{#snippet content()}
-	<div class="flex flex-wrap items-start justify-between gap-2">
-		<p class="font-medium">{question.title}</p>
-		<div class="flex flex-wrap items-center gap-1.5">
-			{#if showVerification && !isVerified}
-				<span
-					class="flex items-center gap-1 rounded-full bg-osf-violet-50 px-2 py-0.5 text-xs text-osf-violet-700"
-				>
-					<span class="iconify size-3.5 mdi--alert-circle-outline"></span>
-					Niet bevestigd
-				</span>
-			{/if}
-			{#if statusText}
-				<span class="rounded-full bg-osf-canvas-100 px-2 py-0.5 text-xs text-osf-canvas-500">
-					{statusText}
-				</span>
-			{/if}
+<article class="overflow-hidden rounded bg-osf-canvas-100">
+	<div class="p-5">
+		<p class="text-sm text-osf-canvas-600">
+			Vraag van {question.authorName} op {formatDateLong(question.createdAt)}
+		</p>
+
+		<p class="mt-3 font-serif text-xl/snug font-[450]">
+			<a href={questionHref} class="decoration-1 underline-offset-2 hover:underline"
+				>{question.title}</a
+			>
+		</p>
+	</div>
+
+	<hr class="mx-5 border-osf-canvas-200" />
+
+	<div class="p-5">
+		{#if question.answer}
+			<p class="mb-4 line-clamp-3 text-[15px] text-osf-canvas-600">
+				&ldquo;{question.answer.body}&rdquo;
+			</p>
+		{/if}
+
+		<div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+			<div class="flex min-w-0 flex-1 items-center gap-3">
+				<a href={politicianHref} class="shrink-0" aria-hidden="true" tabindex="-1">
+					<Avatar
+						class="size-10"
+						name={question.politicianName}
+						src={resolve('/politici/[slug]/foto', { slug: question.politicianSlug })}
+					/>
+				</a>
+				<p class="text-sm text-osf-canvas-600">
+					{recipientLabel}
+					<a href={politicianHref} class="font-medium hover:underline">
+						{question.politicianName}
+						{#if fractionLabel}({fractionLabel}){/if}
+					</a>
+					{#if question.answer}op {formatDateLong(question.answer.createdAt)}{/if}
+				</p>
+			</div>
+
+			<a
+				href={questionHref}
+				class="flex w-fit items-center gap-1 text-sm font-medium text-osf-violet-500 hover:underline"
+			>
+				Lees meer <span class="iconify size-4 mdi--arrow-right"></span>
+			</a>
 		</div>
 	</div>
-	<p class="mt-1 text-sm text-osf-canvas-500">{meta.join(' · ')}</p>
-	{#if question.body}
-		<p class="mt-2 whitespace-pre-wrap">{question.body}</p>
-	{/if}
-	{#if children}
-		<div class="mt-4">{@render children()}</div>
-	{/if}
-{/snippet}
-
-{#if link}
-	<a
-		href={resolve('/vragen/[slug]', { slug: question.slug })}
-		class="block rounded border border-osf-canvas-200 p-4 transition-colors hover:bg-osf-canvas-100"
-	>
-		{@render content()}
-	</a>
-{:else}
-	<article class="rounded border border-osf-canvas-200 p-4">
-		{@render content()}
-	</article>
-{/if}
+</article>
