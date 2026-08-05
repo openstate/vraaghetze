@@ -7,12 +7,16 @@ import {
 	integer,
 	jsonb,
 	check,
+	customType,
 	index
 } from 'drizzle-orm/pg-core';
 import { account, session, user } from './auth.schema';
 import type { InboundEmail } from '../email/parse-inbound';
 
 // --- TABLES ---
+
+// postgres full-text search vector
+const tsvector = customType<{ data: string; driverData: string }>({ dataType: () => 'tsvector' });
 
 export type FractionRole = 'member' | 'chair';
 
@@ -32,26 +36,50 @@ const postColumns = {
 		.notNull()
 };
 
-export const question = pgTable('question', {
-	...postColumns,
-	title: text().notNull(),
-	slug: text().unique().notNull(),
-	assigneeId: text()
-		.references(() => user.id)
-		.notNull(),
-	// snapshot of the assignee's fraction, so later party switches don't rewrite history
-	assigneeFractionId: text().references(() => fraction.id),
-	verifiedAt: timestamp(),
-	// routing token for the politician's reply, generated at approval
-	emailToken: text().unique()
-});
+export const question = pgTable(
+	'question',
+	{
+		...postColumns,
+		title: text().notNull(),
+		slug: text().unique().notNull(),
+		assigneeId: text()
+			.references(() => user.id)
+			.notNull(),
+		// snapshot of the assignee's fraction, so later party switches don't rewrite history
+		assigneeFractionId: text().references(() => fraction.id),
+		verifiedAt: timestamp(),
+		// routing token for the politician's reply, generated at approval
+		emailToken: text().unique(),
+		// weighted vector for searching and finding related questions (A/B/C is for weighting)
+		searchVector: tsvector()
+			.generatedAlwaysAs(
+				sql`setweight(to_tsvector('dutch', "title"), 'A') || setweight(to_tsvector('dutch', "body"), 'C')`
+			)
+			.notNull()
+	},
+	(table) => [
+		index('question_search_idx').using('gin', table.searchVector),
+		index('question_created_at_idx').on(table.createdAt)
+	]
+);
 
-export const answer = pgTable('answer', {
-	...postColumns,
-	questionId: text()
-		.references(() => question.id, { onDelete: 'cascade' })
-		.notNull()
-});
+export const answer = pgTable(
+	'answer',
+	{
+		...postColumns,
+		questionId: text()
+			.references(() => question.id, { onDelete: 'cascade' })
+			.notNull(),
+		// weighted vector for searching and finding related answers (A/B/C is for weighting)
+		searchVector: tsvector()
+			.generatedAlwaysAs(sql`setweight(to_tsvector('dutch', "body"), 'B')`)
+			.notNull()
+	},
+	(table) => [
+		index('answer_search_idx').using('gin', table.searchVector),
+		index('answer_question_id_idx').on(table.questionId)
+	]
+);
 
 export const moderationAction = pgTable(
 	'moderation_action',

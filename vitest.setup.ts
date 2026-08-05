@@ -23,6 +23,15 @@ export default async function setup() {
 		await sql`CREATE DATABASE ${sql(templateName)}`;
 
 		databaseUrl.pathname = `/${templateName}`;
+
+		// push does not create extensions, which search's `<%` operator needs
+		const templateSql = postgres(databaseUrl.toString());
+		try {
+			await templateSql`CREATE EXTENSION IF NOT EXISTS pg_trgm`;
+		} finally {
+			await templateSql.end();
+		}
+
 		execSync('pnpm exec drizzle-kit push --force', {
 			stdio: ['ignore', 'ignore', 'inherit'],
 			env: { ...process.env, DATABASE_URL: databaseUrl.toString() }

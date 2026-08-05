@@ -207,21 +207,6 @@ describe('create', () => {
 });
 
 describe('visibility', () => {
-	test('list shows approved questions to everyone and pending ones only to their owner', async () => {
-		const { politicianUser } = await createPolitician();
-		const asker = await createUser('Vera Vraagsteller');
-		const approved = await insertQuestion(asker.id, politicianUser.id);
-		const pending = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
-
-		const publicList = await questions.list(null);
-		const ownerList = await questions.list(asker.id);
-		const strangerList = await questions.list(politicianUser.id);
-
-		expect(publicList.map((row) => row.slug)).toEqual([approved.slug]);
-		expect(ownerList.map((row) => row.slug).sort()).toEqual([approved.slug, pending.slug].sort());
-		expect(strangerList.map((row) => row.slug)).toEqual([approved.slug]);
-	});
-
 	test('listForPolitician applies the same visibility rules', async () => {
 		const { politician, politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');

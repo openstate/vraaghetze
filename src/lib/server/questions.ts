@@ -4,19 +4,18 @@ import { db, schema, type Transaction } from '$lib/server/db';
 import { slugify, slugifyUnique } from '$lib/server/utils/slug';
 import { hasPermission } from '$lib/permissions';
 
-const politicianUser = alias(schema.user, 'politicianUser');
-const newerAnswer = alias(schema.answer, 'newerAnswer');
+export const politicianUser = alias(schema.user, 'politicianUser');
+export const newerAnswer = alias(schema.answer, 'newerAnswer');
 
 // approved rows for everyone, a signed-in user also sees their own regardless of status
-const isVisibleTo = (
+export const isVisibleTo = (
 	table: typeof schema.question | typeof schema.answer | typeof newerAnswer,
 	viewerId: string | null
 ) => or(eq(table.status, 'approved'), viewerId ? eq(table.userId, viewerId) : undefined);
 
-// a question can carry more than one answer: a politician may follow up while an earlier reply
-// still waits for moderation, or after it was rejected. Only the newest one the viewer may see
-// is joined, otherwise the question comes back once per answer and every count is off.
-const latestAnswer = (viewerId: string | null) =>
+// a politician can follow up on a pending or rejected answer, so a question may have several.
+// join only the newest visible one, otherwise the question repeats once per answer
+export const latestAnswer = (viewerId: string | null) =>
 	and(
 		eq(schema.answer.questionId, schema.question.id),
 		isVisibleTo(schema.answer, viewerId),
@@ -34,7 +33,7 @@ const latestAnswer = (viewerId: string | null) =>
 		)
 	);
 
-const answerColumns = {
+export const answerColumns = {
 	answerBody: schema.answer.body,
 	answerCreatedAt: schema.answer.createdAt
 };
@@ -45,7 +44,7 @@ type AnswerRow = {
 };
 
 // fold the flat left-joined answer columns into a nested object, null when unanswered
-const nestAnswer = <Row extends AnswerRow>(rows: Row[]) =>
+export const nestAnswer = <Row extends AnswerRow>(rows: Row[]) =>
 	rows.map(({ answerBody, answerCreatedAt, ...question }) => ({
 		...question,
 		answer:
@@ -53,31 +52,6 @@ const nestAnswer = <Row extends AnswerRow>(rows: Row[]) =>
 				? null
 				: { body: answerBody, createdAt: answerCreatedAt }
 	}));
-
-export async function list(viewerId: string | null) {
-	const rows = await db
-		.select({
-			slug: schema.question.slug,
-			title: schema.question.title,
-			createdAt: schema.question.createdAt,
-			authorName: schema.user.name,
-			politicianName: politicianUser.name,
-			politicianSlug: schema.politician.slug,
-			fraction: schema.fraction.abbreviation,
-			fractionName: schema.fraction.name,
-			...answerColumns
-		})
-		.from(schema.question)
-		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
-		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
-		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
-		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
-		.leftJoin(schema.answer, latestAnswer(viewerId))
-		.where(isVisibleTo(schema.question, viewerId))
-		.orderBy(desc(schema.question.createdAt));
-
-	return nestAnswer(rows);
-}
 
 export async function listForPolitician(slug: string, viewerId: string | null) {
 	const rows = await db

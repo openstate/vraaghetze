@@ -4,15 +4,15 @@
 	import { Pagination } from 'bits-ui';
 	import { PER_PAGE_OPTIONS } from '$lib/pagination';
 
-	type Props = { count: number; page: number; perPage: number };
+	type Props = { count: number; page: number; perPage: number; selectPerPage?: boolean };
 
-	let { count, page, perPage }: Props = $props();
+	let { count, page, perPage, selectPerPage = true }: Props = $props();
 
 	function navigate(params: Record<string, string>) {
 		const url = new URL(pageState.url);
 		for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto(url, { keepFocus: true, noScroll: true });
+		goto(url);
 	}
 
 	const buttonClass =
@@ -20,19 +20,26 @@
 		'hover:bg-osf-canvas-100 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-osf-violet-800';
 </script>
 
-<div class="mt-6 flex flex-wrap items-center justify-between gap-4">
-	<label class="flex items-center gap-2 text-sm text-osf-canvas-500">
-		Rijen per pagina
-		<select
-			value={perPage}
-			onchange={(event) => navigate({ per: event.currentTarget.value, pagina: '1' })}
-			class="rounded border border-osf-canvas-200 px-2 py-1 focus:border-osf-violet-500 focus:outline-none dark:border-osf-violet-700"
-		>
-			{#each PER_PAGE_OPTIONS as option (option)}
-				<option value={option}>{option}</option>
-			{/each}
-		</select>
-	</label>
+<div
+	class={[
+		'mt-6 flex flex-wrap items-center gap-4',
+		selectPerPage ? 'justify-between' : 'justify-end'
+	]}
+>
+	{#if selectPerPage}
+		<label class="flex items-center gap-2 text-sm text-osf-canvas-500">
+			Rijen per pagina
+			<select
+				value={perPage}
+				onchange={(event) => navigate({ per: event.currentTarget.value, pagina: '1' })}
+				class="rounded border border-osf-canvas-200 px-2 py-1 focus:border-osf-violet-500 focus:outline-none dark:border-osf-violet-700"
+			>
+				{#each PER_PAGE_OPTIONS as option (option)}
+					<option value={option}>{option}</option>
+				{/each}
+			</select>
+		</label>
+	{/if}
 
 	<Pagination.Root
 		{count}
