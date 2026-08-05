@@ -27,6 +27,12 @@ export async function syncPoliticians() {
 
 	const fractions = [...new Map(politicians.map((p) => [p.fraction.id, p.fraction])).values()];
 
+	const memberships = politicians.flatMap((p) => p.memberships);
+
+	const commissions = [
+		...new Map(memberships.map((m) => [m.commission.id, m.commission])).values()
+	];
+
 	await db.transaction(async (tx) => {
 		await tx
 			.insert(schema.fraction)
@@ -51,6 +57,40 @@ export async function syncPoliticians() {
 				target: schema.politician.id,
 				set: conflictColumns(schema.politician, ['isActive', 'fractionId', 'fractionRole'])
 			});
+
+		await tx
+			.insert(schema.commission)
+			.values(commissions)
+			.onConflictDoUpdate({
+				target: schema.commission.id,
+				set: conflictColumns(schema.commission, ['abbreviation', 'name', 'shortName', 'kind'])
+			});
+
+		await tx.delete(schema.commissionMembership).where(
+			notInArray(
+				schema.commissionMembership.id,
+				memberships.map((m) => m.membership.id)
+			)
+		);
+
+		await tx
+			.insert(schema.commissionMembership)
+			.values(memberships.map((m) => m.membership))
+			.onConflictDoUpdate({
+				target: schema.commissionMembership.id,
+				set: conflictColumns(schema.commissionMembership, [
+					'politicianId',
+					'commissionId',
+					'startedAt'
+				])
+			});
+
+		await tx.delete(schema.commission).where(
+			notInArray(
+				schema.commission.id,
+				commissions.map((c) => c.id)
+			)
+		);
 
 		await tx
 			.update(schema.politician)

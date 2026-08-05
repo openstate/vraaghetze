@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import type { Persoon } from './data';
+import type { CommissieZetelPersoon, Persoon } from './data';
 import { transformPoliticians, type Existing } from './transform';
 
 type Seat = Persoon['FractieZetelPersoon'][number];
@@ -17,6 +17,23 @@ function makeSeat(overrides: Partial<Seat> = {}): Seat {
 	};
 }
 
+function makeCommissieZetel(overrides: Partial<CommissieZetelPersoon> = {}): CommissieZetelPersoon {
+	return {
+		Id: 'commissiezetel-1',
+		Van: '2025-01-01T00:00:00+01:00',
+		CommissieZetel: {
+			Commissie: {
+				Id: 'commissie-1',
+				NaamNL: 'Vaste commissie voor Onderwijs, Cultuur en Wetenschap',
+				NaamWebNL: 'Onderwijs, Cultuur en Wetenschap',
+				Afkorting: 'OCW',
+				Inhoudsopgave: 'Vaste commissies'
+			}
+		},
+		...overrides
+	};
+}
+
 function makePersoon(overrides: Partial<Persoon> = {}): Persoon {
 	return {
 		Id: 'persoon-1',
@@ -28,6 +45,7 @@ function makePersoon(overrides: Partial<Persoon> = {}): Persoon {
 		Verwijderd: false,
 		FractieZetelPersoon: [makeSeat()],
 		PersoonContactinformatie: [{ Soort: 'E-mail', Waarde: 'j.jansen@tweedekamer.nl' }],
+		CommissieZetelVastPersoon: [],
 		...overrides
 	};
 }
@@ -150,5 +168,26 @@ describe('transformPoliticians', () => {
 			{ ...unchanged, isActive: true },
 			{ id: 'fractie-2', slug: 'np', name: 'Nieuwe Partij', abbreviation: 'NP', isActive: true }
 		]);
+	});
+
+	test('maps a seat to a commission and a membership row', () => {
+		const person = makePersoon({ CommissieZetelVastPersoon: [makeCommissieZetel()] });
+
+		const [result] = transformPoliticians(NOTHING_SYNCED_YET, [person]);
+
+		expect(result.memberships).toHaveLength(1);
+		expect(result.memberships[0].commission).toEqual({
+			id: 'commissie-1',
+			name: 'Vaste commissie voor Onderwijs, Cultuur en Wetenschap',
+			shortName: 'Onderwijs, Cultuur en Wetenschap',
+			abbreviation: 'OCW',
+			kind: 'Vaste commissies'
+		});
+		expect(result.memberships[0].membership).toEqual({
+			id: 'commissiezetel-1',
+			politicianId: 'persoon-1',
+			commissionId: 'commissie-1',
+			startedAt: new Date('2025-01-01T00:00:00+01:00')
+		});
 	});
 });

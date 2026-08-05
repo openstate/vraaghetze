@@ -179,6 +179,35 @@ export const fraction = pgTable('fraction', {
 	isActive: boolean().default(true).notNull()
 });
 
+export const commission = pgTable('commission', {
+	id: text().primaryKey(),
+	abbreviation: text().notNull(),
+	// the official name ("Vaste commissie voor Justitie en Veiligheid")
+	name: text().notNull(),
+	// the name the Kamer itself puts on the web ("Justitie en Veiligheid")
+	shortName: text().notNull(),
+	// how the Kamer groups them in its own index ("Vaste commissies")
+	kind: text().notNull()
+});
+
+export const commissionMembership = pgTable(
+	'commission_membership',
+	{
+		id: text().primaryKey(),
+		politicianId: text()
+			.references(() => politician.id, { onDelete: 'cascade' })
+			.notNull(),
+		commissionId: text()
+			.references(() => commission.id, { onDelete: 'cascade' })
+			.notNull(),
+		startedAt: timestamp().notNull()
+	},
+	(table) => [
+		index('commission_membership_politician_id_idx').on(table.politicianId),
+		index('commission_membership_commission_id_idx').on(table.commissionId)
+	]
+);
+
 // --- RELATIONS ---
 
 export const fractionRelations = relations(fraction, ({ many }) => ({
@@ -186,7 +215,7 @@ export const fractionRelations = relations(fraction, ({ many }) => ({
 	questions: many(question)
 }));
 
-export const politicianProfileRelations = relations(politician, ({ one }) => ({
+export const politicianProfileRelations = relations(politician, ({ one, many }) => ({
 	user: one(user, {
 		fields: [politician.userId],
 		references: [user.id]
@@ -194,6 +223,22 @@ export const politicianProfileRelations = relations(politician, ({ one }) => ({
 	fraction: one(fraction, {
 		fields: [politician.fractionId],
 		references: [fraction.id]
+	}),
+	commissionMemberships: many(commissionMembership)
+}));
+
+export const commissionRelations = relations(commission, ({ many }) => ({
+	memberships: many(commissionMembership)
+}));
+
+export const commissionMembershipRelations = relations(commissionMembership, ({ one }) => ({
+	politician: one(politician, {
+		fields: [commissionMembership.politicianId],
+		references: [politician.id]
+	}),
+	commission: one(commission, {
+		fields: [commissionMembership.commissionId],
+		references: [commission.id]
 	})
 }));
 

@@ -1,8 +1,13 @@
 import type { schema } from '../db';
-import type { Persoon } from './data';
+import type { CommissieZetelPersoon, Persoon } from './data';
 import { slugifyUnique } from '../utils/slug';
 
 type Fractie = Persoon['FractieZetelPersoon'][number]['FractieZetel']['Fractie'];
+
+export type Membership = {
+	commission: typeof schema.commission.$inferInsert;
+	membership: typeof schema.commissionMembership.$inferInsert;
+};
 
 export type Politician = {
 	user: Pick<typeof schema.user.$inferInsert, 'id' | 'name' | 'email' | 'emailVerified' | 'role'>;
@@ -11,6 +16,7 @@ export type Politician = {
 		'id' | 'slug' | 'userId' | 'isActive' | 'fractionId' | 'fractionRole'
 	>;
 	fraction: typeof schema.fraction.$inferInsert;
+	memberships: Membership[];
 };
 
 export type Existing = {
@@ -36,6 +42,26 @@ export function transformPoliticians(existing: Existing, fetched: Persoon[]) {
 		const slug = slugifyUnique(fraction.Afkorting ?? fraction.NaamNL, taken);
 		fractionSlugs.set(fraction.Id, slug);
 		return slug;
+	}
+
+	function toMembership(politicianId: string, seat: CommissieZetelPersoon): Membership {
+		const commission = seat.CommissieZetel.Commissie;
+
+		return {
+			commission: {
+				id: commission.Id,
+				name: commission.NaamNL,
+				shortName: commission.NaamWebNL ?? commission.NaamNL,
+				abbreviation: commission.Afkorting,
+				kind: commission.Inhoudsopgave
+			},
+			membership: {
+				id: seat.Id,
+				politicianId,
+				commissionId: commission.Id,
+				startedAt: new Date(seat.Van)
+			}
+		};
 	}
 
 	return fetched.flatMap((person) => {
@@ -89,7 +115,8 @@ export function transformPoliticians(existing: Existing, fetched: Persoon[]) {
 					name: fraction.NaamNL,
 					abbreviation: fraction.Afkorting ?? null,
 					isActive: true
-				}
+				},
+				memberships: person.CommissieZetelVastPersoon.map((seat) => toMembership(person.Id, seat))
 			} satisfies Politician
 		];
 	});
