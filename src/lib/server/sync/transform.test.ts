@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import type { Persoon } from './data';
-import { transformPoliticians } from './transform';
+import { transformPoliticians, type Existing } from './transform';
 
 type Seat = Persoon['FractieZetelPersoon'][number];
+
+const NOTHING_SYNCED_YET: Existing = { politicians: [], fractions: [] };
 
 function makeSeat(overrides: Partial<Seat> = {}): Seat {
 	return {
@@ -32,7 +34,7 @@ function makePersoon(overrides: Partial<Persoon> = {}): Persoon {
 
 describe('transformPoliticians', () => {
 	test('maps a person to user, politician and fraction rows', () => {
-		const [result] = transformPoliticians([], [makePersoon()]);
+		const [result] = transformPoliticians(NOTHING_SYNCED_YET, [makePersoon()]);
 
 		expect(result.user).toMatchObject({
 			name: 'Jan Jansen',
@@ -50,6 +52,7 @@ describe('transformPoliticians', () => {
 		});
 		expect(result.fraction).toEqual({
 			id: 'fractie-1',
+			slug: 'dp',
 			name: 'Demopartij',
 			abbreviation: 'DP',
 			isActive: true
@@ -62,14 +65,14 @@ describe('transformPoliticians', () => {
 			PersoonContactinformatie: [{ Soort: 'Website', Waarde: 'https://example.nl' }]
 		});
 
-		expect(transformPoliticians([], [withoutEmail, otherContact])).toEqual([]);
+		expect(transformPoliticians(NOTHING_SYNCED_YET, [withoutEmail, otherContact])).toEqual([]);
 	});
 
 	test('skips people without active fraction membership', () => {
 		const ended = makePersoon({ FractieZetelPersoon: [makeSeat({ TotEnMet: '2024-12-31' })] });
 		const seatless = makePersoon({ FractieZetelPersoon: [] });
 
-		expect(transformPoliticians([], [ended, seatless])).toEqual([]);
+		expect(transformPoliticians(NOTHING_SYNCED_YET, [ended, seatless])).toEqual([]);
 	});
 
 	test('picks the most recent active seat', () => {
@@ -88,14 +91,19 @@ describe('transformPoliticians', () => {
 			})
 		];
 
-		const [result] = transformPoliticians([], [makePersoon({ FractieZetelPersoon: seats })]);
+		const [result] = transformPoliticians(NOTHING_SYNCED_YET, [
+			makePersoon({ FractieZetelPersoon: seats })
+		]);
 
 		expect(result.politician.fractionId).toBe('fractie-1');
 		expect(result.fraction.name).toBe('Demopartij');
 	});
 
 	test('preserves userId and slug of previously synced politicians', () => {
-		const existing = [{ id: 'persoon-1', userId: 'user-999', slug: 'jan-de-eerste' }];
+		const existing = {
+			...NOTHING_SYNCED_YET,
+			politicians: [{ id: 'persoon-1', userId: 'user-999', slug: 'jan-de-eerste' }]
+		};
 
 		const [result] = transformPoliticians(existing, [makePersoon()]);
 
@@ -105,11 +113,42 @@ describe('transformPoliticians', () => {
 	});
 
 	test('dedupes slugs against existing and same-batch politicians', () => {
-		const existing = [{ id: 'persoon-oud', userId: 'user-1', slug: 'jan-jansen' }];
+		const existing = {
+			...NOTHING_SYNCED_YET,
+			politicians: [{ id: 'persoon-oud', userId: 'user-1', slug: 'jan-jansen' }]
+		};
 		const fetched = [makePersoon({ Id: 'persoon-2' }), makePersoon({ Id: 'persoon-3' })];
 
 		const results = transformPoliticians(existing, fetched);
 
 		expect(results.map((entry) => entry.politician.slug)).toEqual(['jan-jansen-2', 'jan-jansen-3']);
+	});
+
+	test('follows a fraction that renamed itself, leaving the others alone', () => {
+		const renamed = makeSeat({
+			FractieZetel: { Fractie: { Id: 'fractie-2', NaamNL: 'Nieuwe Partij', Afkorting: 'NP' } }
+		});
+		const existing = {
+			...NOTHING_SYNCED_YET,
+			fractions: [
+				{ id: 'fractie-1', slug: 'dp' },
+				{ id: 'fractie-2', slug: 'oude-partij' }
+			]
+		};
+		const fetched = [
+			makePersoon({ Id: 'persoon-1' }),
+			makePersoon({ Id: 'persoon-2' }),
+			makePersoon({ Id: 'persoon-3', FractieZetelPersoon: [renamed] })
+		];
+
+		const unchanged = { id: 'fractie-1', slug: 'dp', name: 'Demopartij', abbreviation: 'DP' };
+
+		const results = transformPoliticians(existing, fetched);
+
+		expect(results.map((entry) => entry.fraction)).toEqual([
+			{ ...unchanged, isActive: true },
+			{ ...unchanged, isActive: true },
+			{ id: 'fractie-2', slug: 'np', name: 'Nieuwe Partij', abbreviation: 'NP', isActive: true }
+		]);
 	});
 });

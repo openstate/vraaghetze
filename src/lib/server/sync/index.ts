@@ -6,7 +6,7 @@ import { conflictColumns } from '../db/utils';
 import { syncAvatars } from './avatar';
 
 export async function syncPoliticians() {
-	const [existing, fetched] = await Promise.all([
+	const [existingPoliticians, existingFractions, fetched] = await Promise.all([
 		db
 			.select({
 				id: schema.politician.id,
@@ -14,11 +14,17 @@ export async function syncPoliticians() {
 				slug: schema.politician.slug
 			})
 			.from(schema.politician),
+		db.select({ id: schema.fraction.id, slug: schema.fraction.slug }).from(schema.fraction),
 		fetchPoliticians()
 	]);
 
-	const existingIds = new Set(existing.map((pol) => pol.id));
-	const politicians = transformPoliticians(existing, fetched);
+	const existingIds = new Set(existingPoliticians.map((pol) => pol.id));
+
+	const politicians = transformPoliticians(
+		{ politicians: existingPoliticians, fractions: existingFractions },
+		fetched
+	);
+
 	const fractions = [...new Map(politicians.map((p) => [p.fraction.id, p.fraction])).values()];
 
 	await db.transaction(async (tx) => {
@@ -27,7 +33,7 @@ export async function syncPoliticians() {
 			.values(fractions)
 			.onConflictDoUpdate({
 				target: schema.fraction.id,
-				set: conflictColumns(schema.fraction, ['name', 'abbreviation', 'isActive'])
+				set: conflictColumns(schema.fraction, ['slug', 'name', 'abbreviation', 'isActive'])
 			});
 
 		await tx

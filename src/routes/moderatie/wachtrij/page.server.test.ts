@@ -29,7 +29,7 @@ async function createQuestion(overrides: Partial<typeof schema.question.$inferIn
 	const fractionId = crypto.randomUUID();
 	await db
 		.insert(schema.fraction)
-		.values({ id: fractionId, name: 'Testfractie', abbreviation: 'TF' });
+		.values({ id: fractionId, slug: `tf-${fractionId}`, name: 'Testfractie', abbreviation: 'TF' });
 
 	const politicianId = crypto.randomUUID();
 	await db.insert(schema.politician).values({

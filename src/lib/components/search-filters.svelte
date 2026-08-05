@@ -5,7 +5,13 @@
 	type Facets = {
 		answered: number;
 		unanswered: number;
-		fractions: { id: string; name: string; abbreviation: string | null; total: number }[];
+		fractions: {
+			id: string;
+			slug: string;
+			name: string;
+			abbreviation: string | null;
+			total: number;
+		}[];
 		politicians: { slug: string; name: string; total: number }[];
 	};
 
@@ -111,8 +117,8 @@
 					<input
 						type="checkbox"
 						name="fractie"
-						value={fraction.id}
-						checked={query.fractions.includes(fraction.id)}
+						value={fraction.slug}
+						checked={query.fractions.includes(fraction.slug)}
 						class={boxClass}
 					/>
 					<span class="min-w-0 flex-1 truncate" title={fraction.name}>

@@ -18,9 +18,10 @@ async function createPolitician(overrides: Partial<typeof schema.politician.$inf
 	const politicianUser = await createUser('Jan Jansen', { role: 'politician' });
 
 	const fractionId = crypto.randomUUID();
-	await db
+	const [fraction] = await db
 		.insert(schema.fraction)
-		.values({ id: fractionId, name: 'Testfractie', abbreviation: 'TF' });
+		.values({ id: fractionId, slug: `tf-${fractionId}`, name: 'Testfractie', abbreviation: 'TF' })
+		.returning();
 
 	const id = crypto.randomUUID();
 	const [politician] = await db
@@ -35,7 +36,7 @@ async function createPolitician(overrides: Partial<typeof schema.politician.$inf
 		})
 		.returning();
 
-	return { politician, politicianUser };
+	return { politician, politicianUser, fraction };
 }
 
 async function insertQuestion(
@@ -274,7 +275,7 @@ describe('search', () => {
 		await insertAnswer(answered.id, first.politicianUser.id);
 
 		const unfiltered = await runSearch('');
-		const byFraction = await runSearch(`?fractie=${first.politician.fractionId}`);
+		const byFraction = await runSearch(`?fractie=${first.fraction.slug}`);
 		const byStatus = await runSearch('?status=beantwoord');
 
 		expect(unfiltered.total).toBe(3);

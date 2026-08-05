@@ -87,7 +87,7 @@ function searchConditions(query: SearchQuery, viewerId: string | null, skip?: Sk
 		);
 
 	if (skip !== 'fraction' && query.fractions.length > 0)
-		conditions.push(inArray(schema.question.assigneeFractionId, query.fractions));
+		conditions.push(inArray(schema.fraction.slug, query.fractions));
 
 	if (skip !== 'politician' && query.politicians.length > 0)
 		conditions.push(inArray(schema.politician.slug, query.politicians));
@@ -150,14 +150,11 @@ export function search(query: SearchQuery, { page, perPage }: Pagination, viewer
 		).where(searchConditions(query, viewerId, 'status'));
 
 		const fractionCounts = await joinSearchTables(
-			tx
-				.select({ id: schema.question.assigneeFractionId, total: count() })
-				.from(schema.question)
-				.$dynamic(),
+			tx.select({ slug: schema.fraction.slug, total: count() }).from(schema.question).$dynamic(),
 			viewerId
 		)
 			.where(searchConditions(query, viewerId, 'fraction'))
-			.groupBy(schema.question.assigneeFractionId);
+			.groupBy(schema.fraction.slug);
 
 		const politicianCounts = await joinSearchTables(
 			tx.select({ slug: schema.politician.slug, total: count() }).from(schema.question).$dynamic(),
@@ -169,6 +166,7 @@ export function search(query: SearchQuery, { page, perPage }: Pagination, viewer
 		const fractions = await tx
 			.select({
 				id: schema.fraction.id,
+				slug: schema.fraction.slug,
 				name: schema.fraction.name,
 				abbreviation: schema.fraction.abbreviation
 			})
@@ -184,7 +182,7 @@ export function search(query: SearchQuery, { page, perPage }: Pagination, viewer
 			.orderBy(asc(schema.user.name));
 
 		const countBySlug = new Map(politicianCounts.map((row) => [row.slug, row.total]));
-		const countByFraction = new Map(fractionCounts.map((row) => [row.id, row.total]));
+		const countByFraction = new Map(fractionCounts.map((row) => [row.slug, row.total]));
 
 		return {
 			questions: nestAnswer(rows),
@@ -194,7 +192,7 @@ export function search(query: SearchQuery, { page, perPage }: Pagination, viewer
 				unanswered: answerCounts.unanswered,
 				fractions: fractions.map((fraction) => ({
 					...fraction,
-					total: countByFraction.get(fraction.id) ?? 0
+					total: countByFraction.get(fraction.slug) ?? 0
 				})),
 				politicians: politicians.map((politician) => ({
 					...politician,

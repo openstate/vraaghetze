@@ -173,6 +173,7 @@ export const politician = pgTable('politician', {
 
 export const fraction = pgTable('fraction', {
 	id: text().primaryKey(),
+	slug: text().unique().notNull(),
 	name: text().notNull(),
 	abbreviation: text(),
 	isActive: boolean().default(true).notNull()

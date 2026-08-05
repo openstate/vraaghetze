@@ -2,6 +2,8 @@ import type { schema } from '../db';
 import type { Persoon } from './data';
 import { slugifyUnique } from '../utils/slug';
 
+type Fractie = Persoon['FractieZetelPersoon'][number]['FractieZetel']['Fractie'];
+
 export type Politician = {
 	user: Pick<typeof schema.user.$inferInsert, 'id' | 'name' | 'email' | 'emailVerified' | 'role'>;
 	politician: Pick<
@@ -11,12 +13,30 @@ export type Politician = {
 	fraction: typeof schema.fraction.$inferInsert;
 };
 
-export function transformPoliticians(
-	existing: { id: string; userId: string; slug: string }[],
-	fetched: Persoon[]
-) {
-	const priorById = new Map(existing.map((prior) => [prior.id, prior]));
-	const takenSlugs = new Set(existing.map((prior) => prior.slug));
+export type Existing = {
+	politicians: { id: string; userId: string; slug: string }[];
+	fractions: { id: string; slug: string }[];
+};
+
+export function transformPoliticians(existing: Existing, fetched: Persoon[]) {
+	const priorById = new Map(existing.politicians.map((prior) => [prior.id, prior]));
+	const takenSlugs = new Set(existing.politicians.map((prior) => prior.slug));
+
+	const fractionSlugs = new Map<string, string>();
+
+	function slugifyFraction(fraction: Fractie) {
+		const known = fractionSlugs.get(fraction.Id);
+		if (known) return known;
+
+		const taken = new Set(
+			existing.fractions.filter((row) => row.id !== fraction.Id).map((row) => row.slug)
+		);
+		for (const slug of fractionSlugs.values()) taken.add(slug);
+
+		const slug = slugifyUnique(fraction.Afkorting ?? fraction.NaamNL, taken);
+		fractionSlugs.set(fraction.Id, slug);
+		return slug;
+	}
 
 	return fetched.flatMap((person) => {
 		const name = [person.Roepnaam, person.Tussenvoegsel, person.Achternaam]
@@ -40,10 +60,11 @@ export function transformPoliticians(
 			return [];
 		}
 
-		const fractionId = fractionPerson.FractieZetel.Fractie.Id;
+		const fraction = fractionPerson.FractieZetel.Fractie;
 		const prior = priorById.get(person.Id);
 		const userId = prior?.userId ?? crypto.randomUUID();
 		const slug = prior?.slug ?? slugifyUnique(name, takenSlugs);
+		const fractionSlug = slugifyFraction(fraction);
 
 		return [
 			{
@@ -59,13 +80,14 @@ export function transformPoliticians(
 					slug,
 					userId,
 					isActive: true,
-					fractionId,
+					fractionId: fraction.Id,
 					fractionRole: fractionPerson.Functie === 'Fractievoorzitter' ? 'chair' : 'member'
 				},
 				fraction: {
-					id: fractionId,
-					name: fractionPerson.FractieZetel.Fractie.NaamNL,
-					abbreviation: fractionPerson.FractieZetel.Fractie.Afkorting ?? null,
+					id: fraction.Id,
+					slug: fractionSlug,
+					name: fraction.NaamNL,
+					abbreviation: fraction.Afkorting ?? null,
 					isActive: true
 				}
 			} satisfies Politician

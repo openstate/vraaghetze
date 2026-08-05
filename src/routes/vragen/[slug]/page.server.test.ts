@@ -20,7 +20,7 @@ async function createPolitician() {
 	const fractionId = crypto.randomUUID();
 	await db
 		.insert(schema.fraction)
-		.values({ id: fractionId, name: 'Testfractie', abbreviation: 'TF' });
+		.values({ id: fractionId, slug: `tf-${fractionId}`, name: 'Testfractie', abbreviation: 'TF' });
 
 	const id = crypto.randomUUID();
 	await db.insert(schema.politician).values({
