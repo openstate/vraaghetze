@@ -5,6 +5,7 @@
 
 	import favicon32 from '$lib/assets/favicon-32.png';
 	import favicon512 from '$lib/assets/favicon-512.png';
+	import Loading from '$lib/components/loading.svelte';
 	import Navigation from '$lib/components/navigation.svelte';
 	import { page } from '$app/state';
 
@@ -23,6 +24,8 @@
 	<link rel="apple-touch-icon" href={favicon512} />
 	<title>{title}</title>
 </svelte:head>
+
+<Loading />
 
 <Navigation data-theme={page.url.pathname === '/' ? 'dark' : 'light'} />
 
