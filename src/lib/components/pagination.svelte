@@ -8,6 +8,13 @@
 
 	let { count, page, perPage, selectPerPage = true }: Props = $props();
 
+	let currentPage = $derived(page);
+
+	function changePage(next: number) {
+		currentPage = page;
+		navigate({ pagina: String(next) });
+	}
+
 	function navigate(params: Record<string, string>) {
 		const url = new URL(pageState.url);
 		for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
@@ -41,14 +48,9 @@
 		</label>
 	{/if}
 
-	<Pagination.Root
-		{count}
-		{perPage}
-		{page}
-		onPageChange={(next) => navigate({ pagina: String(next) })}
-	>
+	<Pagination.Root {count} {perPage} bind:page={currentPage} onPageChange={changePage}>
 		{#snippet children({ pages, range })}
-			<div class="flex items-center gap-4">
+			<div class="flex items-center gap-4 transition-opacity duration-150">
 				<p class="text-sm text-osf-canvas-500">
 					{count === 0 ? 0 : range.start}–{range.end} van {count}
 				</p>
