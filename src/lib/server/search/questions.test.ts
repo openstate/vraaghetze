@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import { db, schema } from '$lib/server/db';
-import { parseSearch, RESULTS_PER_PAGE } from '$lib/search';
-import { search } from './search';
+import { parseQuestionSearch, QUESTIONS_PER_PAGE } from '$lib/search';
+import { searchQuestions } from './questions';
 
 async function createUser(name: string, overrides: Partial<typeof schema.user.$inferInsert> = {}) {
 	const id = crypto.randomUUID();
@@ -82,11 +82,11 @@ async function insertAnswer(
 function runSearch(
 	params: string,
 	viewerId: string | null = null,
-	pagination = { page: 1, perPage: RESULTS_PER_PAGE }
+	pagination = { page: 1, perPage: QUESTIONS_PER_PAGE }
 ) {
-	const query = parseSearch(new URL(`https://vraaghetze.nu/vragen${params}`));
+	const query = parseQuestionSearch(new URL(`https://vraaghetze.nu/vragen${params}`));
 
-	return search(query, pagination, viewerId);
+	return searchQuestions(query, pagination, viewerId);
 }
 
 const slugsOf = (rows: { slug: string }[]) => rows.map((row) => row.slug).sort();
@@ -101,7 +101,7 @@ beforeEach(async () => {
 	});
 });
 
-describe('search', () => {
+describe('searchQuestions', () => {
 	test('shows approved questions to everyone and pending ones only to their owner', async () => {
 		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');

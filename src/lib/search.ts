@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { normalizeTerm } from './url';
 
-export const RESULTS_PER_PAGE = 10;
+export const QUESTIONS_PER_PAGE = 10;
+export const POLITICIANS_PER_PAGE = 24;
 
 export const STATUS_OPTIONS = ['alles', 'beantwoord', 'onbeantwoord'] as const;
 export const SORT_OPTIONS = ['relevantie', 'nieuwste', 'oudste'] as const;
@@ -9,7 +10,7 @@ export const SORT_OPTIONS = ['relevantie', 'nieuwste', 'oudste'] as const;
 export type SearchStatus = (typeof STATUS_OPTIONS)[number];
 export type SearchSort = (typeof SORT_OPTIONS)[number];
 
-export type SearchQuery = {
+export type QuestionSearchQuery = {
 	term: string;
 	status: SearchStatus;
 	fractions: string[];
@@ -19,13 +20,15 @@ export type SearchQuery = {
 	sort: SearchSort;
 };
 
+const term = z.string().catch('').transform(normalizeTerm);
+
 const values = z
 	.array(z.string())
 	.catch([])
 	.transform((entries) => entries.map((entry) => entry.trim()).filter(Boolean));
 
-const searchSchema = z.object({
-	q: z.string().catch('').transform(normalizeTerm),
+const questionSearchSchema = z.object({
+	q: term,
 	status: z.enum(STATUS_OPTIONS).catch('alles'),
 	fractie: values,
 	kamerlid: values,
@@ -34,8 +37,8 @@ const searchSchema = z.object({
 	sorteer: z.enum(SORT_OPTIONS).nullable().catch(null)
 });
 
-export function parseSearch(url: URL) {
-	const parsed = searchSchema.parse({
+export function parseQuestionSearch(url: URL) {
+	const parsed = questionSearchSchema.parse({
 		q: url.searchParams.get('q') ?? undefined,
 		status: url.searchParams.get('status') ?? undefined,
 		fractie: url.searchParams.getAll('fractie'),
@@ -53,7 +56,7 @@ export function parseSearch(url: URL) {
 		from: parsed.van,
 		until: parsed.tot,
 		sort: resolveSort(parsed.sorteer, parsed.q)
-	} satisfies SearchQuery;
+	} satisfies QuestionSearchQuery;
 }
 
 export const getImpliedSort = (term: string | null) =>
@@ -65,7 +68,7 @@ function resolveSort(sorteer: SearchSort | null, term: string) {
 	return sorteer;
 }
 
-export function hasActiveFilters(query: SearchQuery) {
+export function hasActiveFilters(query: QuestionSearchQuery) {
 	return (
 		query.status !== 'alles' ||
 		query.fractions.length > 0 ||
@@ -73,4 +76,30 @@ export function hasActiveFilters(query: SearchQuery) {
 		query.from !== null ||
 		query.until !== null
 	);
+}
+
+export type PoliticianSearchQuery = {
+	term: string;
+	fractions: string[];
+	commissions: string[];
+};
+
+const politicianSearchSchema = z.object({
+	q: term,
+	fractie: values,
+	commissie: values
+});
+
+export function parsePoliticianSearch(url: URL) {
+	const parsed = politicianSearchSchema.parse({
+		q: url.searchParams.get('q') ?? undefined,
+		fractie: url.searchParams.getAll('fractie'),
+		commissie: url.searchParams.getAll('commissie')
+	});
+
+	return {
+		term: parsed.q,
+		fractions: parsed.fractie,
+		commissions: parsed.commissie
+	} satisfies PoliticianSearchQuery;
 }

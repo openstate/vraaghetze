@@ -76,6 +76,7 @@
 
 			<a
 				href={questionHref}
+				tabindex="-1"
 				class="flex w-fit items-center gap-1 text-sm font-medium text-osf-violet-500 hover:underline"
 			>
 				Lees meer <span class="iconify size-4 mdi--arrow-right"></span>

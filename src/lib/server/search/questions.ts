@@ -1,16 +1,4 @@
-import {
-	and,
-	asc,
-	count,
-	desc,
-	eq,
-	inArray,
-	isNotNull,
-	isNull,
-	or,
-	sql,
-	type SQL
-} from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from 'drizzle-orm';
 import { type PgSelect } from 'drizzle-orm/pg-core';
 import { db, schema } from '$lib/server/db';
 import {
@@ -20,11 +8,10 @@ import {
 	nestAnswer,
 	politicianUser
 } from '$lib/server/questions';
-import { type SearchQuery } from '$lib/search';
+import { type QuestionSearchQuery } from '$lib/search';
 import type { Pagination } from '$lib/pagination';
 import { TIME_ZONE } from '$lib/date-time';
-
-const WORD_MIN_LENGTH = 2;
+import { activeFractions, matchesTerm } from './index';
 
 const columns = [
 	{ column: schema.question.title, weight: 3 },
@@ -34,24 +21,8 @@ const columns = [
 
 const documentVector = sql`${schema.question.searchVector} || coalesce(${schema.answer.searchVector}, '')`;
 
-function splitWords(term: string) {
-	// splits on every run of characters that is neither a letter nor a digit
-	return term.split(/[^\p{L}\p{N}]+/u).filter((word) => word.length >= WORD_MIN_LENGTH);
-}
-
-const query = (word: string) => sql`plainto_tsquery('dutch', ${word})`;
-
-const matchesWord = (word: string) =>
-	or(
-		// matches if a column has the word as a whole word in any grammatical form ("vragen" finds "vraag")
-		sql`(${documentVector}) @@ ${query(word)}`,
-		// matches if part of a column shares 60% of the word's 3-letter chunks ("klimaat" and "beleid" find "klimaatbeleid")
-		...columns.map(({ column }) => sql`${word} <% coalesce(${column}, '')`),
-		// passes if the word is a stop word and thus does not need to be matched
-		sql`numnode(${query(word)}) = 0`
-	);
-
-const matchesTerm = (term: string) => and(...splitWords(term).map(matchesWord)) ?? sql`true`;
+const matchesQuestion = (term: string) =>
+	matchesTerm(term, { columns: columns.map(({ column }) => column), vector: documentVector });
 
 const relevance = (term: string) =>
 	sql`greatest(${sql.join(
@@ -76,10 +47,10 @@ function joinSearchTables<Query extends PgSelect>(query: Query, viewerId: string
 
 type SkipFacet = 'status' | 'fraction' | 'politician';
 
-function searchConditions(query: SearchQuery, viewerId: string | null, skip?: SkipFacet) {
+function searchConditions(query: QuestionSearchQuery, viewerId: string | null, skip?: SkipFacet) {
 	const conditions: (SQL | undefined)[] = [isVisibleTo(schema.question, viewerId)];
 
-	if (query.term) conditions.push(matchesTerm(query.term));
+	if (query.term) conditions.push(matchesQuestion(query.term));
 
 	if (skip !== 'status' && query.status !== 'alles')
 		conditions.push(
@@ -101,13 +72,17 @@ function searchConditions(query: SearchQuery, viewerId: string | null, skip?: Sk
 	return and(...conditions);
 }
 
-function searchOrderBy(query: SearchQuery) {
+function searchOrderBy(query: QuestionSearchQuery) {
 	if (query.sort === 'oudste') return [asc(schema.question.createdAt)];
 	if (query.sort === 'nieuwste') return [desc(schema.question.createdAt)];
 	return [desc(relevance(query.term)), desc(schema.question.createdAt)];
 }
 
-export function search(query: SearchQuery, { page, perPage }: Pagination, viewerId: string | null) {
+export function searchQuestions(
+	query: QuestionSearchQuery,
+	{ page, perPage }: Pagination,
+	viewerId: string | null
+) {
 	return db.transaction(async (tx) => {
 		const rows = await joinSearchTables(
 			tx
@@ -163,16 +138,7 @@ export function search(query: SearchQuery, { page, perPage }: Pagination, viewer
 			.where(searchConditions(query, viewerId, 'politician'))
 			.groupBy(schema.politician.slug);
 
-		const fractions = await tx
-			.select({
-				id: schema.fraction.id,
-				slug: schema.fraction.slug,
-				name: schema.fraction.name,
-				abbreviation: schema.fraction.abbreviation
-			})
-			.from(schema.fraction)
-			.where(eq(schema.fraction.isActive, true))
-			.orderBy(asc(sql`coalesce(${schema.fraction.abbreviation}, ${schema.fraction.name})`));
+		const fractions = await activeFractions(tx);
 
 		const politicians = await tx
 			.select({ slug: schema.politician.slug, name: schema.user.name })

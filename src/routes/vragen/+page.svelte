@@ -4,7 +4,7 @@
 	import Page from '$lib/components/page.svelte';
 	import Pagination from '$lib/components/pagination.svelte';
 	import QuestionCard from '$lib/components/question-card.svelte';
-	import SearchFilters from '$lib/components/search-filters.svelte';
+	import QuestionFilters from '$lib/components/question-filters.svelte';
 	import { getImpliedSort, hasActiveFilters, SORT_OPTIONS, type SearchSort } from '$lib/search';
 	import { SearchForm } from '$lib/search-form.svelte';
 
@@ -55,7 +55,7 @@
 				<summary class="cursor-pointer font-medium lg:hidden">Filters</summary>
 
 				<div class="max-lg:mt-4">
-					<SearchFilters query={data.query} facets={data.facets} />
+					<QuestionFilters query={data.query} facets={data.facets} />
 				</div>
 
 				<noscript>
@@ -70,7 +70,7 @@
 		</aside>
 
 		<div class="lg:col-start-1">
-			<div class="mb-5 flex flex-wrap items-center justify-between gap-4">
+			<div class="mb-5 flex min-h-8 flex-wrap items-center justify-between gap-4">
 				<p class="text-sm text-osf-canvas-500">
 					{data.total}
 					{data.total === 1 ? 'resultaat' : 'resultaten'}
