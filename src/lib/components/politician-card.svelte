@@ -19,9 +19,9 @@
 	<div class="flex items-center gap-3 p-5">
 		<a href={profileHref} class="shrink-0" aria-hidden="true" tabindex="-1">
 			<Avatar
-				class="size-14 text-xl"
+				class="text-xl"
+				size={56}
 				name={politician.name}
-				loading="lazy"
 				src={resolve('/politici/[slug]/foto', { slug: politician.slug })}
 			/>
 		</a>

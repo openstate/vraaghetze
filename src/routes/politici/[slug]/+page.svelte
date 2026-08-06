@@ -11,7 +11,8 @@
 <Page>
 	<div class="flex flex-col items-center gap-6 text-center sm:flex-row sm:text-left">
 		<Avatar
-			class="size-32 text-5xl"
+			class="text-5xl"
+			size={128}
 			name={data.politician.name}
 			src={resolve('/politici/[slug]/foto', { slug: data.politician.slug })}
 		/>

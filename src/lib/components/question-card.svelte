@@ -59,7 +59,7 @@
 			<div class="flex min-w-0 flex-1 items-center gap-3">
 				<a href={politicianHref} class="shrink-0" aria-hidden="true" tabindex="-1">
 					<Avatar
-						class="size-10"
+						size={40}
 						name={question.politicianName}
 						src={resolve('/politici/[slug]/foto', { slug: question.politicianSlug })}
 					/>

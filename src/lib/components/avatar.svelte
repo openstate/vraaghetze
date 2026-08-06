@@ -3,11 +3,12 @@
 		src?: string;
 		name: string;
 		alt?: string;
+		size: number;
 		loading?: 'lazy' | 'eager';
 		class?: string;
 	};
 
-	let { src, name, alt = '', loading, class: className }: Props = $props();
+	let { src, name, alt = '', size, loading, class: className }: Props = $props();
 
 	let failedSrc = $state<string>();
 
@@ -21,6 +22,7 @@
 </script>
 
 <div
+	style="width: {size}px; height: {size}px"
 	class={[
 		'flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-osf-shocking-pink/10 font-mono text-osf-shocking-pink',
 		className
@@ -31,6 +33,9 @@
 			{src}
 			{alt}
 			{loading}
+			width={size}
+			height={size}
+			decoding="sync"
 			class="size-full object-cover"
 			onerror={() => (failedSrc = src)}
 			{@attach (image) => {

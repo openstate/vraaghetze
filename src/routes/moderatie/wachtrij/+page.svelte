@@ -39,7 +39,7 @@
 								tabindex="-1"
 							>
 								<Avatar
-									class="size-10"
+									size={40}
 									name={question.politicianName}
 									src={resolve('/politici/[slug]/foto', { slug: question.politicianSlug })}
 								/>
