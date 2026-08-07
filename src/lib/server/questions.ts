@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull, notExists, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gt, isNull, notExists, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db, schema, type Transaction } from '$lib/server/db';
 import { slugify, slugifyUnique } from '$lib/server/utils/slug';
@@ -53,7 +53,8 @@ export const nestAnswer = <Row extends AnswerRow>(rows: Row[]) =>
 				: { body: answerBody, createdAt: answerCreatedAt }
 	}));
 
-export async function listForPolitician(slug: string, viewerId: string | null) {
+// the public record of what this politician was asked
+export async function listForPolitician(slug: string, limit: number) {
 	const rows = await db
 		.select({
 			slug: schema.question.slug,
@@ -71,11 +72,28 @@ export async function listForPolitician(slug: string, viewerId: string | null) {
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
-		.leftJoin(schema.answer, latestAnswer(viewerId))
-		.where(and(eq(schema.politician.slug, slug), isVisibleTo(schema.question, viewerId)))
-		.orderBy(desc(schema.question.createdAt));
+		.leftJoin(schema.answer, latestAnswer(null))
+		.where(and(eq(schema.politician.slug, slug), eq(schema.question.status, 'approved')))
+		.orderBy(desc(schema.question.createdAt))
+		.limit(limit);
 
 	return nestAnswer(rows);
+}
+
+// a public figure about a politician, so it counts approved rows only, whoever is looking
+export async function statsForPolitician(slug: string) {
+	const [stats] = await db
+		.select({
+			total: count(),
+			answered: count(schema.answer.id)
+		})
+		.from(schema.question)
+		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
+		// no viewer, so this joins the newest approved answer and nothing else
+		.leftJoin(schema.answer, latestAnswer(null))
+		.where(and(eq(schema.politician.slug, slug), eq(schema.question.status, 'approved')));
+
+	return stats;
 }
 
 export async function listForUser(userId: string) {

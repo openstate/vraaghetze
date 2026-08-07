@@ -1,11 +1,10 @@
 import { and, asc, count, countDistinct, eq, exists, inArray, sql, type SQL } from 'drizzle-orm';
 import { type PgSelect } from 'drizzle-orm/pg-core';
 import { db, schema } from '$lib/server/db';
+import { COMMISSION_KIND } from '$lib/server/politicians';
 import { type PoliticianSearchQuery } from '$lib/search';
 import type { Pagination } from '$lib/pagination';
 import { activeFractions, matchesTerm } from './index';
-
-const COMMISSION_KIND = 'Vaste commissies';
 
 // matches if the politician holds a seat in one of the named commissions
 const isCommissionMember = (abbreviations: string[]) =>

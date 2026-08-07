@@ -1,5 +1,7 @@
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
+
+export const COMMISSION_KIND = 'Vaste commissies';
 
 export function listActive() {
 	return db
@@ -21,12 +23,14 @@ export function listActive() {
 export async function bySlug(slug: string) {
 	const [politician] = await db
 		.select({
+			id: schema.politician.id,
 			slug: schema.politician.slug,
 			userId: schema.politician.userId,
 			name: schema.user.name,
 			fractionRole: schema.politician.fractionRole,
 			fraction: schema.fraction.abbreviation,
-			fractionName: schema.fraction.name
+			fractionName: schema.fraction.name,
+			fractionSlug: schema.fraction.slug
 		})
 		.from(schema.politician)
 		.innerJoin(schema.user, eq(schema.politician.userId, schema.user.id))
@@ -35,6 +39,27 @@ export async function bySlug(slug: string) {
 		.limit(1);
 
 	return politician;
+}
+
+export function commissionsForPolitician(politicianId: string) {
+	return db
+		.select({
+			abbreviation: schema.commission.abbreviation,
+			name: schema.commission.name,
+			shortName: schema.commission.shortName
+		})
+		.from(schema.commissionMembership)
+		.innerJoin(
+			schema.commission,
+			eq(schema.commissionMembership.commissionId, schema.commission.id)
+		)
+		.where(
+			and(
+				eq(schema.commissionMembership.politicianId, politicianId),
+				eq(schema.commission.kind, COMMISSION_KIND)
+			)
+		)
+		.orderBy(asc(schema.commission.shortName));
 }
 
 export async function photoBySlug(slug: string) {

@@ -207,17 +207,15 @@ describe('create', () => {
 });
 
 describe('visibility', () => {
-	test('listForPolitician applies the same visibility rules', async () => {
+	test('listForPolitician hides pending questions', async () => {
 		const { politician, politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const approved = await insertQuestion(asker.id, politicianUser.id);
-		const pending = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
+		await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
 
-		const publicList = await questions.listForPolitician(politician.slug, null);
-		const ownerList = await questions.listForPolitician(politician.slug, asker.id);
+		const list = await questions.listForPolitician(politician.slug, 10);
 
-		expect(publicList.map((row) => row.slug)).toEqual([approved.slug]);
-		expect(ownerList.map((row) => row.slug).sort()).toEqual([approved.slug, pending.slug].sort());
+		expect(list.map((row) => row.slug)).toEqual([approved.slug]);
 	});
 
 	test('bySlug hides an invisible question exactly like a missing one', async () => {
