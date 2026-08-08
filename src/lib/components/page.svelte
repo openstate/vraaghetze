@@ -12,6 +12,6 @@
 	const maxWidth = $derived(width === 'wide' ? 'max-w-7xl' : 'max-w-3xl');
 </script>
 
-<main class={['mx-auto w-full px-6 py-12', maxWidth, className]}>
+<main id="inhoud" tabindex="-1" class={['mx-auto w-full px-6 py-12', maxWidth, className]}>
 	{@render children()}
 </main>

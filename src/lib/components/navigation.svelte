@@ -35,8 +35,15 @@
 		<header
 			{...rootProps}
 			{...props}
-			class={['bg-osf-neutral-50 dark:bg-osf-violet-900 dark:text-osf-violet-50', props.class]}
+			class={[
+				'relative bg-osf-neutral-50 dark:bg-osf-violet-900 dark:text-osf-violet-50',
+				props.class
+			]}
 		>
+			<Button href="#inhoud" variant="primary" class="absolute top-3 left-3 z-50 not-focus:sr-only">
+				Naar de inhoud
+			</Button>
+
 			<nav
 				class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-5 lg:grid lg:grid-cols-[1fr_2fr_1fr]"
 			>
