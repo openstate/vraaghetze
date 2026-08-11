@@ -110,7 +110,7 @@
 					</Button>
 				</div>
 			{:else}
-				<ul class="grid gap-3">
+				<ul class="grid gap-4">
 					{#each data.questions as question (question.slug)}
 						<li>
 							<QuestionCard {question} />

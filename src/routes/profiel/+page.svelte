@@ -28,7 +28,7 @@
 	{:else}
 		<!-- TODO: unverified questions are still indistinguishable from verified ones,
 		 		 once a design exists reselect verifiedAt in questions.listForUser and mark them -->
-		<ul class="grid gap-3">
+		<ul class="grid gap-4">
 			{#each questions as question (question.slug)}
 				<li>
 					<QuestionCard {question} />

@@ -44,6 +44,9 @@
 	--color-osf-canvas-200: #e1dad0;
 	--color-osf-canvas-100: #f4f0eb;
 	--color-osf-canvas-50: #f8f5f2;
+
+	--text-shadow-xl:
+		0px 0px 3px rgb(0 0 0 / 0.8), 0px 0px 6px rgb(0 0 0 / 0.7), 0px 0px 14px rgb(0 0 0 / 0.6);
 }
 
 :root {

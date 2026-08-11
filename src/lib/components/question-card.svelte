@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import cardDoodle from '$lib/assets/card-doodle.webp';
 	import Avatar from '$lib/components/avatar.svelte';
 	import { formatDateLong } from '$lib/date-time';
 
@@ -16,7 +17,7 @@
 		answer: { body: string; createdAt: Date } | null;
 	};
 
-	let { question }: { question: Question } = $props();
+	let { question, featured = false }: { question: Question; featured?: boolean } = $props();
 
 	const recipientLabel = $derived(
 		question.status === 'pending'
@@ -33,24 +34,56 @@
 	const politicianHref = $derived(resolve('/politici/[slug]', { slug: question.politicianSlug }));
 </script>
 
-<article class="overflow-hidden rounded bg-osf-canvas-100">
-	<div class="p-5">
-		<p class="text-sm text-osf-canvas-600">
-			Vraag van {question.authorName} op {formatDateLong(question.createdAt)}
-		</p>
+<article
+	class={[
+		'overflow-hidden rounded bg-osf-canvas-100',
+		featured ? 'grid md:min-h-76 md:grid-cols-2' : 'flex h-full flex-col'
+	]}
+>
+	<!-- grows so that side-by-side cards line up everything below the rule -->
+	<div
+		class={[
+			'p-6',
+			featured ? 'relative overflow-hidden bg-osf-violet-900 text-osf-violet-50 md:p-8' : 'grow'
+		]}
+	>
+		{#if featured}
+			<img
+				src={cardDoodle}
+				alt=""
+				aria-hidden="true"
+				class="pointer-events-none absolute -right-5 -bottom-3 w-75 max-md:hidden"
+			/>
+		{/if}
 
-		<p class="mt-3 font-serif text-xl/snug font-[450]">
-			<a href={questionHref} class="decoration-1 underline-offset-2 hover:underline"
-				>{question.title}</a
-			>
-		</p>
+		<div class={[featured && 'relative max-w-lg']}>
+			<p class={['text-sm', featured ? 'text-osf-violet-100' : 'text-osf-canvas-600']}>
+				Vraag van {question.authorName} op {formatDateLong(question.createdAt)}
+			</p>
+
+			<p class={['mt-3 font-serif', featured ? 'mb-4 text-2xl/snug md:text-3xl' : 'text-xl/snug']}>
+				<a
+					href={questionHref}
+					class={[
+						'decoration-1 underline-offset-2 hover:underline',
+						featured && 'text-shadow-osf-violet-900 text-shadow-xl'
+					]}
+				>
+					{question.title}
+				</a>
+			</p>
+		</div>
 	</div>
 
-	<hr class="mx-5 border-osf-canvas-200" />
+	{#if !featured}
+		<hr class="mx-6 border-osf-canvas-200" />
+	{/if}
 
-	<div class="p-5">
+	<div class={['p-6', featured && 'flex flex-col justify-between md:p-8']}>
 		{#if question.answer}
-			<p class="mb-4 line-clamp-3 text-[15px] text-osf-canvas-600">
+			<p
+				class={['mb-4 text-[15px] text-osf-canvas-600', featured ? 'line-clamp-6' : 'line-clamp-3']}
+			>
 				&ldquo;{question.answer.body}&rdquo;
 			</p>
 		{/if}
