@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gt, isNull, notExists, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gt, isNull, ne, notExists, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db, schema, type Transaction } from '$lib/server/db';
 import { slugify, slugifyUnique } from '$lib/server/utils/slug';
@@ -53,20 +53,23 @@ export const nestAnswer = <Row extends AnswerRow>(rows: Row[]) =>
 				: { body: answerBody, createdAt: answerCreatedAt }
 	}));
 
+// what a question card renders, wherever questions are listed
+const cardColumns = {
+	slug: schema.question.slug,
+	title: schema.question.title,
+	createdAt: schema.question.createdAt,
+	authorName: schema.user.name,
+	politicianName: politicianUser.name,
+	politicianSlug: schema.politician.slug,
+	fraction: schema.fraction.abbreviation,
+	fractionName: schema.fraction.name,
+	...answerColumns
+};
+
 // the public record of what this politician was asked
 export async function listForPolitician(slug: string, limit: number) {
 	const rows = await db
-		.select({
-			slug: schema.question.slug,
-			title: schema.question.title,
-			createdAt: schema.question.createdAt,
-			authorName: schema.user.name,
-			politicianName: politicianUser.name,
-			politicianSlug: schema.politician.slug,
-			fraction: schema.fraction.abbreviation,
-			fractionName: schema.fraction.name,
-			...answerColumns
-		})
+		.select(cardColumns)
 		.from(schema.question)
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
@@ -75,6 +78,70 @@ export async function listForPolitician(slug: string, limit: number) {
 		.leftJoin(schema.answer, latestAnswer(null))
 		.where(and(eq(schema.politician.slug, slug), eq(schema.question.status, 'approved')))
 		.orderBy(desc(schema.question.createdAt))
+		.limit(limit);
+
+	return nestAnswer(rows);
+}
+
+// :* turns the term into a prefix match, so 'stikstof' also finds 'stikstofcrisis'
+const queryTerm = (lexeme: string, prefix: boolean) =>
+	`'${lexeme.replaceAll("'", "''")}'${prefix ? ':*' : ''}`;
+
+const MIN_COMPOUND_PART = 5;
+const MIN_COMPOUND_REST = 3;
+
+// a lexeme and every cut of it, so 'stikstofcrisis' also finds 'stikstof' and 'crisis'
+function compoundTerms(lexeme: string) {
+	const terms = [queryTerm(lexeme, lexeme.length >= MIN_COMPOUND_PART)];
+
+	for (
+		let partLength = MIN_COMPOUND_PART;
+		partLength <= lexeme.length - MIN_COMPOUND_REST;
+		partLength++
+	) {
+		terms.push(queryTerm(lexeme.slice(0, partLength), false));
+		terms.push(queryTerm(lexeme.slice(-partLength), false));
+	}
+
+	return terms;
+}
+
+// what else was asked about the same subject, shown under a question
+export async function relatedTo(slug: string, limit: number) {
+	const [source] = await db
+		// every non-stop word of the title and body
+		.select({ lexemes: sql<string[]>`tsvector_to_array(${schema.question.searchVector})` })
+		.from(schema.question)
+		.where(eq(schema.question.slug, slug))
+		.limit(1);
+
+	if (!source || source.lexemes.length === 0) return [];
+
+	const terms = new Set(source.lexemes.flatMap((lexeme) => compoundTerms(lexeme)));
+
+	// OR-ed, so any shared word makes another question a candidate
+	const related = sql`to_tsquery('dutch', ${[...terms].join(' | ')})`;
+
+	const rows = await db
+		.select(cardColumns)
+		.from(schema.question)
+		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
+		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
+		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
+		.leftJoin(schema.answer, latestAnswer(null))
+		.where(
+			and(
+				ne(schema.question.slug, slug),
+				eq(schema.question.status, 'approved'),
+				sql`${schema.question.searchVector} @@ ${related}`
+			)
+		)
+		// the strongest overlap first, the newest question among equals
+		.orderBy(
+			desc(sql`ts_rank(${schema.question.searchVector}, ${related})`),
+			desc(schema.question.createdAt)
+		)
 		.limit(limit);
 
 	return nestAnswer(rows);
@@ -98,18 +165,8 @@ export async function statsForPolitician(slug: string) {
 
 export async function listForUser(userId: string) {
 	const rows = await db
-		.select({
-			slug: schema.question.slug,
-			title: schema.question.title,
-			createdAt: schema.question.createdAt,
-			status: schema.question.status,
-			authorName: schema.user.name,
-			politicianName: politicianUser.name,
-			politicianSlug: schema.politician.slug,
-			fraction: schema.fraction.abbreviation,
-			fractionName: schema.fraction.name,
-			...answerColumns
-		})
+		// the owner's own list is the one place a card also shows the moderation status
+		.select({ ...cardColumns, status: schema.question.status })
 		.from(schema.question)
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))

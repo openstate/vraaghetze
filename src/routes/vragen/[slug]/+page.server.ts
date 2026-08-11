@@ -3,6 +3,8 @@ import { z } from 'zod';
 import * as questions from '$lib/server/questions';
 import type { Actions, PageServerLoad } from './$types';
 
+const RELATED_QUESTIONS = 3;
+
 export const load: PageServerLoad = async ({ params, locals, url }) => {
 	const viewerId = locals.user?.id ?? null;
 
@@ -19,6 +21,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 
 	return {
 		...result,
+		related: await questions.relatedTo(params.slug, RELATED_QUESTIONS),
 		banner,
 		meta: { title: result.question.title }
 	};

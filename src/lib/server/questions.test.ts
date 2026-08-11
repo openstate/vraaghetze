@@ -206,6 +206,81 @@ describe('create', () => {
 	});
 });
 
+describe('relatedTo', () => {
+	test('returns questions sharing a word, and never the question itself', async () => {
+		const { politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+
+		const source = await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Wat vindt u van de toeslagen?',
+			body: 'Graag een toelichting.'
+		});
+		const sharesTitle = await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Moeten de toeslagen worden afgeschaft?',
+			body: 'Wat is uw standpunt?'
+		});
+		await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Hoe staat het met de dijkverzwaring?',
+			body: 'Wanneer komt het rapport?'
+		});
+
+		const related = await questions.relatedTo(source.slug, 3);
+
+		expect(related.map((row) => row.slug)).toEqual([sharesTitle.slug]);
+	});
+
+	test('matches on a word from the body, not just the title', async () => {
+		const { politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+
+		const source = await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Wat vindt u van de toeslagen?',
+			body: 'Graag een toelichting.'
+		});
+		const sharesBody = await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Hoe gaat het met de koopkracht?',
+			body: 'De toeslagen lopen achter.'
+		});
+
+		const related = await questions.relatedTo(source.slug, 3);
+
+		expect(related.map((row) => row.slug)).toEqual([sharesBody.slug]);
+	});
+
+	test('relates a compound subject to its bare parts', async () => {
+		const { politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+
+		const source = await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Wat is uw plan voor de stikstofcrisis?',
+			body: 'De boeren wachten al jaren op duidelijkheid.'
+		});
+		const bareParts = await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Hoeveel stikstof mag er nog worden uitgestoten?',
+			body: 'Graag een concreet getal.'
+		});
+
+		const related = await questions.relatedTo(source.slug, 3);
+
+		expect(related.map((row) => row.slug)).toEqual([bareParts.slug]);
+	});
+
+	test('hides a pending question from the related list', async () => {
+		const { politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+
+		const source = await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Wat vindt u van de toeslagen?'
+		});
+		await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Moeten de toeslagen worden afgeschaft?',
+			status: 'pending'
+		});
+
+		expect(await questions.relatedTo(source.slug, 3)).toEqual([]);
+	});
+});
+
 describe('visibility', () => {
 	test('listForPolitician hides pending questions', async () => {
 		const { politician, politicianUser } = await createPolitician();
