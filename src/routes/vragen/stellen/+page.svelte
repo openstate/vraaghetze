@@ -20,16 +20,16 @@
 
 <Page>
 	{#if sentEmail}
-		<h1 class="mb-4 font-serif text-4xl font-[450]">Bijna klaar!</h1>
+		<h1 class="mb-4 font-serif text-4xl">Bijna klaar!</h1>
 		<p class="text-osf-canvas-600">
 			We hebben een link naar <strong>{sentEmail}</strong> gestuurd. Klik erop om je vraag te bevestigen
 			en te bekijken.
 		</p>
 	{:else if !data.mayAsk}
-		<h1 class="mb-4 font-serif text-4xl font-[450]">Stel een vraag</h1>
+		<h1 class="mb-4 font-serif text-4xl">Stel een vraag</h1>
 		<p class="text-osf-canvas-600">Met dit account kun je geen vragen stellen.</p>
 	{:else}
-		<h1 class="mb-8 font-serif text-4xl font-[450]">
+		<h1 class="mb-8 font-serif text-4xl">
 			Stel een vraag {#if selectedPolitician}aan {selectedPolitician.name}{/if}
 		</h1>
 

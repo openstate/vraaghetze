@@ -27,7 +27,7 @@
 							Vraag van {question.authorName} op {formatDateLong(question.createdAt)}
 						</p>
 
-						<p class="mt-3 font-serif text-xl/snug font-[450]">{question.title}</p>
+						<p class="mt-3 font-serif text-xl/snug">{question.title}</p>
 
 						<p class="mt-2 text-sm whitespace-pre-wrap text-osf-canvas-500">{question.body}</p>
 

@@ -22,7 +22,7 @@
 </script>
 
 <Page width="wide">
-	<h1 class="mb-8 font-serif text-4xl font-[450]">Vragen & Antwoorden</h1>
+	<h1 class="mb-8 font-serif text-4xl">Vragen & Antwoorden</h1>
 
 	<form
 		method="GET"

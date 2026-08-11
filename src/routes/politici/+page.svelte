@@ -12,7 +12,7 @@
 </script>
 
 <Page width="wide">
-	<h1 class="mb-8 font-serif text-4xl font-[450]">Kamerleden</h1>
+	<h1 class="mb-8 font-serif text-4xl">Kamerleden</h1>
 
 	<form
 		method="GET"

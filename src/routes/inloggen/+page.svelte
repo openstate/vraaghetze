@@ -31,7 +31,7 @@
 </script>
 
 <Page>
-	<h1 class="mb-8 font-serif text-4xl font-[450]">Inloggen</h1>
+	<h1 class="mb-8 font-serif text-4xl">Inloggen</h1>
 
 	{#if data.user}
 		<p class="mb-6 text-osf-canvas-600">

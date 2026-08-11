@@ -18,7 +18,7 @@
 </script>
 
 <Page width="wide">
-	<h1 class="mb-8 font-serif text-4xl font-[450]">Moderatie</h1>
+	<h1 class="mb-8 font-serif text-4xl">Moderatie</h1>
 
 	<Tabs.Root
 		value={currentTab}
