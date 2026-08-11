@@ -83,6 +83,27 @@ export async function listForPolitician(slug: string, limit: number) {
 	return nestAnswer(rows);
 }
 
+// the homepage showcase, so only publicly answered questions, the freshest answer first
+export async function listAnswered(limit: number) {
+	const rows = await db
+		.select(cardColumns)
+		.from(schema.question)
+		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
+		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
+		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
+		.innerJoin(schema.answer, latestAnswer(null))
+		.where(eq(schema.question.status, 'approved'))
+		.orderBy(desc(schema.answer.createdAt))
+		.limit(limit);
+
+	// the inner join guarantees an answer, so nest it without the null case
+	return rows.map(({ answerBody, answerCreatedAt, ...question }) => ({
+		...question,
+		answer: { body: answerBody, createdAt: answerCreatedAt }
+	}));
+}
+
 // :* turns the term into a prefix match, so 'stikstof' also finds 'stikstofcrisis'
 const queryTerm = (lexeme: string, prefix: boolean) =>
 	`'${lexeme.replaceAll("'", "''")}'${prefix ? ':*' : ''}`;

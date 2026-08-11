@@ -37,7 +37,10 @@
 	{/if}
 
 	<span
-		class={['flex h-10 items-center rounded-sm px-4.5 text-sm leading-0 font-medium', dynamicClass]}
+		class={[
+			'flex h-10 items-center justify-center rounded-sm px-4.5 text-sm leading-0 font-medium',
+			dynamicClass
+		]}
 	>
 		{@render children?.()}
 	</span>
