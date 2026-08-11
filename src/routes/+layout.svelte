@@ -5,6 +5,9 @@
 
 	import favicon32 from '$lib/assets/favicon-32.png';
 	import favicon512 from '$lib/assets/favicon-512.png';
+	import BrandBar from '$lib/components/brand-bar.svelte';
+	import Button from '$lib/components/button.svelte';
+	import Footer from '$lib/components/footer.svelte';
 	import Loading from '$lib/components/loading.svelte';
 	import Navigation from '$lib/components/navigation.svelte';
 	import { page } from '$app/state';
@@ -27,6 +30,16 @@
 
 <Loading />
 
-<Navigation data-theme={page.url.pathname === '/' ? 'dark' : 'light'} />
+<Button href="#inhoud" variant="primary" class="fixed top-3 left-3 z-50 not-focus:sr-only">
+	Naar de inhoud
+</Button>
 
-{@render children()}
+<BrandBar />
+
+<Navigation class={page.url.pathname === '/' ? 'bg-osf-canvas-50!' : ''} />
+
+<main id="inhoud" tabindex="-1">
+	{@render children()}
+</main>
+
+<Footer />

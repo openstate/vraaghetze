@@ -32,23 +32,12 @@
 
 <Collapsible.Root bind:open={expanded}>
 	{#snippet child({ props: rootProps })}
-		<header
-			{...rootProps}
-			{...props}
-			class={[
-				'relative bg-osf-neutral-50 dark:bg-osf-violet-900 dark:text-osf-violet-50',
-				props.class
-			]}
-		>
-			<Button href="#inhoud" variant="primary" class="absolute top-3 left-3 z-50 not-focus:sr-only">
-				Naar de inhoud
-			</Button>
-
+		<header {...rootProps} {...props} class={['relative bg-osf-neutral-50', props.class]}>
 			<nav
 				class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-5 lg:grid lg:grid-cols-[1fr_2fr_1fr]"
 			>
 				<h1>
-					<a href={resolve('/')} class="block w-fit [&>svg]:h-5.5 [&>svg]:w-auto">
+					<a href={resolve('/')} class="block w-fit [&>svg]:h-6 [&>svg]:w-auto">
 						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 						{@html logo}
 						<span class="sr-only">VraagHetZe</span>
@@ -61,7 +50,7 @@
 
 				<Button
 					href={resolve('/profiel')}
-					variant="secondary"
+					variant="primary"
 					icon="mdi--account-circle-outline"
 					class="ml-auto max-lg:hidden"
 				>
@@ -76,12 +65,10 @@
 				</Collapsible.Trigger>
 			</nav>
 
-			<Collapsible.Content
-				class="grid gap-5 border-b border-osf-canvas-200 px-6 py-6 lg:hidden dark:border-osf-violet-700"
-			>
+			<Collapsible.Content class="grid gap-5 border-b border-osf-canvas-200 px-6 py-6 lg:hidden">
 				{@render menuLinks()}
 
-				<Button href={resolve('/profiel')} variant="secondary" icon="mdi--account-circle-outline">
+				<Button href={resolve('/profiel')} variant="primary" icon="mdi--account-circle-outline">
 					Jouw vragen
 				</Button>
 			</Collapsible.Content>
