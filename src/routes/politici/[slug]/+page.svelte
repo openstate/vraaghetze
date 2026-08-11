@@ -2,7 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { Meter } from 'bits-ui';
 	import Avatar from '$lib/components/avatar.svelte';
-	import Button from '$lib/components/button.svelte';
+	import LinkCard from '$lib/components/link-card.svelte';
 	import Page from '$lib/components/page.svelte';
 	import QuestionCard from '$lib/components/question-card.svelte';
 
@@ -12,6 +12,12 @@
 
 	const answeredShare = $derived(
 		data.stats.total === 0 ? 0 : Math.round((data.stats.answered / data.stats.total) * 100)
+	);
+
+	// an answered card is a lot taller, so two of those already fill the column beside the cards
+	const showGhost = $derived(
+		data.questions.length < 3 &&
+			(data.questions.length < 2 || data.questions.every((question) => question.answer === null))
 	);
 
 	const roleLabel = $derived(
@@ -25,7 +31,7 @@
 	>
 		<div class="flex flex-wrap items-center gap-x-8 gap-y-5">
 			<Avatar
-				class="text-6xl ring ring-osf-canvas-200"
+				class="text-6xl"
 				size={144}
 				loading="eager"
 				name={data.politician.name}
@@ -33,7 +39,7 @@
 			/>
 
 			<div class="min-w-0">
-				<h1 class="font-serif text-5xl/none font-[450]">{data.politician.name}</h1>
+				<h1 class="font-serif text-5xl/none">{data.politician.name}</h1>
 
 				<p class="mt-3 text-lg text-osf-canvas-600">
 					{roleLabel}
@@ -57,7 +63,7 @@
 					Vragen beantwoord
 				</h2>
 
-				<p class="mt-3 font-serif text-4xl/none font-[450]">
+				<p class="mt-3 font-serif text-4xl/none">
 					{data.stats.answered}&nbsp;van&nbsp;{data.stats.total}
 				</p>
 
@@ -96,65 +102,49 @@
 		{/if}
 	</header>
 
-	<h2 class="mt-12 mb-8 font-serif text-3xl font-[450]">Vragen &amp; Antwoorden</h2>
+	<h2 class="mt-12 mb-8 font-serif text-3xl">Vragen &amp; Antwoorden</h2>
 
-	<div class="grid items-start gap-x-10 gap-y-3 lg:grid-cols-[1fr_17rem]">
-		<aside class="lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
-			<a
-				href="{resolve('/vragen/stellen')}?aan={data.politician.slug}"
-				class="group flex min-h-52 flex-col justify-between rounded bg-osf-violet-900 p-6 text-osf-violet-50"
-			>
-				<span class="font-serif text-2xl/snug font-[450] text-balance">
-					Stel {data.stats.total > 0 ? 'ook ' : ''}een vraag aan {data.politician.name}
-				</span>
-
-				<span
-					aria-hidden="true"
-					class="mt-8 ml-auto flex size-11 items-center justify-center rounded-full bg-osf-neutral-50 text-osf-violet-900"
-				>
-					<span
-						class="iconify size-4.5 mdi--arrow-right group-hover:scale-125 group-hover:-rotate-45 motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-in-out motion-reduce:group-hover:scale-100 motion-reduce:group-hover:rotate-0"
-					></span>
-				</span>
-			</a>
-		</aside>
-
-		<div class="lg:col-start-1 lg:row-start-1">
-			{#if data.questions.length === 0}
-				<div class="flex min-h-52 flex-col justify-between rounded bg-osf-canvas-100 p-8 lg:h-full">
-					<div>
-						<p class="font-serif text-xl/snug font-[450]">
-							Nog geen vragen aan {data.politician.name}
-						</p>
-
-						<p class="mt-3 text-osf-canvas-600">
-							Wees de eerste die iets vraagt of bekijk vragen aan andere Kamerleden.
-						</p>
-					</div>
-
-					<Button href={resolve('/vragen')} variant="primary" icon="mdi--arrow-right" class="mt-8">
-						Bekijk andere vragen
-					</Button>
-				</div>
-			{:else}
-				<ul class="grid gap-3">
+	<div class="grid items-start gap-x-10 gap-y-10 lg:grid-cols-[1fr_17rem]">
+		<!-- h-full stretches this to the cards beside it, so the ghost card fills whatever is left -->
+		<div class="flex flex-col gap-4 lg:col-start-1 lg:row-start-1 lg:h-full">
+			{#if data.questions.length > 0}
+				<ul class="grid gap-4">
 					{#each data.questions as question (question.slug)}
 						<li>
 							<QuestionCard {question} />
 						</li>
 					{/each}
 				</ul>
+			{/if}
 
-				{#if data.stats.total > data.questions.length}
-					<Button href={allQuestionsHref} variant="primary" icon="mdi--arrow-right" class="mt-8">
-						Bekijk alle {data.stats.total} vragen
-					</Button>
-				{:else}
-					<Button href={resolve('/vragen')} variant="primary" icon="mdi--arrow-right" class="mt-8">
-						Bekijk andere vragen
-					</Button>
-				{/if}
+			{#if showGhost}
+				<div
+					class="flex min-h-32 flex-1 items-center justify-center rounded border border-osf-canvas-200 p-6 text-center"
+				>
+					<p class="font-serif text-xl/snug text-osf-canvas-500">
+						Stel jij de {data.questions.length === 0 ? 'eerste' : 'volgende'} vraag aan {data
+							.politician.name}?
+					</p>
+				</div>
 			{/if}
 		</div>
+
+		<aside class="@container grid lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
+			<div class="grid gap-4 @lg:grid-cols-2">
+				<LinkCard href="{resolve('/vragen/stellen')}?aan={data.politician.slug}">
+					Stel een vraag aan {data.politician.name}
+				</LinkCard>
+
+				{#if data.stats.total > data.questions.length}
+					<LinkCard href={allQuestionsHref} variant="bright">
+						Bekijk alle {data.stats.total} vragen aan {data.politician.name}
+					</LinkCard>
+				{:else}
+					<LinkCard href={resolve('/vragen')} variant="bright">
+						Bekijk vragen aan andere Kamerleden
+					</LinkCard>
+				{/if}
+			</div>
+		</aside>
 	</div>
 </Page>

@@ -24,7 +24,7 @@
 <div
 	style="width: {size}px; height: {size}px"
 	class={[
-		'flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-osf-shocking-pink/10 font-mono text-osf-shocking-pink',
+		'flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-osf-shocking-pink/10 font-mono text-osf-shocking-pink ring ring-osf-canvas-200',
 		className
 	]}
 >
