@@ -24,7 +24,7 @@
 		{label}
 		{#if selected > 0}
 			<span
-				class="rounded-sm bg-osf-violet-100 px-1.5 py-0.5 font-mono text-xs text-osf-violet-700 dark:bg-osf-violet-700 dark:text-osf-violet-50"
+				class="rounded-sm bg-osf-violet-100 px-1.5 py-0.5 font-mono text-xs text-osf-violet-700"
 			>
 				{selected}
 			</span>

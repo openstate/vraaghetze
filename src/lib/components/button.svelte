@@ -10,8 +10,8 @@
 
 	const dynamicClass = $derived(
 		variant === 'primary'
-			? 'bg-osf-violet-900 text-osf-canvas-50 dark:bg-osf-neutral-50 dark:text-osf-violet-900'
-			: 'bg-osf-canvas-200 text-osf-canvas-600 dark:bg-osf-violet-700 dark:text-osf-violet-100'
+			? 'bg-osf-violet-900 text-osf-canvas-50'
+			: 'bg-osf-canvas-200 text-osf-canvas-600'
 	);
 </script>
 

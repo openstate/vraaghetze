@@ -41,10 +41,9 @@
 
 	const inputClass =
 		'w-full rounded border border-osf-canvas-200 bg-transparent px-3 py-2 text-sm ' +
-		'focus:border-osf-violet-500 focus:outline-none dark:border-osf-violet-700';
+		'focus:border-osf-violet-500 focus:outline-none';
 
-	const choiceClass =
-		'flex cursor-pointer items-center gap-2.5 py-1 text-sm text-osf-canvas-600 dark:text-osf-violet-100';
+	const choiceClass = 'flex cursor-pointer items-center gap-2.5 py-1 text-sm text-osf-canvas-600';
 
 	const boxClass =
 		'size-4 shrink-0 cursor-pointer accent-osf-violet-500 disabled:cursor-not-allowed';

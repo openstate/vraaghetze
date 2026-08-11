@@ -10,7 +10,7 @@
 
 	let { title, details }: Props = $props();
 
-	const cellClass = 'border-osf-canvas-200 dark:border-osf-violet-700';
+	const cellClass = 'border-osf-canvas-200';
 	const valueClass = 'font-medium wrap-anywhere whitespace-pre-wrap';
 </script>
 
@@ -18,7 +18,7 @@
 	<Dialog.Trigger
 		title="Toon details"
 		aria-label="Toon details"
-		class="flex size-8 cursor-pointer items-center justify-center rounded-sm text-osf-canvas-500 hover:bg-osf-canvas-100 hover:text-osf-violet-900 dark:hover:bg-osf-violet-800 dark:hover:text-osf-canvas-50"
+		class="flex size-8 cursor-pointer items-center justify-center rounded-sm text-osf-canvas-500 hover:bg-osf-canvas-100 hover:text-osf-violet-900"
 	>
 		<span class="iconify size-4.5 mdi--text-box-outline"></span>
 	</Dialog.Trigger>
@@ -28,14 +28,14 @@
 
 		<Dialog.Content
 			aria-describedby={undefined}
-			class="fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-[min(44rem,calc(100vw-3rem))] -translate-x-1/2 -translate-y-1/2 flex-col rounded border border-osf-canvas-200 bg-osf-neutral-50 dark:border-osf-violet-700 dark:bg-osf-violet-900"
+			class="fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-[min(44rem,calc(100vw-3rem))] -translate-x-1/2 -translate-y-1/2 flex-col rounded border border-osf-canvas-200 bg-osf-neutral-50"
 		>
 			<div class="flex items-center justify-between gap-4 p-6 pb-4">
 				<Dialog.Title class="font-medium">{title}</Dialog.Title>
 
 				<Dialog.Close
 					aria-label="Sluiten"
-					class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-sm text-osf-canvas-500 hover:bg-osf-canvas-100 hover:text-osf-violet-900 dark:hover:bg-osf-violet-800 dark:hover:text-osf-canvas-50"
+					class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-sm text-osf-canvas-500 hover:bg-osf-canvas-100 hover:text-osf-violet-900"
 				>
 					<span class="iconify size-5 mdi--close"></span>
 				</Dialog.Close>

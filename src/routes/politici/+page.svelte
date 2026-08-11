@@ -29,7 +29,7 @@
 					name={search.key}
 					bind:value={search.term}
 					placeholder="Zoek kamerleden…"
-					class="w-full rounded border border-osf-canvas-200 bg-transparent py-3 pr-12 pl-4 focus:border-osf-violet-500 focus:outline-none dark:border-osf-violet-700"
+					class="w-full rounded border border-osf-canvas-200 bg-transparent py-3 pr-12 pl-4 focus:border-osf-violet-500 focus:outline-none"
 				/>
 				<span
 					aria-hidden="true"

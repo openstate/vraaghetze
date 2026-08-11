@@ -39,7 +39,7 @@
 					name={search.key}
 					bind:value={search.term}
 					placeholder="Zoek in vragen en antwoorden…"
-					class="w-full rounded border border-osf-canvas-200 bg-transparent py-3 pr-12 pl-4 focus:border-osf-violet-500 focus:outline-none dark:border-osf-violet-700"
+					class="w-full rounded border border-osf-canvas-200 bg-transparent py-3 pr-12 pl-4 focus:border-osf-violet-500 focus:outline-none"
 				/>
 				<span
 					aria-hidden="true"
@@ -81,7 +81,7 @@
 					<select
 						name="sorteer"
 						value={data.query.sort === impliedSort ? '' : data.query.sort}
-						class="rounded border border-osf-canvas-200 bg-transparent px-2 py-1 focus:border-osf-violet-500 focus:outline-none dark:border-osf-violet-700"
+						class="rounded border border-osf-canvas-200 bg-transparent px-2 py-1 focus:border-osf-violet-500 focus:outline-none"
 					>
 						{#each SORT_OPTIONS as option (option)}
 							<option

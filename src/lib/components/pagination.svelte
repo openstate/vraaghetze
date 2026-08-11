@@ -24,7 +24,7 @@
 
 	const buttonClass =
 		'flex size-9 cursor-pointer items-center justify-center rounded-sm font-mono text-sm ' +
-		'hover:bg-osf-canvas-100 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-osf-violet-800';
+		'hover:bg-osf-canvas-100 disabled:cursor-not-allowed disabled:opacity-40';
 </script>
 
 <div
@@ -39,7 +39,7 @@
 			<select
 				value={perPage}
 				onchange={(event) => navigate({ per: event.currentTarget.value, pagina: '1' })}
-				class="rounded border border-osf-canvas-200 px-2 py-1 focus:border-osf-violet-500 focus:outline-none dark:border-osf-violet-700"
+				class="rounded border border-osf-canvas-200 px-2 py-1 focus:border-osf-violet-500 focus:outline-none"
 			>
 				{#each PER_PAGE_OPTIONS as option (option)}
 					<option value={option}>{option}</option>
@@ -68,8 +68,7 @@
 								page={pageItem}
 								class={[
 									buttonClass,
-									'data-selected:bg-osf-violet-900 data-selected:text-osf-canvas-50',
-									'dark:data-selected:bg-osf-neutral-50 dark:data-selected:text-osf-violet-900'
+									'data-selected:bg-osf-violet-900 data-selected:text-osf-canvas-50'
 								]}
 							>
 								{pageItem.value}

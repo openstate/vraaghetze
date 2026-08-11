@@ -4,8 +4,6 @@
 	prefixes: 'mdi';
 }
 
-@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
-
 @theme {
 	--font-serif: 'Azurio', serif;
 	--font-sans: 'Geist Variable', sans-serif;

@@ -36,10 +36,9 @@
 
 	const inputClass =
 		'w-full rounded border border-osf-canvas-200 bg-transparent px-3 py-2 text-sm ' +
-		'focus:border-osf-violet-500 focus:outline-none dark:border-osf-violet-700';
+		'focus:border-osf-violet-500 focus:outline-none';
 
-	const choiceClass =
-		'flex cursor-pointer items-center gap-2.5 py-1 text-sm text-osf-canvas-600 dark:text-osf-violet-100';
+	const choiceClass = 'flex cursor-pointer items-center gap-2.5 py-1 text-sm text-osf-canvas-600';
 
 	const boxClass =
 		'size-4 shrink-0 cursor-pointer accent-osf-violet-500 disabled:cursor-not-allowed';
@@ -102,12 +101,12 @@
 		<fieldset class="mt-1 mb-3 ml-6 grid gap-3">
 			<legend class="sr-only">Periode</legend>
 
-			<label class="grid gap-1.5 text-sm text-osf-canvas-600 dark:text-osf-violet-100">
+			<label class="grid gap-1.5 text-sm text-osf-canvas-600">
 				Van
 				<input type="date" name="van" value={query.from ?? ''} class={inputClass} />
 			</label>
 
-			<label class="grid gap-1.5 text-sm text-osf-canvas-600 dark:text-osf-violet-100">
+			<label class="grid gap-1.5 text-sm text-osf-canvas-600">
 				Tot en met
 				<input type="date" name="tot" value={query.until ?? ''} class={inputClass} />
 			</label>

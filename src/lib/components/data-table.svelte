@@ -27,7 +27,7 @@
 	<table class="w-full min-w-6xl table-fixed text-left text-sm">
 		<thead>
 			{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
-				<tr class="border-b border-osf-canvas-200 dark:border-osf-violet-700">
+				<tr class="border-b border-osf-canvas-200">
 					{#each headerGroup.headers as header (header.id)}
 						<th class={['truncate px-3 py-2 font-medium', header.column.columnDef.meta?.class]}>
 							{#if !header.isPlaceholder}<FlexRender {header} />{/if}
@@ -38,7 +38,7 @@
 		</thead>
 		<tbody>
 			{#each table.getRowModel().rows as row (row.id)}
-				<tr class="border-b border-osf-canvas-100 dark:border-osf-violet-800">
+				<tr class="border-b border-osf-canvas-100">
 					{#each row.getAllCells() as cell (cell.id)}
 						<td class={['truncate px-3 py-2 align-middle', cell.column.columnDef.meta?.class]}>
 							<FlexRender {cell} />

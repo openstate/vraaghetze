@@ -29,11 +29,11 @@
 			goto(perPage ? `${href}?per=${perPage}` : href, { keepFocus: true, noScroll: true });
 		}}
 	>
-		<Tabs.List class="mb-8 flex w-fit gap-1 rounded bg-osf-canvas-100 p-1 dark:bg-osf-violet-800">
+		<Tabs.List class="mb-8 flex w-fit gap-1 rounded bg-osf-canvas-100 p-1">
 			{#each tabs as tab (tab.value)}
 				<Tabs.Trigger
 					value={tab.value}
-					class="cursor-pointer rounded-sm px-4 py-1.5 font-mono text-sm font-medium data-[state=active]:bg-osf-violet-900 data-[state=active]:text-osf-canvas-50 dark:data-[state=active]:bg-osf-neutral-50 dark:data-[state=active]:text-osf-violet-900"
+					class="cursor-pointer rounded-sm px-4 py-1.5 font-mono text-sm font-medium data-[state=active]:bg-osf-violet-900 data-[state=active]:text-osf-canvas-50"
 				>
 					{tab.label}
 				</Tabs.Trigger>
