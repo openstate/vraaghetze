@@ -10,8 +10,14 @@
 	const issues = $derived(form && 'issues' in form ? form.issues : undefined);
 	const errorMessage = $derived(form && 'error' in form ? form.error : null);
 
-	const selectedPolitician = $derived(
+	const QUESTION_MAX_LENGTH = 200;
+
+	const prefilledPolitician = $derived(
 		data.politicians.find((politician) => politician.slug === page.url.searchParams.get('aan'))
+	);
+
+	const prefilledQuestion = $derived(
+		page.url.searchParams.get('vraag')?.trim().slice(0, QUESTION_MAX_LENGTH) ?? ''
 	);
 
 	const inputClass =
@@ -30,7 +36,7 @@
 		<p class="text-osf-canvas-600">Met dit account kun je geen vragen stellen.</p>
 	{:else}
 		<h1 class="mb-8 font-serif text-4xl">
-			Stel een vraag {#if selectedPolitician}aan {selectedPolitician.name}{/if}
+			Stel een vraag {#if prefilledPolitician}aan {prefilledPolitician.name}{/if}
 		</h1>
 
 		<form method="POST" use:enhance class="grid gap-6">
@@ -64,7 +70,13 @@
 
 			<label class="grid gap-1.5">
 				<span class="text-sm font-medium">Je vraag</span>
-				<input name="title" required maxlength={200} class={inputClass} />
+				<input
+					name="title"
+					required
+					maxlength={QUESTION_MAX_LENGTH}
+					value={prefilledQuestion}
+					class={inputClass}
+				/>
 				{#if issues?.title}
 					<span class="text-sm text-osf-shocking-pink">
 						{issues.title[0]}
@@ -77,8 +89,8 @@
 				<textarea name="body" rows="6" maxlength={1000} class={inputClass}></textarea>
 			</label>
 
-			{#if selectedPolitician}
-				<input type="hidden" name="politicianId" value={selectedPolitician.id} />
+			{#if prefilledPolitician}
+				<input type="hidden" name="politicianId" value={prefilledPolitician.id} />
 			{:else}
 				<label class="grid gap-1.5">
 					<span class="text-sm font-medium">Aan welk Kamerlid?</span>
