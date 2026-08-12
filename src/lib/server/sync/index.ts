@@ -18,8 +18,6 @@ export async function syncPoliticians() {
 		fetchPoliticians()
 	]);
 
-	const existingIds = new Set(existingPoliticians.map((pol) => pol.id));
-
 	const politicians = transformPoliticians(
 		{ politicians: existingPoliticians, fractions: existingFractions },
 		fetched
@@ -113,5 +111,5 @@ export async function syncPoliticians() {
 			);
 	});
 
-	await syncAvatars(politicians, existingIds);
+	await syncAvatars(politicians);
 }

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, isNull } from 'drizzle-orm';
 import sharp from 'sharp';
 import { db, schema } from '../db';
 import type { Politician } from './transform';
@@ -26,10 +26,18 @@ async function fetchAndSaveAvatar(politicianId: string, userId: string) {
 	await db.update(schema.user).set({ image }).where(eq(schema.user.id, userId));
 }
 
-export async function syncAvatars(politicians: Politician[], existingIds: Set<string>) {
-	const toFetch = politicians.filter((pol) => !existingIds.has(pol.politician.id));
+export async function syncAvatars(politicians: Politician[]) {
+	const missing = await db
+		.select({ id: schema.user.id })
+		.from(schema.user)
+		.where(isNull(schema.user.image));
 
-	console.log(`Fetching ${toFetch.length} new avatars`);
+	const missingIds = new Set(missing.map((row) => row.id));
+
+	// matches if the politician has no avatar stored yet
+	const toFetch = politicians.filter((pol) => missingIds.has(pol.user.id));
+
+	console.log(`Fetching ${toFetch.length} avatars`);
 
 	for (let index = 0; index < toFetch.length; index += CONCURRENCY) {
 		const batch = toFetch.slice(index, index + CONCURRENCY);
