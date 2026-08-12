@@ -7,6 +7,7 @@ export default defineConfig({
 	test: {
 		include: ['src/**/*.test.ts'],
 		environment: 'node',
+		silent: 'passed-only',
 		globalSetup: './vitest.setup.ts',
 		setupFiles: './vitest.worker.ts',
 		maxWorkers: 8

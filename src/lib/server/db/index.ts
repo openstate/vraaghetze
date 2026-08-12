@@ -7,7 +7,8 @@ import * as authSchema from './auth.schema';
 
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
 
-export const client = postgres(process.env.DATABASE_URL);
+// notices are informational only (e.g. stop-word-only tsquery), so keep them out of the logs
+export const client = postgres(process.env.DATABASE_URL, { onnotice: () => {} });
 
 export const schema = { ...authSchema, ...appSchema }; // do not change order
 
