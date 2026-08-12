@@ -286,7 +286,12 @@
 				condimentum in vitae lacus. Maecenas vitae.
 			</p>
 
-			<Button href="/" variant="primary" icon="mdi--arrow-right" class="mt-4 max-md:self-end">
+			<Button
+				href={resolve('/over')}
+				variant="primary"
+				icon="mdi--arrow-right"
+				class="mt-4 max-md:self-end"
+			>
 				Lees meer
 			</Button>
 		</div>

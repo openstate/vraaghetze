@@ -78,7 +78,7 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	return svelteKitHandler({ event, resolve, auth, building });
 };
 
-const isModerationRoute = (routeId: string | null) => /^\/moderatie(\/|$)/.test(routeId ?? '');
+const isModerationRoute = (routeId: string | null) => /^\/modereren(\/|$)/.test(routeId ?? '');
 
 export const handleAuthorization: Handle = async ({ event, resolve }) => {
 	if (isModerationRoute(event.route.id)) authorizeModerator(event.locals.user);

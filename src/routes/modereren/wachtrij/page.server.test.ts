@@ -87,7 +87,7 @@ function makeActionEvent(
 
 	return {
 		locals: { user: user ?? undefined },
-		request: new Request('http://localhost/moderatie', { method: 'POST', body: formData })
+		request: new Request('http://localhost/modereren', { method: 'POST', body: formData })
 	} as unknown as Parameters<typeof page.actions.default>[0];
 }
 
@@ -101,7 +101,7 @@ beforeEach(async () => {
 	});
 });
 
-// authorization for the whole /moderatie section lives in handleAuthorization, not in
+// authorization for the whole /modereren section lives in handleAuthorization, not in
 // these loads and actions; see src/hooks.server.test.ts
 describe('load', () => {
 	test('returns the queue to a moderator', async () => {

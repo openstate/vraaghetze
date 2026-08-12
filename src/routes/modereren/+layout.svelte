@@ -8,10 +8,10 @@
 	let { children } = $props();
 
 	const tabs = [
-		{ value: 'wachtrij', label: 'Wachtrij', href: resolve('/moderatie/wachtrij') },
-		{ value: 'vragen', label: 'Vragen', href: resolve('/moderatie/vragen') },
-		{ value: 'inbox', label: 'Inbox', href: resolve('/moderatie/inbox') },
-		{ value: 'outbox', label: 'Outbox', href: resolve('/moderatie/outbox') }
+		{ value: 'wachtrij', label: 'Wachtrij', href: resolve('/modereren/wachtrij') },
+		{ value: 'vragen', label: 'Vragen', href: resolve('/modereren/vragen') },
+		{ value: 'inbox', label: 'Inbox', href: resolve('/modereren/inbox') },
+		{ value: 'outbox', label: 'Outbox', href: resolve('/modereren/outbox') }
 	];
 
 	const currentTab = $derived(page.url.pathname.split('/')[2] ?? 'wachtrij');

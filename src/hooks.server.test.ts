@@ -24,7 +24,7 @@ async function guard(routeId: string | null, user: App.Locals['user'] = undefine
 	return { blockedWith: thrown?.status, passedThrough: resolve.mock.calls.length > 0 };
 }
 
-const moderationRoutes = ['/moderatie', '/moderatie/wachtrij', '/moderatie/inbox'];
+const moderationRoutes = ['/modereren', '/modereren/wachtrij', '/modereren/inbox'];
 
 describe('handleAuthorization', () => {
 	test.each(moderationRoutes)('refuses an anonymous visitor of %s', async (routeId) => {
@@ -51,7 +51,7 @@ describe('handleAuthorization', () => {
 		expect(passedThrough).toBe(true);
 	});
 
-	test.each(['/', '/vragen/[slug]', '/moderatie-publiek', null])(
+	test.each(['/', '/vragen/[slug]', '/moderatie', '/modereren-publiek', null])(
 		'leaves %s outside the moderation section alone',
 		async (routeId) => {
 			const { blockedWith, passedThrough } = await guard(routeId);

@@ -42,7 +42,7 @@
 				<div>
 					<p class="font-mono text-[13px] font-medium text-osf-shocking-pink">Over ons</p>
 					<ul class="mt-4 grid gap-3 text-sm font-medium">
-						<li><a href={resolve('/')} class="hover:underline">VraagHetZe</a></li>
+						<li><a href={resolve('/over')} class="hover:underline">VraagHetZe</a></li>
 						<li>
 							<a href="https://openstate.eu" target="_blank" class="hover:underline">
 								Open State Foundation
@@ -72,13 +72,13 @@
 
 			<ul class="flex flex-wrap gap-x-8 gap-y-2">
 				<li>
-					<a href={resolve('/')} class="hover:underline">Moderatiebeleid</a>
+					<a href={resolve('/moderatie')} class="hover:underline">Moderatiebeleid</a>
 				</li>
 				<li>
-					<a href={resolve('/')} class="hover:underline">Algemene voorwaarden</a>
+					<a href={resolve('/voorwaarden')} class="hover:underline">Algemene voorwaarden</a>
 				</li>
 				<li>
-					<a href={resolve('/')} class="hover:underline">Privacybeleid</a>
+					<a href={resolve('/privacy')} class="hover:underline">Privacybeleid</a>
 				</li>
 			</ul>
 		</div>

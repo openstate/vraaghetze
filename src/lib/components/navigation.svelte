@@ -18,9 +18,9 @@
 {#snippet menuLinks()}
 	<a href={resolve('/vragen')}>Vragen & Antwoorden</a>
 	<a href={resolve('/politici')}>Kamerleden</a>
-	<a href={resolve('/')}>Over ons</a>
+	<a href={resolve('/over')}>Over ons</a>
 	{#if hasPermission(page.data.user, { question: ['moderate'] })}
-		<a href={resolve('/moderatie')}>Moderatie</a>
+		<a href={resolve('/modereren')}>Moderatie</a>
 	{/if}
 {/snippet}
 
