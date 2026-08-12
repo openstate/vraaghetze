@@ -75,7 +75,7 @@
 							/>
 						</a>
 
-						<p class="text-osf-canvas-600">
+						<p class="text-balance text-osf-canvas-600">
 							{data.answer ? 'Antwoord van' : 'Wacht op antwoord van'}
 							<a href={politicianHref} class="font-medium hover:underline">
 								{data.question.assigneeName}

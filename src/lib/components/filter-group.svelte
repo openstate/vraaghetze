@@ -15,12 +15,10 @@
 	let open = $state(untrack(() => initiallyOpen));
 </script>
 
-<details bind:open class="group min-w-0">
-	<summary class="flex cursor-pointer items-center gap-2 py-1 font-medium">
-		<span
-			aria-hidden="true"
-			class="iconify size-4 text-osf-canvas-400 mdi--chevron-right group-open:rotate-90"
-		></span>
+<details bind:open class="group min-w-0 not-first-of-type:pt-3 not-last-of-type:pb-3">
+	<summary
+		class="flex cursor-pointer list-none items-center gap-2 py-1 font-medium [&::-webkit-details-marker]:hidden"
+	>
 		{label}
 		{#if selected > 0}
 			<span
@@ -29,6 +27,10 @@
 				{selected}
 			</span>
 		{/if}
+		<span
+			aria-hidden="true"
+			class="ml-auto iconify size-4 text-osf-canvas-400 mdi--chevron-right group-open:rotate-90"
+		></span>
 	</summary>
 
 	{@render children()}

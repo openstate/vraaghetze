@@ -55,11 +55,13 @@
 	>
 		<HeroPlanes />
 
-		<p class="mx-auto max-w-2xl text-center font-serif text-4xl text-balance md:text-6xl">
+		<p
+			class="mx-auto max-w-2xl text-center font-serif text-[2.75rem] leading-[1.2] text-balance md:text-6xl"
+		>
 			Wat wil jij de politiek vragen?
 		</p>
 
-		<p class="mx-auto mt-8 max-w-lg text-center">
+		<p class="mx-auto mt-8 max-w-lg text-center max-md:text-lg">
 			Stel jouw vraag aan een politicus en ontvang een direct antwoord. Lees mee met anderen en
 			ontdek wat er speelt.
 		</p>
@@ -111,23 +113,33 @@
 	</div>
 </section>
 
-<section class="mx-auto max-w-7xl px-6 py-20 md:py-28">
-	<div class="mb-12 flex flex-wrap items-end justify-between gap-6">
-		<div>
-			<p class="font-mono text-xs font-semibold text-osf-shocking-pink">Uitgelicht</p>
-			<h2 class="mt-4 font-serif text-3xl md:text-4xl">Recent beantwoorde vragen</h2>
-		</div>
-
-		<Button href="/vragen" variant="primary" icon="mdi--arrow-right">Bekijk alle vragen</Button>
+<section
+	class="mx-auto grid max-w-7xl px-6 py-20 md:grid-cols-[1fr_auto] md:items-end md:gap-x-6 md:py-28"
+>
+	<div class="mb-8 md:mb-12">
+		<p class="font-mono text-xs font-semibold text-osf-shocking-pink">Uitgelicht</p>
+		<h2 class="mt-4 font-serif text-3xl md:text-4xl">Recent beantwoorde vragen</h2>
 	</div>
 
-	{#if featuredQuestion}
-		<QuestionCard question={featuredQuestion} featured />
-	{:else}
-		<p class="text-osf-canvas-500">Er zijn nog geen beantwoorde vragen.</p>
-	{/if}
+	<!-- below md the button sits under the questions instead of next to the heading -->
+	<Button
+		href="/vragen"
+		variant="primary"
+		icon="mdi--arrow-right"
+		class="max-md:order-last max-md:mt-10 max-md:justify-self-end md:mb-12"
+	>
+		Bekijk alle vragen
+	</Button>
 
-	<ul class="mt-4 grid gap-4 md:grid-cols-2">
+	<div class="md:col-span-2">
+		{#if featuredQuestion}
+			<QuestionCard question={featuredQuestion} featured />
+		{:else}
+			<p class="text-osf-canvas-500">Er zijn nog geen beantwoorde vragen.</p>
+		{/if}
+	</div>
+
+	<ul class="mt-4 grid gap-4 md:col-span-2 md:grid-cols-2">
 		{#each otherQuestions as question (question.slug)}
 			<li>
 				<QuestionCard {question} />
@@ -167,18 +179,6 @@
 
 <section class="overflow-hidden bg-osf-canvas-50">
 	<div class="relative isolate mx-auto max-w-7xl px-6 pt-20 pb-24 md:pt-28 md:pb-32">
-		<img
-			src={stepsIllustration}
-			alt=""
-			aria-hidden="true"
-			class={[
-				'pointer-events-none mb-10 w-full max-w-2xl',
-				'max-md:relative max-md:left-1/2 max-md:w-[120vw] max-md:max-w-lg max-md:-translate-x-1/2',
-				'md:absolute md:top-1/2 md:right-0 md:-z-10 md:mb-0 md:w-[65%] md:-translate-y-1/2 ',
-				'lg:right-6 lg:w-1/2 lg:scale-120'
-			]}
-		/>
-
 		<div class="md:max-w-md lg:max-w-lg">
 			<p class="font-mono text-xs font-semibold text-osf-shocking-pink">Hoe werkt het</p>
 
@@ -209,6 +209,18 @@
 				{/each}
 			</div>
 		</div>
+
+		<img
+			src={stepsIllustration}
+			alt=""
+			aria-hidden="true"
+			class={[
+				'pointer-events-none mt-10 w-full max-w-2xl',
+				'max-md:relative max-md:left-1/2 max-md:w-[120vw] max-md:max-w-lg max-md:-translate-x-1/2',
+				'md:absolute md:top-1/2 md:right-0 md:-z-10 md:mt-0 md:w-[65%] md:-translate-y-1/2',
+				'lg:right-6 lg:w-1/2 lg:scale-120'
+			]}
+		/>
 	</div>
 </section>
 
@@ -274,7 +286,9 @@
 				condimentum in vitae lacus. Maecenas vitae.
 			</p>
 
-			<Button href="/" variant="primary" icon="mdi--arrow-right" class="mt-4">Lees meer</Button>
+			<Button href="/" variant="primary" icon="mdi--arrow-right" class="mt-4 max-md:self-end">
+				Lees meer
+			</Button>
 		</div>
 	</div>
 </section>

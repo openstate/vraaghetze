@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import Button from '$lib/components/button.svelte';
+	import FiltersPanel from '$lib/components/filters-panel.svelte';
 	import Page from '$lib/components/page.svelte';
 	import Pagination from '$lib/components/pagination.svelte';
 	import QuestionCard from '$lib/components/question-card.svelte';
@@ -48,26 +49,9 @@
 			</label>
 		</search>
 
-		<aside
-			class="lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
-		>
-			<details open class="rounded border-osf-canvas-200 max-lg:border max-lg:p-4">
-				<summary class="cursor-pointer font-medium lg:hidden">Filters</summary>
-
-				<div class="max-lg:mt-4">
-					<QuestionFilters query={data.query} facets={data.facets} />
-				</div>
-
-				<noscript>
-					<button
-						type="submit"
-						class="mt-6 w-full cursor-pointer rounded-sm bg-osf-violet-900 px-4 py-2 text-sm font-medium text-osf-canvas-50"
-					>
-						Filters toepassen
-					</button>
-				</noscript>
-			</details>
-		</aside>
+		<FiltersPanel>
+			<QuestionFilters query={data.query} facets={data.facets} />
+		</FiltersPanel>
 
 		<div class="lg:col-start-1">
 			<div class="mb-5 flex min-h-8 flex-wrap items-center justify-between gap-4">

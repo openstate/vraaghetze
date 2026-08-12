@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import FacetGroup from '$lib/components/facet-group.svelte';
+	import FiltersPanel from '$lib/components/filters-panel.svelte';
 	import Page from '$lib/components/page.svelte';
 	import Pagination from '$lib/components/pagination.svelte';
 	import PoliticianCard from '$lib/components/politician-card.svelte';
@@ -38,48 +39,31 @@
 			</label>
 		</search>
 
-		<aside
-			class="lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
-		>
-			<details open class="rounded border-osf-canvas-200 max-lg:border max-lg:p-4">
-				<summary class="cursor-pointer font-medium lg:hidden">Filters</summary>
+		<FiltersPanel>
+			<FacetGroup
+				label="Fracties"
+				name="fractie"
+				selected={data.query.fractions}
+				options={data.facets.fractions.map((fraction) => ({
+					value: fraction.slug,
+					label: fraction.abbreviation ?? fraction.name,
+					title: fraction.name,
+					total: fraction.total
+				}))}
+			/>
 
-				<div class="grid gap-2 max-lg:mt-4">
-					<FacetGroup
-						label="Fracties"
-						name="fractie"
-						selected={data.query.fractions}
-						options={data.facets.fractions.map((fraction) => ({
-							value: fraction.slug,
-							label: fraction.abbreviation ?? fraction.name,
-							title: fraction.name,
-							total: fraction.total
-						}))}
-					/>
-
-					<FacetGroup
-						label="Commissies"
-						name="commissie"
-						selected={data.query.commissions}
-						options={data.facets.commissions.map((commission) => ({
-							value: commission.abbreviation,
-							label: commission.shortName,
-							title: commission.name,
-							total: commission.total
-						}))}
-					/>
-				</div>
-
-				<noscript>
-					<button
-						type="submit"
-						class="mt-6 w-full cursor-pointer rounded-sm bg-osf-violet-900 px-4 py-2 text-sm font-medium text-osf-canvas-50"
-					>
-						Filters toepassen
-					</button>
-				</noscript>
-			</details>
-		</aside>
+			<FacetGroup
+				label="Commissies"
+				name="commissie"
+				selected={data.query.commissions}
+				options={data.facets.commissions.map((commission) => ({
+					value: commission.abbreviation,
+					label: commission.shortName,
+					title: commission.name,
+					total: commission.total
+				}))}
+			/>
+		</FiltersPanel>
 
 		<div class="lg:col-start-1">
 			<p class="mb-5 flex min-h-8 items-center text-sm text-osf-canvas-500">

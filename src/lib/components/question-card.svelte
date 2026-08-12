@@ -89,7 +89,7 @@
 		{/if}
 
 		<div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-			<div class="flex min-w-0 flex-1 items-center gap-3">
+			<div class="flex min-w-0 flex-1 items-center gap-3 max-md:basis-full">
 				<a href={politicianHref} class="shrink-0" aria-hidden="true" tabindex="-1">
 					<Avatar
 						size={40}
@@ -97,7 +97,7 @@
 						src={resolve('/politici/[slug]/foto', { slug: question.politicianSlug })}
 					/>
 				</a>
-				<p class="text-sm text-osf-canvas-600">
+				<p class="text-sm text-balance text-osf-canvas-600">
 					{recipientLabel}
 					<a href={politicianHref} class="font-medium hover:underline">
 						{question.politicianName}
@@ -110,7 +110,7 @@
 			<a
 				href={questionHref}
 				tabindex="-1"
-				class="flex w-fit items-center gap-1 text-sm font-medium text-osf-violet-500 hover:underline"
+				class="flex w-fit items-center gap-1 text-sm font-medium text-osf-violet-500 hover:underline max-md:ml-auto"
 			>
 				Lees meer <span class="iconify size-4 mdi--arrow-right"></span>
 			</a>

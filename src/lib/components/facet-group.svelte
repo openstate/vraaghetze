@@ -50,7 +50,7 @@
 </script>
 
 <FilterGroup {label} selected={selected.length} {open}>
-	<fieldset class={['mt-1 mb-3 ml-6 min-w-0', !searchable && 'max-h-72 overflow-y-auto']}>
+	<fieldset class={['mt-1 min-w-0', !searchable && 'max-h-72 overflow-y-auto']}>
 		<legend class="sr-only">{label}</legend>
 
 		{#if searchable}
