@@ -52,6 +52,13 @@
 	color: var(--color-osf-violet-900);
 }
 
+/* keeps the footer at the bottom of the viewport on short pages */
+body {
+	display: flex;
+	min-height: 100dvh;
+	flex-direction: column;
+}
+
 *::selection {
 	background: var(--color-osf-shocking-pink);
 	color: var(--color-osf-neutral-50);

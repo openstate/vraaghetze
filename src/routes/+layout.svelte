@@ -38,7 +38,7 @@
 
 <Navigation class={page.url.pathname === '/' ? 'bg-osf-canvas-50!' : ''} />
 
-<main id="inhoud" tabindex="-1">
+<main id="inhoud" tabindex="-1" class="grow">
 	{@render children()}
 </main>
 
