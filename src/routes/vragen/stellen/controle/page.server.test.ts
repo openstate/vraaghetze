@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
+import { QUESTION_TITLE_MAX_LENGTH } from '$lib/ask';
 import * as page from './+page.server';
 
 const sendSignInLink = vi.hoisted(() => vi.fn());
@@ -41,9 +42,44 @@ async function createPolitician(overrides: Partial<typeof schema.politician.$inf
 	return { politician, politicianUser };
 }
 
+async function insertQuestion(
+	askerId: string,
+	assigneeId: string,
+	overrides: Partial<typeof schema.question.$inferInsert> = {}
+) {
+	const id = crypto.randomUUID();
+
+	const [question] = await db
+		.insert(schema.question)
+		.values({
+			id,
+			userId: askerId,
+			assigneeId,
+			title: 'Wat vindt u van de toeslagen?',
+			body: 'Graag een toelichting.',
+			slug: `testvraag-${id}`,
+			status: 'approved',
+			verifiedAt: new Date(),
+			...overrides
+		})
+		.returning();
+
+	return question;
+}
+
 async function getQuestionBySlug(slug: string) {
 	const [question] = await db.select().from(schema.question).where(eq(schema.question.slug, slug));
 	return question;
+}
+
+type LoadData = Exclude<Awaited<ReturnType<typeof page.load>>, void>;
+type Chosen = { id: string; slug: string } | null;
+
+function makeLoadEvent(politician: Chosen, search = '') {
+	return {
+		parent: async () => ({ politician }),
+		url: new URL(`http://localhost/vragen/stellen/controle${search}`)
+	} as unknown as Parameters<typeof page.load>[0];
 }
 
 function makeActionEvent(
@@ -55,8 +91,11 @@ function makeActionEvent(
 
 	return {
 		locals: { user: user ?? undefined },
-		url: new URL('http://localhost/vragen/stellen'),
-		request: new Request('http://localhost/vragen/stellen', { method: 'POST', body: formData })
+		url: new URL('http://localhost/vragen/stellen/controle'),
+		request: new Request('http://localhost/vragen/stellen/controle', {
+			method: 'POST',
+			body: formData
+		})
 	} as unknown as Parameters<typeof page.actions.default>[0];
 }
 
@@ -75,6 +114,41 @@ beforeEach(async () => {
 		await tx.delete(schema.question);
 		await tx.delete(schema.user);
 		await tx.delete(schema.fraction);
+	});
+});
+
+describe('load', () => {
+	test('shows what the fraction was already asked', async () => {
+		const { politician, politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const published = await insertQuestion(asker.id, politicianUser.id, {
+			assigneeFractionId: politician.fractionId
+		});
+		await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Hoe staat het met de dijkverzwaring?',
+			assigneeFractionId: politician.fractionId
+		});
+
+		const event = makeLoadEvent(politician, '?aan=jan-jansen&vraag=toeslagen');
+		const data = (await page.load(event)) as LoadData;
+
+		expect(data.similar).toHaveLength(1);
+		expect(data.similar[0]).toMatchObject({
+			slug: published.slug,
+			authorName: 'Vera Vraagsteller'
+		});
+	});
+
+	test('searches for nothing until the draft is complete', async () => {
+		const { politician } = await createPolitician();
+
+		const withoutKamerlid = (await page.load(makeLoadEvent(null, '?vraag=toeslagen'))) as LoadData;
+		const withoutQuestion = (await page.load(
+			makeLoadEvent(politician, '?aan=jan-jansen')
+		)) as LoadData;
+
+		expect(withoutKamerlid.similar).toEqual([]);
+		expect(withoutQuestion.similar).toEqual([]);
 	});
 });
 
@@ -162,6 +236,22 @@ describe('default action', () => {
 			status: 400,
 			data: { issues: { politicianId: expect.anything() } }
 		});
+		expect(await db.select().from(schema.question)).toHaveLength(0);
+	});
+
+	test('refuses a question longer than the shared limit', async () => {
+		const { politician } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const event = makeActionEvent(asker, {
+			...questionFields,
+			title: 'a'.repeat(QUESTION_TITLE_MAX_LENGTH + 1),
+			email: asker.email,
+			politicianId: politician.id
+		});
+
+		const result = await page.actions.default(event);
+
+		expect(result).toMatchObject({ status: 400, data: { issues: { title: expect.anything() } } });
 		expect(await db.select().from(schema.question)).toHaveLength(0);
 	});
 

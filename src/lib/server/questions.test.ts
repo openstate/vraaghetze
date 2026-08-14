@@ -206,78 +206,141 @@ describe('create', () => {
 	});
 });
 
-describe('relatedTo', () => {
-	test('returns questions sharing a word, and never the question itself', async () => {
-		const { politicianUser } = await createPolitician();
+describe('term matching', () => {
+	test('finds every question that shares a subject word', async () => {
+		const { politician, politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
+		const inFraction = { assigneeFractionId: politician.fractionId };
 
-		const source = await insertQuestion(asker.id, politicianUser.id, {
-			title: 'Wat vindt u van de toeslagen?',
-			body: 'Graag een toelichting.'
-		});
-		const sharesTitle = await insertQuestion(asker.id, politicianUser.id, {
+		const shared = await insertQuestion(asker.id, politicianUser.id, {
 			title: 'Moeten de toeslagen worden afgeschaft?',
-			body: 'Wat is uw standpunt?'
+			...inFraction
 		});
 		await insertQuestion(asker.id, politicianUser.id, {
 			title: 'Hoe staat het met de dijkverzwaring?',
-			body: 'Wanneer komt het rapport?'
+			...inFraction
 		});
 
-		const related = await questions.relatedTo(source.slug, 3);
+		const similar = await questions.similarForFraction('toeslagen', politician.id, 3);
 
-		expect(related.map((row) => row.slug)).toEqual([sharesTitle.slug]);
+		expect(similar.map((row) => row.slug)).toEqual([shared.slug]);
 	});
 
-	test('matches on a word from the body, not just the title', async () => {
+	test('relates a compound subject to its bare parts', async () => {
+		const { politician, politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+
+		const bareParts = await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Hoeveel stikstof mag er nog worden uitgestoten?',
+			assigneeFractionId: politician.fractionId
+		});
+
+		const similar = await questions.similarForFraction(
+			'Wat is uw plan voor de stikstofcrisis?',
+			politician.id,
+			3
+		);
+
+		expect(similar.map((row) => row.slug)).toEqual([bareParts.slug]);
+	});
+
+	test('shows nothing that is not published yet', async () => {
+		const { politician, politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const inFraction = { assigneeFractionId: politician.fractionId };
+
+		await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Moeten de toeslagen worden afgeschaft?',
+			status: 'pending',
+			...inFraction
+		});
+		await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Zijn de toeslagen eerlijk verdeeld?',
+			status: 'rejected',
+			...inFraction
+		});
+
+		expect(await questions.similarForFraction('toeslagen', politician.id, 3)).toEqual([]);
+	});
+
+	test('hands back no more questions than asked for', async () => {
+		const { politician, politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const inFraction = { assigneeFractionId: politician.fractionId };
+
+		await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Moeten de toeslagen worden afgeschaft?',
+			...inFraction
+		});
+		await insertQuestion(asker.id, politicianUser.id, {
+			title: 'Zijn de toeslagen eerlijk verdeeld?',
+			...inFraction
+		});
+
+		expect(await questions.similarForFraction('toeslagen', politician.id, 1)).toHaveLength(1);
+	});
+});
+
+describe('relatedTo', () => {
+	test('takes its words from the body too, and never returns the question itself', async () => {
 		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 
 		const source = await insertQuestion(asker.id, politicianUser.id, {
-			title: 'Wat vindt u van de toeslagen?',
-			body: 'Graag een toelichting.'
+			title: 'Hoe kijkt u hiernaar?',
+			body: 'De toeslagen lopen achter.'
 		});
 		const sharesBody = await insertQuestion(asker.id, politicianUser.id, {
-			title: 'Hoe gaat het met de koopkracht?',
-			body: 'De toeslagen lopen achter.'
+			title: 'Moeten de toeslagen worden afgeschaft?',
+			body: 'Wat is uw standpunt?'
 		});
 
 		const related = await questions.relatedTo(source.slug, 3);
 
 		expect(related.map((row) => row.slug)).toEqual([sharesBody.slug]);
 	});
+});
 
-	test('relates a compound subject to its bare parts', async () => {
-		const { politicianUser } = await createPolitician();
+describe('similarForFraction', () => {
+	test('never leaves the fraction of the chosen Kamerlid', async () => {
+		const own = await createPolitician();
+		const other = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 
-		const source = await insertQuestion(asker.id, politicianUser.id, {
-			title: 'Wat is uw plan voor de stikstofcrisis?',
-			body: 'De boeren wachten al jaren op duidelijkheid.'
+		const ours = await insertQuestion(asker.id, own.politicianUser.id, {
+			title: 'Moeten de toeslagen worden afgeschaft?',
+			assigneeFractionId: own.politician.fractionId
 		});
-		const bareParts = await insertQuestion(asker.id, politicianUser.id, {
-			title: 'Hoeveel stikstof mag er nog worden uitgestoten?',
-			body: 'Graag een concreet getal.'
+		await insertQuestion(asker.id, other.politicianUser.id, {
+			title: 'Moeten de toeslagen worden afgeschaft?',
+			assigneeFractionId: other.politician.fractionId
 		});
 
-		const related = await questions.relatedTo(source.slug, 3);
+		const similar = await questions.similarForFraction('toeslagen', own.politician.id, 3);
 
-		expect(related.map((row) => row.slug)).toEqual([bareParts.slug]);
+		expect(similar.map((row) => row.slug)).toEqual([ours.slug]);
 	});
 
-	test('hides a pending question from the related list', async () => {
-		const { politicianUser } = await createPolitician();
+	test('answers with nothing for a Kamerlid that cannot be asked', async () => {
+		const { politician, politicianUser } = await createPolitician({ isActive: false });
 		const asker = await createUser('Vera Vraagsteller');
-
-		const source = await insertQuestion(asker.id, politicianUser.id, {
-			title: 'Wat vindt u van de toeslagen?'
-		});
 		await insertQuestion(asker.id, politicianUser.id, {
 			title: 'Moeten de toeslagen worden afgeschaft?',
-			status: 'pending'
+			assigneeFractionId: politician.fractionId
 		});
 
-		expect(await questions.relatedTo(source.slug, 3)).toEqual([]);
+		expect(await questions.similarForFraction('toeslagen', politician.id, 3)).toEqual([]);
+		expect(await questions.similarForFraction('toeslagen', crypto.randomUUID(), 3)).toEqual([]);
+	});
+
+	test('looks nothing up until the text holds a word', async () => {
+		const { politician, politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		await insertQuestion(asker.id, politicianUser.id, {
+			assigneeFractionId: politician.fractionId
+		});
+
+		expect(await questions.similarForFraction('  ?  ', politician.id, 3)).toEqual([]);
 	});
 });
 

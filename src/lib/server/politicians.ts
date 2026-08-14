@@ -3,7 +3,23 @@ import { db, schema } from '$lib/server/db';
 
 export const COMMISSION_KIND = 'Vaste commissies';
 
-export function listActive() {
+export async function listActiveWithCommissions() {
+	const [active, seats] = await Promise.all([listActive(), activeCommissionSeats()]);
+
+	const seatsByPolitician = Map.groupBy(seats, (seat) => seat.politicianId);
+
+	return {
+		politicians: active.map((politician) => ({
+			...politician,
+			commissions: (seatsByPolitician.get(politician.id) ?? []).map((seat) => seat.abbreviation)
+		})),
+		commissions: [...new Map(seats.map((seat) => [seat.abbreviation, seat.shortName]))].map(
+			([abbreviation, shortName]) => ({ abbreviation, shortName })
+		)
+	};
+}
+
+function listActive() {
 	return db
 		.select({
 			id: schema.politician.id,
@@ -20,12 +36,33 @@ export function listActive() {
 		.orderBy(asc(schema.user.name));
 }
 
+function activeCommissionSeats() {
+	return db
+		.select({
+			politicianId: schema.commissionMembership.politicianId,
+			abbreviation: schema.commission.abbreviation,
+			shortName: schema.commission.shortName
+		})
+		.from(schema.commissionMembership)
+		.innerJoin(
+			schema.politician,
+			eq(schema.commissionMembership.politicianId, schema.politician.id)
+		)
+		.innerJoin(
+			schema.commission,
+			eq(schema.commissionMembership.commissionId, schema.commission.id)
+		)
+		.where(and(eq(schema.politician.isActive, true), eq(schema.commission.kind, COMMISSION_KIND)))
+		.orderBy(asc(schema.commission.shortName));
+}
+
 export async function bySlug(slug: string) {
 	const [politician] = await db
 		.select({
 			id: schema.politician.id,
 			slug: schema.politician.slug,
 			userId: schema.politician.userId,
+			isActive: schema.politician.isActive,
 			name: schema.user.name,
 			fractionRole: schema.politician.fractionRole,
 			fraction: schema.fraction.abbreviation,

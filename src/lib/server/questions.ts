@@ -1,6 +1,20 @@
-import { and, count, desc, eq, gt, isNull, ne, notExists, or, sql } from 'drizzle-orm';
+import {
+	and,
+	count,
+	desc,
+	eq,
+	gt,
+	inArray,
+	isNull,
+	ne,
+	notExists,
+	or,
+	sql,
+	type SQL
+} from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db, schema, type Transaction } from '$lib/server/db';
+import { splitWords } from '$lib/server/search';
 import { slugify, slugifyUnique } from '$lib/server/utils/slug';
 import { hasPermission } from '$lib/permissions';
 
@@ -104,6 +118,29 @@ export async function listAnswered(limit: number) {
 	}));
 }
 
+// the similarity searching already excludes stopwords, but we should also exclude the following from matching
+const QUESTION_WORDS = new Set([
+	'hoe',
+	'hoelang',
+	'hoeveel',
+	'hoezo',
+	'waar',
+	'waarin',
+	'waarmee',
+	'waarom',
+	'waarop',
+	'waarover',
+	'waaruit',
+	'waarvoor',
+	'wanneer',
+	'wat',
+	'welk',
+	'welke',
+	'wie'
+]);
+
+const isSubjectWord = (word: string) => !QUESTION_WORDS.has(word.toLowerCase());
+
 // :* turns the term into a prefix match, so 'stikstof' also finds 'stikstofcrisis'
 const queryTerm = (lexeme: string, prefix: boolean) =>
 	`'${lexeme.replaceAll("'", "''")}'${prefix ? ':*' : ''}`;
@@ -127,21 +164,10 @@ function compoundTerms(lexeme: string) {
 	return terms;
 }
 
-// what else was asked about the same subject, shown under a question
-export async function relatedTo(slug: string, limit: number) {
-	const [source] = await db
-		// every non-stop word of the title and body
-		.select({ lexemes: sql<string[]>`tsvector_to_array(${schema.question.searchVector})` })
-		.from(schema.question)
-		.where(eq(schema.question.slug, slug))
-		.limit(1);
-
-	if (!source || source.lexemes.length === 0) return [];
-
-	const terms = new Set(source.lexemes.flatMap((lexeme) => compoundTerms(lexeme)));
-
+// approved questions matching any of the terms, best overlap first
+async function rankedByTerms(terms: Set<string>, scope: SQL, limit: number) {
 	// OR-ed, so any shared word makes another question a candidate
-	const related = sql`to_tsquery('dutch', ${[...terms].join(' | ')})`;
+	const query = sql`to_tsquery('dutch', ${[...terms].join(' | ')})`;
 
 	const rows = await db
 		.select(cardColumns)
@@ -153,19 +179,61 @@ export async function relatedTo(slug: string, limit: number) {
 		.leftJoin(schema.answer, latestAnswer(null))
 		.where(
 			and(
-				ne(schema.question.slug, slug),
+				// approved only and no viewer, so this shows nothing /vragen does not already show
 				eq(schema.question.status, 'approved'),
-				sql`${schema.question.searchVector} @@ ${related}`
+				scope,
+				sql`${schema.question.searchVector} @@ ${query}`
 			)
 		)
 		// the strongest overlap first, the newest question among equals
 		.orderBy(
-			desc(sql`ts_rank(${schema.question.searchVector}, ${related})`),
+			desc(sql`ts_rank(${schema.question.searchVector}, ${query})`),
 			desc(schema.question.createdAt)
 		)
 		.limit(limit);
 
 	return nestAnswer(rows);
+}
+
+// what else was asked about the same subject, shown under a question
+export async function relatedTo(slug: string, limit: number) {
+	const [source] = await db
+		// every non-stop word of the title and body
+		.select({ lexemes: sql<string[]>`tsvector_to_array(${schema.question.searchVector})` })
+		.from(schema.question)
+		.where(eq(schema.question.slug, slug))
+		.limit(1);
+
+	const lexemes = source?.lexemes.filter(isSubjectWord) ?? [];
+	if (lexemes.length === 0) return [];
+
+	const terms = new Set(lexemes.flatMap((lexeme) => compoundTerms(lexeme)));
+
+	return rankedByTerms(terms, ne(schema.question.slug, slug), limit);
+}
+
+// how many words of the typed text end up in the query, so a long body stays affordable
+// to search for while the asker is still typing
+const SIMILAR_MAX_WORDS = 12;
+
+// what the picked politician's fraction was already asked, from the text an asker is typing.
+// the sibling of relatedTo for people who have no question yet, so duplicates surface
+// before one is created
+export async function similarForFraction(text: string, politicianId: string, limit: number) {
+	const words = splitWords(text).filter(isSubjectWord).slice(0, SIMILAR_MAX_WORDS);
+	if (words.length === 0) return [];
+
+	// to_tsquery normalises the terms itself, so raw words need no stemming beforehand
+	const terms = new Set(words.flatMap((word) => compoundTerms(word)));
+
+	// the fraction the picked politician sits in, empty when they are unknown or inactive
+	const askableFraction = db
+		.select({ fractionId: schema.politician.fractionId })
+		.from(schema.politician)
+		.where(and(eq(schema.politician.id, politicianId), eq(schema.politician.isActive, true)));
+
+	// the fraction a question was addressed to, snapshotted when it was asked
+	return rankedByTerms(terms, inArray(schema.question.assigneeFractionId, askableFraction), limit);
 }
 
 // a public figure about a politician, so it counts approved rows only, whoever is looking

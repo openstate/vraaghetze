@@ -45,7 +45,7 @@ export class SearchForm {
 	constructor(options: Options) {
 		this.key = options.key ?? 'q';
 		this.term = untrack(options.term);
-		this.#debouncedSubmit = debounce(() => this.submit(), options.delay ?? 300);
+		this.#debouncedSubmit = debounce(() => this.submit(), options.delay);
 
 		// back and forward go to a url this form did not write, so the term follows it
 		afterNavigate((navigation) => {

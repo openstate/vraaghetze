@@ -4,7 +4,7 @@ import { schema, type Transaction } from '$lib/server/db';
 
 const WORD_MIN_LENGTH = 2;
 
-function splitWords(term: string) {
+export function splitWords(term: string) {
 	// splits on every run of characters that is neither a letter nor a digit
 	return term.split(/[^\p{L}\p{N}]+/u).filter((word) => word.length >= WORD_MIN_LENGTH);
 }
