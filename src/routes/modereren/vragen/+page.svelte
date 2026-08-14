@@ -1,119 +1,85 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
-	import { createColumnHelper, renderComponent, renderSnippet } from '@tanstack/svelte-table';
-	import DetailsDialog, { type Detail } from '$lib/components/details-dialog.svelte';
-	import DataTable, { features } from '$lib/components/data-table.svelte';
-	import DateTime from '$lib/components/date-time.svelte';
-	import StatusPill, { moderationStatusPills } from '$lib/components/status-pill.svelte';
-	import Pagination from '$lib/components/pagination.svelte';
+	import Avatar from '$lib/components/avatar.svelte';
+	import Button from '$lib/components/button.svelte';
+	import { formatDateLong } from '$lib/date-time';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
-	type Row = (typeof data.rows)[number];
-
-	const helper = createColumnHelper<typeof features, Row>();
-
-	const columns = helper.columns([
-		helper.display({
-			id: 'details',
-			header: '',
-			meta: { class: 'w-14' },
-			cell: (cell) =>
-				renderComponent(DetailsDialog, {
-					title: dialogTitles[cell.row.original.status],
-					details: details(cell.row.original)
-				})
-		}),
-		helper.accessor('title', {
-			header: 'Vraag',
-			cell: (cell) => renderSnippet(titleLink, cell.row.original)
-		}),
-		helper.accessor('authorName', {
-			header: 'Vraagsteller',
-			meta: { class: 'w-44' }
-		}),
-		helper.accessor('politicianName', {
-			header: 'Kamerlid',
-			meta: { class: 'w-44' },
-			cell: (cell) => renderSnippet(politicianLink, cell.row.original)
-		}),
-		helper.accessor('status', {
-			header: 'Status',
-			meta: { class: 'w-40' },
-			cell: (cell) => renderComponent(StatusPill, moderationStatusPills[cell.getValue()])
-		}),
-		helper.accessor('createdAt', {
-			header: 'Aangemaakt',
-			meta: { class: 'w-44' },
-			cell: (cell) => renderComponent(DateTime, { value: cell.getValue(), time: true })
-		}),
-		helper.accessor('answeredAt', {
-			header: 'Beantwoord',
-			meta: { class: 'w-44' },
-			cell: (cell) => renderSnippet(answeredCell, cell.row.original)
-		})
-	]);
-
-	const dialogTitles = {
-		pending: 'Ongemodereerde vraag',
-		approved: 'Goedgekeurde vraag',
-		rejected: 'Afgewezen vraag'
-	} satisfies Record<Row['status'], string>;
-
-	function details(row: Row) {
-		return [
-			['Vraag', row.title],
-			['Context', row.body || '—'],
-			['Vraagsteller', row.authorName],
-			['Kamerlid', row.politicianName],
-			['Aangemaakt op', row.createdAt],
-			['Moderatiestatus', moderationStatusPills[row.status].label],
-			['Moderatiereden', row.rejectionReason],
-			['Moderatienotitie', row.note],
-			['Gemodereerd op', row.moderatedAt],
-			['Gemodereerd door', row.moderatorName],
-			['Beantwoord op', row.answeredAt]
-		] satisfies Detail[];
-	}
+	const inputClass =
+		'rounded border bg-white border-osf-canvas-200 px-3 py-2 focus:border-osf-violet-500 focus:outline-none';
 </script>
 
-{#snippet titleLink(row: Row)}
-	{#if row.status === 'approved'}
-		<a
-			href={resolve('/vragen/[slug]', { slug: row.slug })}
-			title={row.title}
-			class="hover:underline"
-		>
-			{row.title}
-		</a>
-	{:else}
-		<span title={row.title}>{row.title}</span>
-	{/if}
-{/snippet}
+{#if form?.error}
+	<p class="mb-4 text-sm text-osf-shocking-pink">{form.error}</p>
+{/if}
 
-{#snippet answeredCell(row: Row)}
-	{#if row.answeredAt !== null}
-		<DateTime value={row.answeredAt} time />
-	{:else}
-		<span class="text-osf-canvas-400">
-			{#if row.status === 'approved'}
-				Niet beantwoord
-			{:else}
-				&mdash;
-			{/if}
-		</span>
-	{/if}
-{/snippet}
+{#if data.queue.length === 0}
+	<p class="text-osf-canvas-500">Geen vragen in de wachtrij.</p>
+{:else}
+	<ul class="grid gap-3">
+		{#each data.queue as question (question.id)}
+			<li>
+				<article class="overflow-hidden rounded bg-osf-canvas-100">
+					<div class="p-5">
+						<p class="text-sm text-osf-canvas-600">
+							Vraag van {question.authorName} op {formatDateLong(question.createdAt)}
+						</p>
 
-{#snippet politicianLink(row: Row)}
-	{#if row.politicianSlug === null}
-		{row.politicianName}
-	{:else}
-		<a href={resolve('/politici/[slug]', { slug: row.politicianSlug })} class="hover:underline">
-			{row.politicianName}
-		</a>
-	{/if}
-{/snippet}
+						<p class="mt-3 font-serif text-xl/snug">{question.title}</p>
 
-<DataTable {columns} rows={data.rows} />
-<Pagination count={data.total} page={data.page} perPage={data.perPage} />
+						<p class="mt-2 whitespace-pre-wrap text-osf-canvas-500">{question.body}</p>
+
+						<div class="mt-4 flex items-center gap-3">
+							<a
+								href={resolve('/politici/[slug]', { slug: question.politicianSlug })}
+								class="shrink-0"
+								aria-hidden="true"
+								tabindex="-1"
+							>
+								<Avatar
+									size={40}
+									name={question.politicianName}
+									src={resolve('/politici/[slug]/foto', { slug: question.politicianSlug })}
+								/>
+							</a>
+							<p class="text-sm text-osf-canvas-600">
+								Gesteld aan
+								<a
+									href={resolve('/politici/[slug]', { slug: question.politicianSlug })}
+									class="hover:underline"
+								>
+									{question.politicianName}
+									{#if question.fraction ?? question.fractionName}
+										({question.fraction ?? question.fractionName})
+									{/if}
+								</a>
+							</p>
+						</div>
+					</div>
+
+					<hr class="mx-5 border-osf-canvas-200" />
+
+					<form method="POST" use:enhance class="grid gap-4 p-5">
+						<input type="hidden" name="questionId" value={question.id} />
+
+						<label class="grid gap-1.5">
+							<span class="text-sm font-medium">Interne notitie (optioneel)</span>
+							<textarea name="note" rows="2" class={inputClass}></textarea>
+						</label>
+
+						<div class="flex flex-wrap gap-2">
+							<Button type="submit" name="action" value="approved" variant="primary">
+								Keur goed
+							</Button>
+							<Button type="submit" name="action" value="rejected" variant="secondary">
+								Wijs af
+							</Button>
+						</div>
+					</form>
+				</article>
+			</li>
+		{/each}
+	</ul>
+{/if}

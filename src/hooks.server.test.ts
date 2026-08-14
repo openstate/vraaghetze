@@ -24,7 +24,12 @@ async function guard(routeId: string | null, user: App.Locals['user'] = undefine
 	return { blockedWith: thrown?.status, passedThrough: resolve.mock.calls.length > 0 };
 }
 
-const moderationRoutes = ['/modereren', '/modereren/wachtrij', '/modereren/inbox'];
+const moderationRoutes = [
+	'/modereren',
+	'/modereren/vragen',
+	'/modereren/antwoorden',
+	'/modereren/inbox'
+];
 
 describe('handleAuthorization', () => {
 	test.each(moderationRoutes)('refuses an anonymous visitor of %s', async (routeId) => {

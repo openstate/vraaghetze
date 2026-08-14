@@ -5,13 +5,12 @@ import { validateForm } from '$lib/server/utils/forms';
 import type { Actions, PageServerLoad } from './$types';
 
 const moderationSchema = z.object({
-	questionId: z.string().min(1),
-	action: z.enum(['approved', 'rejected']),
-	note: z.string().trim().optional()
+	answerId: z.string().min(1),
+	action: z.enum(['approved', 'rejected'])
 });
 
 export const load: PageServerLoad = async () => {
-	return { queue: await moderation.listQueue() };
+	return { queue: await moderation.listAnswerQueue() };
 };
 
 export const actions = {
@@ -19,20 +18,13 @@ export const actions = {
 		const result = await validateForm(request, moderationSchema);
 		if (!result.valid || !locals.user) return fail(400, { error: 'Ongeldige aanvraag.' });
 
-		const outcome = await moderation.moderate({
-			questionId: result.data.questionId,
+		const outcome = await moderation.moderateAnswer({
+			answerId: result.data.answerId,
 			moderatorId: locals.user.id,
-			action: result.data.action,
-			note: result.data.note || undefined
+			action: result.data.action
 		});
 
-		if ('error' in outcome)
-			return fail(409, {
-				error:
-					outcome.error === 'not-verified'
-						? 'Deze vraag is nog niet bevestigd door de vraagsteller.'
-						: 'Deze vraag is al behandeld.'
-			});
-		return { moderated: result.data.questionId };
+		if ('error' in outcome) return fail(409, { error: 'Dit antwoord is al behandeld.' });
+		return { moderated: result.data.answerId };
 	}
 } satisfies Actions;

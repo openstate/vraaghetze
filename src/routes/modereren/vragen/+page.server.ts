@@ -1,9 +1,38 @@
+import { fail } from '@sveltejs/kit';
+import { z } from 'zod';
 import * as moderation from '$lib/server/moderation';
-import { parsePagination } from '$lib/pagination';
-import type { PageServerLoad } from './$types';
+import { validateForm } from '$lib/server/utils/forms';
+import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url }) => {
-	const pagination = parsePagination(url);
-	const questions = await moderation.listQuestions(pagination);
-	return { ...questions, ...pagination };
+const moderationSchema = z.object({
+	questionId: z.string().min(1),
+	action: z.enum(['approved', 'rejected']),
+	note: z.string().trim().optional()
+});
+
+export const load: PageServerLoad = async () => {
+	return { queue: await moderation.listQuestionQueue() };
 };
+
+export const actions = {
+	default: async ({ request, locals }) => {
+		const result = await validateForm(request, moderationSchema);
+		if (!result.valid || !locals.user) return fail(400, { error: 'Ongeldige aanvraag.' });
+
+		const outcome = await moderation.moderateQuestion({
+			questionId: result.data.questionId,
+			moderatorId: locals.user.id,
+			action: result.data.action,
+			note: result.data.note || undefined
+		});
+
+		if ('error' in outcome)
+			return fail(409, {
+				error:
+					outcome.error === 'not-verified'
+						? 'Deze vraag is nog niet bevestigd door de vraagsteller.'
+						: 'Deze vraag is al behandeld.'
+			});
+		return { moderated: result.data.questionId };
+	}
+} satisfies Actions;

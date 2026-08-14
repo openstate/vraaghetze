@@ -106,7 +106,7 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 		`${asker.name} stelt u via VraagHetZe de volgende vraag:`,
 		`"${question.title}"`,
 		`"${question.body}"`,
-		`U kunt antwoorden door simpelweg deze e-mail te beantwoorden. Uw antwoord verschijnt daarna openbaar bij de vraag op ${env.ORIGIN}/vragen/${question.slug}.`,
+		`U kunt antwoorden door simpelweg deze e-mail te beantwoorden. Uw antwoord wordt eerst door onze moderatoren gecontroleerd en verschijnt daarna openbaar bij de vraag op ${env.ORIGIN}/vragen/${question.slug}.`,
 		`Met vriendelijke groet,\nHet VraagHetZe-team`
 	]
 		.filter(Boolean)

@@ -59,6 +59,24 @@ async function createQuestion(overrides: Partial<typeof schema.question.$inferIn
 	return { question, asker, politician };
 }
 
+async function createAnswer(
+	question: { id: string; assigneeId: string },
+	overrides: Partial<typeof schema.answer.$inferInsert> = {}
+) {
+	const [answer] = await db
+		.insert(schema.answer)
+		.values({
+			id: crypto.randomUUID(),
+			questionId: question.id,
+			userId: question.assigneeId,
+			body: 'Mijn antwoord op uw vraag.',
+			...overrides
+		})
+		.returning();
+
+	return answer;
+}
+
 async function getQuestion(questionId: string) {
 	const [question] = await db
 		.select()
@@ -67,8 +85,20 @@ async function getQuestion(questionId: string) {
 	return question;
 }
 
+async function getAnswer(answerId: string) {
+	const [answer] = await db.select().from(schema.answer).where(eq(schema.answer.id, answerId));
+	return answer;
+}
+
 async function getEnqueuedMails(questionId: string) {
 	return db.select().from(schema.outbox).where(eq(schema.outbox.questionId, questionId));
+}
+
+async function getAnswerAudit(answerId: string) {
+	return db
+		.select()
+		.from(schema.moderationAction)
+		.where(eq(schema.moderationAction.answerId, answerId));
 }
 
 beforeEach(async () => {
@@ -85,7 +115,7 @@ afterEach(() => {
 	testEnv.DIVERSION_EMAIL = '';
 });
 
-describe('listQueue', () => {
+describe('listQuestionQueue', () => {
 	test('lists only verified pending questions, oldest first', async () => {
 		const older = await createQuestion({ createdAt: new Date('2026-07-01') });
 		const newer = await createQuestion({ createdAt: new Date('2026-07-10') });
@@ -93,18 +123,148 @@ describe('listQueue', () => {
 		await createQuestion({ status: 'approved' });
 		await createQuestion({ status: 'rejected' });
 
-		const queue = await moderation.listQueue();
+		const queue = await moderation.listQuestionQueue();
 
 		expect(queue.map((row) => row.id)).toEqual([older.question.id, newer.question.id]);
 	});
 });
 
-describe('moderate', () => {
+describe('listAnswerQueue', () => {
+	test('lists only pending answers, oldest first', async () => {
+		const { question, asker } = await createQuestion({ status: 'approved' });
+		const older = await createAnswer(question, { createdAt: new Date('2026-07-01') });
+		const newer = await createAnswer(question, { createdAt: new Date('2026-07-10') });
+		await createAnswer(question, { status: 'approved' });
+		await createAnswer(question, { status: 'rejected' });
+
+		const queue = await moderation.listAnswerQueue();
+
+		expect(queue.map((row) => row.id)).toEqual([older.id, newer.id]);
+		expect(queue[0]).toMatchObject({
+			body: 'Mijn antwoord op uw vraag.',
+			questionTitle: question.title,
+			questionBody: question.body,
+			questionSlug: question.slug,
+			authorName: asker.name,
+			politicianName: 'Jan Jansen'
+		});
+	});
+});
+
+describe('countQueues', () => {
+	test('counts what is waiting in both queues', async () => {
+		const { question } = await createQuestion();
+		await createQuestion({ verifiedAt: null });
+		await createQuestion({ status: 'approved' });
+
+		await createAnswer(question);
+		await createAnswer(question);
+		await createAnswer(question, { status: 'approved' });
+
+		expect(await moderation.countQueues()).toEqual({ questions: 1, answers: 2 });
+	});
+});
+
+describe('moderateAnswer', () => {
+	test('approves an answer and notifies the asker and the followers', async () => {
+		const { question, asker, politician } = await createQuestion({ status: 'approved' });
+		const answer = await createAnswer(question);
+		const moderator = await createUser('Mo Moderator');
+		const follower = await createUser('Fatima Volger');
+
+		await db
+			.insert(schema.questionFollow)
+			.values({ id: crypto.randomUUID(), questionId: question.id, userId: follower.id });
+
+		const result = await moderation.moderateAnswer({
+			answerId: answer.id,
+			moderatorId: moderator.id,
+			action: 'approved'
+		});
+
+		expect(result).toEqual({ action: 'approved' });
+		expect((await getAnswer(answer.id)).status).toBe('approved');
+
+		expect(await getAnswerAudit(answer.id)).toMatchObject([
+			{ moderatorId: moderator.id, action: 'approved', note: null, questionId: null }
+		]);
+
+		const mails = await getEnqueuedMails(question.id);
+		expect(mails).toHaveLength(2);
+		const askerMail = mails.find((mail) => mail.kind === 'answer-notification');
+		expect(askerMail).toMatchObject({ recipient: asker.email });
+		expect(askerMail?.body).toContain(politician.name);
+		expect(mails.find((mail) => mail.kind === 'follow-notification')).toMatchObject({
+			recipient: follower.email
+		});
+	});
+
+	test('ignores an answer without mailing anyone', async () => {
+		const { question } = await createQuestion({ status: 'approved' });
+		const answer = await createAnswer(question);
+		const moderator = await createUser('Mo Moderator');
+
+		const result = await moderation.moderateAnswer({
+			answerId: answer.id,
+			moderatorId: moderator.id,
+			action: 'rejected'
+		});
+
+		expect(result).toEqual({ action: 'rejected' });
+		expect((await getAnswer(answer.id)).status).toBe('rejected');
+		expect(await getAnswerAudit(answer.id)).toHaveLength(1);
+		expect(await getEnqueuedMails(question.id)).toHaveLength(0);
+	});
+
+	test('ignores the other waiting answers when one is approved', async () => {
+		const { question } = await createQuestion({ status: 'approved' });
+		const automatic = await createAnswer(question, { body: 'Ik ben afwezig tot 1 september.' });
+		const real = await createAnswer(question);
+		const moderator = await createUser('Mo Moderator');
+
+		await moderation.moderateAnswer({
+			answerId: real.id,
+			moderatorId: moderator.id,
+			action: 'approved'
+		});
+
+		expect((await getAnswer(automatic.id)).status).toBe('rejected');
+		expect(await getAnswerAudit(automatic.id)).toMatchObject([
+			{ moderatorId: moderator.id, action: 'rejected' }
+		]);
+		expect(await moderation.listAnswerQueue()).toHaveLength(0);
+	});
+
+	test('treats a second moderation of the same answer as already handled', async () => {
+		const { question } = await createQuestion({ status: 'approved' });
+		const answer = await createAnswer(question);
+		const moderator = await createUser('Mo Moderator');
+
+		const first = await moderation.moderateAnswer({
+			answerId: answer.id,
+			moderatorId: moderator.id,
+			action: 'approved'
+		});
+		const second = await moderation.moderateAnswer({
+			answerId: answer.id,
+			moderatorId: moderator.id,
+			action: 'rejected'
+		});
+
+		expect(first).toEqual({ action: 'approved' });
+		expect(second).toEqual({ error: 'already-handled' });
+		expect((await getAnswer(answer.id)).status).toBe('approved');
+		expect(await getAnswerAudit(answer.id)).toHaveLength(1);
+		expect(await getEnqueuedMails(question.id)).toHaveLength(1);
+	});
+});
+
+describe('moderateQuestion', () => {
 	test('approves a question, mints a reply token and mails both parties', async () => {
 		const { question, asker, politician } = await createQuestion();
 		const moderator = await createUser('Mo Moderator');
 
-		const result = await moderation.moderate({
+		const result = await moderation.moderateQuestion({
 			questionId: question.id,
 			moderatorId: moderator.id,
 			action: 'approved',
@@ -144,7 +304,7 @@ describe('moderate', () => {
 		const { question } = await createQuestion();
 		const moderator = await createUser('Mo Moderator');
 
-		await moderation.moderate({
+		await moderation.moderateQuestion({
 			questionId: question.id,
 			moderatorId: moderator.id,
 			action: 'approved'
@@ -159,7 +319,7 @@ describe('moderate', () => {
 		const { question, asker } = await createQuestion();
 		const moderator = await createUser('Mo Moderator');
 
-		const result = await moderation.moderate({
+		const result = await moderation.moderateQuestion({
 			questionId: question.id,
 			moderatorId: moderator.id,
 			action: 'rejected'
@@ -179,12 +339,12 @@ describe('moderate', () => {
 		const { question } = await createQuestion();
 		const moderator = await createUser('Mo Moderator');
 
-		const first = await moderation.moderate({
+		const first = await moderation.moderateQuestion({
 			questionId: question.id,
 			moderatorId: moderator.id,
 			action: 'approved'
 		});
-		const second = await moderation.moderate({
+		const second = await moderation.moderateQuestion({
 			questionId: question.id,
 			moderatorId: moderator.id,
 			action: 'rejected'
@@ -205,7 +365,7 @@ describe('moderate', () => {
 		const { question } = await createQuestion({ verifiedAt: null });
 		const moderator = await createUser('Mo Moderator');
 
-		const result = await moderation.moderate({
+		const result = await moderation.moderateQuestion({
 			questionId: question.id,
 			moderatorId: moderator.id,
 			action: 'approved'

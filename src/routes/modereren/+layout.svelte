@@ -5,16 +5,25 @@
 	import { Tabs } from 'bits-ui';
 	import Page from '$lib/components/page.svelte';
 
-	let { children } = $props();
+	let { children, data } = $props();
 
-	const tabs = [
-		{ value: 'wachtrij', label: 'Wachtrij', href: resolve('/modereren/wachtrij') },
-		{ value: 'vragen', label: 'Vragen', href: resolve('/modereren/vragen') },
+	const tabs = $derived([
+		{
+			value: 'vragen',
+			label: `Vragen (${data.queues.questions})`,
+			href: resolve('/modereren/vragen')
+		},
+		{
+			value: 'antwoorden',
+			label: `Antwoorden (${data.queues.answers})`,
+			href: resolve('/modereren/antwoorden')
+		},
+		{ value: 'archief', label: 'Archief', href: resolve('/modereren/archief') },
 		{ value: 'inbox', label: 'Inbox', href: resolve('/modereren/inbox') },
 		{ value: 'outbox', label: 'Outbox', href: resolve('/modereren/outbox') }
-	];
+	]);
 
-	const currentTab = $derived(page.url.pathname.split('/')[2] ?? 'wachtrij');
+	const currentTab = $derived(page.url.pathname.split('/')[2] ?? 'vragen');
 </script>
 
 <Page width="wide">

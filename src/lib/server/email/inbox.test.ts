@@ -87,8 +87,8 @@ afterEach(() => {
 });
 
 describe('receiveInboundEmail', () => {
-	test('publishes the answer and notifies the asker', async () => {
-		const { question, asker, politician } = await createQuestion();
+	test('stores the answer for moderation without notifying anyone', async () => {
+		const { question, politician } = await createQuestion();
 
 		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
 
@@ -105,42 +105,33 @@ describe('receiveInboundEmail', () => {
 		expect(answer).toMatchObject({
 			userId: politician.id,
 			body: 'Mijn antwoord op uw vraag.',
-			status: 'approved'
+			status: 'pending'
 		});
 		expect(stored.answerId).toBe(answer.id);
-
-		const [notification] = await db
-			.select()
-			.from(schema.outbox)
-			.where(eq(schema.outbox.questionId, question.id));
-
-		expect(notification).toMatchObject({ kind: 'answer-notification', recipient: asker.email });
-	});
-
-	test('notifies everyone following the question as well', async () => {
-		const { question, asker, politician } = await createQuestion();
-		const first = await createUser('Fatima Volger');
-		const second = await createUser('Freek Volger');
-
-		await db.insert(schema.questionFollow).values([
-			{ id: crypto.randomUUID(), questionId: question.id, userId: first.id },
-			{ id: crypto.randomUUID(), questionId: question.id, userId: second.id }
-		]);
-
-		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
 
 		const mails = await db
 			.select()
 			.from(schema.outbox)
 			.where(eq(schema.outbox.questionId, question.id));
 
-		expect(mails).toHaveLength(3);
-		expect(mails.filter((mail) => mail.kind === 'answer-notification')).toMatchObject([
-			{ recipient: asker.email }
-		]);
-		expect(
-			mails.filter((mail) => mail.kind === 'follow-notification').map((mail) => mail.recipient)
-		).toEqual(expect.arrayContaining([first.email, second.email]));
+		expect(mails).toHaveLength(0);
+	});
+
+	test('stores a second reply as long as nothing has been published', async () => {
+		const { question, politician } = await createQuestion();
+
+		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
+		await receiveInboundEmail(
+			makeEmail(politician.email, question.emailToken, { text: 'Nu mijn echte antwoord.' })
+		);
+
+		const answers = await db
+			.select()
+			.from(schema.answer)
+			.where(eq(schema.answer.questionId, question.id));
+
+		expect(answers).toHaveLength(2);
+		expect(answers.map((answer) => answer.status)).toEqual(['pending', 'pending']);
 	});
 
 	test('ignores a duplicate delivery of the same mail', async () => {

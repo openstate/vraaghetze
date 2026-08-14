@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db, schema } from '$lib/server/db';
-import { enqueueAnswerMail, enqueueFollowerMails, resolveMailAddress } from './templates';
+import { resolveMailAddress } from './templates';
 import {
 	dedupKey,
 	extractAddress,
@@ -63,17 +63,11 @@ async function processMail(mail: InboxRow) {
 	const [question] = await db
 		.select({
 			id: schema.question.id,
-			slug: schema.question.slug,
-			title: schema.question.title,
 			status: schema.question.status,
 			assigneeId: schema.question.assigneeId,
-			politicianName: politicianUser.name,
-			politicianEmail: politicianUser.email,
-			askerName: schema.user.name,
-			askerEmail: schema.user.email
+			politicianEmail: politicianUser.email
 		})
 		.from(schema.question)
-		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.where(eq(schema.question.emailToken, mail.token))
 		.limit(1);
@@ -109,17 +103,14 @@ async function processMail(mail: InboxRow) {
 	await db.transaction(async (tx) => {
 		const answerId = crypto.randomUUID();
 
+		// a politician often sends an automatic reply before the real one and the two can't be
+		// told apart reliably, so the answer waits for a moderator instead of going public
 		await tx.insert(schema.answer).values({
 			id: answerId,
 			questionId: question.id,
 			userId: question.assigneeId,
-			body: replyText,
-			status: 'approved'
+			body: replyText
 		});
-
-		// notify the asker that their question has been answered, and everyone following it
-		await enqueueAnswerMail(tx, question);
-		await enqueueFollowerMails(tx, question);
 
 		await tx
 			.update(schema.inbox)
