@@ -13,6 +13,7 @@
 	type Row = (typeof data.rows)[number];
 
 	const outboxKindLabels: Record<OutboxKind, string> = {
+		'question-confirmation': 'Vraagbevestiging',
 		'question-notification': 'Vraagmelding',
 		'moderation-notification': 'Moderatiemelding',
 		'answer-notification': 'Antwoordmelding',

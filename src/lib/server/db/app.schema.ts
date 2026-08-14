@@ -126,6 +126,7 @@ export const moderationAction = pgTable(
 );
 
 export type OutboxKind =
+	| 'question-confirmation'
 	| 'question-notification'
 	| 'moderation-notification'
 	| 'answer-notification'

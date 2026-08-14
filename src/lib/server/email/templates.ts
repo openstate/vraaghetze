@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
-import { schema, type Transaction } from '$lib/server/db';
+import { db, schema, type Transaction } from '$lib/server/db';
 import { enqueueMail, sendMail } from './outbox';
 
 // pre-launch safety: when DIVERSION_EMAIL is set, all politician-facing mail goes to
@@ -36,6 +36,45 @@ export function sendMagicLinkMail({ recipient, url, purpose, expiresAt }: MagicL
 	const { subject, body } = magicLinkCopy[purpose](url);
 
 	return sendMail({ kind: 'magic-link', recipient, subject, body, expiresAt });
+}
+
+type VerifiedQuestion = {
+	id: string;
+	title: string;
+	slug: string;
+	userId: string;
+	assigneeId: string;
+};
+
+// sends a receipt to the asker as soon as the question is theirs for certain and before a
+// moderator has looked at it
+export async function sendConfirmationMail(question: VerifiedQuestion) {
+	const [asker] = await db
+		.select({ name: schema.user.name, email: schema.user.email })
+		.from(schema.user)
+		.where(eq(schema.user.id, question.userId))
+		.limit(1);
+
+	const [politician] = await db
+		.select({ name: schema.user.name })
+		.from(schema.user)
+		.where(eq(schema.user.id, question.assigneeId))
+		.limit(1);
+
+	const body = [
+		`Beste ${asker.name},`,
+		`We hebben je vraag "${question.title}" aan ${politician.name} ontvangen. Onze moderatoren beoordelen je vraag eerst aan de hand van de spelregels; je vraag is daarom nog niet openbaar.`,
+		`Zodra je vraag is goedgekeurd, sturen we deze door naar ${politician.name} en krijg je daarvan bericht. Je kunt je vraag alvast teruglezen op ${env.ORIGIN}/vragen/${question.slug}.`,
+		`Met vriendelijke groet,\nHet VraagHetZe-team`
+	].join('\n\n');
+
+	return sendMail({
+		kind: 'question-confirmation',
+		questionId: question.id,
+		recipient: asker.email,
+		subject: 'We hebben je vraag op VraagHetZe ontvangen',
+		body
+	});
 }
 
 type ModeratedQuestion = {

@@ -14,6 +14,7 @@ import {
 } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db, schema, type Transaction } from '$lib/server/db';
+import { sendConfirmationMail } from '$lib/server/email/templates';
 import { splitWords } from '$lib/server/search';
 import { slugify, slugifyUnique } from '$lib/server/utils/slug';
 import { hasPermission } from '$lib/permissions';
@@ -340,8 +341,15 @@ type CreateQuestion = {
 	currentUserId: string | null;
 };
 
-export function create({ name, email, title, body, politicianId, currentUserId }: CreateQuestion) {
-	return db.transaction(async (tx) => {
+export async function create({
+	name,
+	email,
+	title,
+	body,
+	politicianId,
+	currentUserId
+}: CreateQuestion) {
+	const created = await db.transaction(async (tx) => {
 		// questions can only be addressed to currently active politicians
 		const [politician] = await tx
 			.select({ userId: schema.politician.userId, fractionId: schema.politician.fractionId })
@@ -376,8 +384,10 @@ export function create({ name, email, title, body, politicianId, currentUserId }
 
 		const slug = await slugifyUniqueQuestion(tx, title);
 
+		const questionId = crypto.randomUUID();
+
 		await tx.insert(schema.question).values({
-			id: crypto.randomUUID(),
+			id: questionId,
 			userId,
 			title,
 			slug,
@@ -388,8 +398,16 @@ export function create({ name, email, title, body, politicianId, currentUserId }
 			verifiedAt: currentUserId ? new Date() : null
 		});
 
-		return { slug };
+		return { id: questionId, title, slug, userId, assigneeId: politician.userId };
 	});
+
+	if ('error' in created) return created;
+
+	// the asker is verified, so the receipt goes out now; an unverified asker gets theirs
+	// once they claim the question
+	if (currentUserId) await sendConfirmationMail(created);
+
+	return { slug: created.slug };
 }
 
 export async function pendingConfirmation(slug: string, userId: string) {
@@ -405,14 +423,39 @@ export async function pendingConfirmation(slug: string, userId: string) {
 }
 
 export async function claimQuestion(slug: string, userId: string) {
-	const claimed = await db
-		.update(schema.question)
-		// coalesce keeps the original timestamp, so re-confirming stays idempotent
-		.set({ verifiedAt: sql`coalesce(${schema.question.verifiedAt}, now())` })
-		.where(and(eq(schema.question.slug, slug), eq(schema.question.userId, userId)))
-		.returning({ id: schema.question.id });
+	const claim = await db.transaction(async (tx) => {
+		const [question] = await tx
+			.select({
+				id: schema.question.id,
+				title: schema.question.title,
+				slug: schema.question.slug,
+				userId: schema.question.userId,
+				assigneeId: schema.question.assigneeId,
+				verifiedAt: schema.question.verifiedAt
+			})
+			.from(schema.question)
+			.where(and(eq(schema.question.slug, slug), eq(schema.question.userId, userId)))
+			.limit(1)
+			// the lock makes a double-submitted confirmation wait instead of mailing twice
+			.for('update');
 
-	return claimed.length > 0;
+		if (!question) return { owned: false, verified: null }; // not the owner / no such question
+
+		// already claimed, so the receipt went out earlier and re-confirming changes nothing
+		if (question.verifiedAt) return { owned: true, verified: null };
+
+		await tx
+			.update(schema.question)
+			.set({ verifiedAt: new Date() })
+			.where(eq(schema.question.id, question.id));
+
+		return { owned: true, verified: question };
+	});
+
+	// only the claim that verified the question sends the receipt, once the row is committed
+	if (claim.verified) await sendConfirmationMail(claim.verified);
+
+	return claim.owned;
 }
 
 export async function disownQuestion(slug: string, userId: string) {

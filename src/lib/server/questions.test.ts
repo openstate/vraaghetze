@@ -1,7 +1,15 @@
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as questions from './questions';
+
+const testEnv = vi.hoisted(() => ({
+	DIVERSION_EMAIL: '',
+	EMAIL_DOMAIN: 'test.example',
+	ORIGIN: 'https://test.example'
+}));
+
+vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
 
 async function createUser(name: string, overrides: Partial<typeof schema.user.$inferInsert> = {}) {
 	const id = crypto.randomUUID();
@@ -68,6 +76,10 @@ async function getQuestionBySlug(slug: string) {
 	return question;
 }
 
+async function getMails(questionId: string) {
+	return db.select().from(schema.outbox).where(eq(schema.outbox.questionId, questionId));
+}
+
 beforeEach(async () => {
 	await db.transaction(async (tx) => {
 		await tx.delete(schema.moderationAction);
@@ -105,6 +117,41 @@ describe('create', () => {
 			status: 'pending'
 		});
 		expect(question.verifiedAt).not.toBeNull();
+	});
+
+	test('confirms a signed-in asker’s question by mail right away', async () => {
+		const { politician } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+
+		await questions.create({
+			...questionInput,
+			politicianId: politician.id,
+			currentUserId: asker.id
+		});
+
+		const question = await getQuestionBySlug('wat-vindt-u-van-de-toeslagen');
+		const mails = await getMails(question.id);
+		expect(mails).toHaveLength(1);
+		expect(mails[0]).toMatchObject({
+			kind: 'question-confirmation',
+			recipient: asker.email,
+			status: 'sent'
+		});
+		expect(mails[0].body).toContain(question.title);
+		expect(mails[0].body).toContain(`${testEnv.ORIGIN}/vragen/${question.slug}`);
+	});
+
+	test('holds back the confirmation until an unverified asker claims the question', async () => {
+		const { politician } = await createPolitician();
+
+		await questions.create({
+			...questionInput,
+			politicianId: politician.id,
+			currentUserId: null
+		});
+
+		const question = await getQuestionBySlug('wat-vindt-u-van-de-toeslagen');
+		expect(await getMails(question.id)).toHaveLength(0);
 	});
 
 	test('rejects a question addressed to an inactive politician', async () => {
@@ -410,6 +457,24 @@ describe('question ownership', () => {
 
 		await questions.claimQuestion(question.slug, asker.id);
 		expect((await getQuestionBySlug(question.slug)).verifiedAt).not.toBeNull();
+	});
+
+	test('claimQuestion confirms by mail once', async () => {
+		const { politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt: null });
+
+		await questions.claimQuestion(question.slug, asker.id);
+		await questions.claimQuestion(question.slug, asker.id);
+
+		const mails = await getMails(question.id);
+		expect(mails).toHaveLength(1);
+		expect(mails[0]).toMatchObject({
+			kind: 'question-confirmation',
+			recipient: asker.email,
+			status: 'sent'
+		});
+		expect(mails[0].body).toContain(question.title);
 	});
 
 	test('disownQuestion deletes only the owner’s unverified question', async () => {
