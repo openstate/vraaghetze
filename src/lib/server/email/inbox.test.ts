@@ -117,6 +117,32 @@ describe('receiveInboundEmail', () => {
 		expect(notification).toMatchObject({ kind: 'answer-notification', recipient: asker.email });
 	});
 
+	test('notifies everyone following the question as well', async () => {
+		const { question, asker, politician } = await createQuestion();
+		const first = await createUser('Fatima Volger');
+		const second = await createUser('Freek Volger');
+
+		await db.insert(schema.questionFollow).values([
+			{ id: crypto.randomUUID(), questionId: question.id, userId: first.id },
+			{ id: crypto.randomUUID(), questionId: question.id, userId: second.id }
+		]);
+
+		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
+
+		const mails = await db
+			.select()
+			.from(schema.outbox)
+			.where(eq(schema.outbox.questionId, question.id));
+
+		expect(mails).toHaveLength(3);
+		expect(mails.filter((mail) => mail.kind === 'answer-notification')).toMatchObject([
+			{ recipient: asker.email }
+		]);
+		expect(
+			mails.filter((mail) => mail.kind === 'follow-notification').map((mail) => mail.recipient)
+		).toEqual(expect.arrayContaining([first.email, second.email]));
+	});
+
 	test('ignores a duplicate delivery of the same mail', async () => {
 		const { question, politician } = await createQuestion();
 		const email = makeEmail(politician.email, question.emailToken);

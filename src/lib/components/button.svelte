@@ -6,7 +6,14 @@
 		icon?: string;
 	};
 
-	let { variant = 'primary', icon, class: className = '', children, ...rest }: Props = $props();
+	let {
+		variant = 'primary',
+		icon,
+		disabled,
+		class: className = '',
+		children,
+		...rest
+	}: Props = $props();
 
 	const dynamicClass = $derived(
 		variant === 'primary'
@@ -17,10 +24,15 @@
 
 <Button.Root
 	{...rest}
+	{disabled}
 	class={[
-		'group grid w-fit cursor-pointer items-center font-mono',
+		'group grid w-fit items-center font-mono',
+		disabled ? 'cursor-default' : 'cursor-pointer',
+		icon !== undefined && 'grid-cols-[0_auto_2.75rem]',
+		// a disabled button does not answer the pointer, so the icon stays where it is
 		icon !== undefined &&
-			'grid-cols-[0_auto_2.75rem] motion-safe:transition-[grid] motion-safe:duration-200 motion-safe:ease-in-out motion-safe:hover:grid-cols-[2.75rem_auto_0] motion-reduce:hover:grid-cols-[0_auto_2.75rem]',
+			!disabled &&
+			'motion-safe:transition-[grid] motion-safe:duration-200 motion-safe:ease-in-out motion-safe:hover:grid-cols-[2.75rem_auto_0] motion-reduce:hover:grid-cols-[0_auto_2.75rem]',
 		className
 	]}
 >
@@ -28,7 +40,9 @@
 		<span
 			aria-hidden={true}
 			class={[
-				'mr-1 flex size-10 origin-left scale-0 items-center justify-center rounded-full group-hover:scale-100 motion-safe:duration-200 motion-safe:ease-in-out motion-reduce:group-hover:scale-0',
+				'mr-1 flex size-10 origin-left scale-0 items-center justify-center rounded-full',
+				!disabled &&
+					'group-hover:scale-100 motion-safe:transition-[scale] motion-safe:duration-200 motion-safe:ease-in-out motion-reduce:group-hover:scale-0',
 				dynamicClass
 			]}
 		>
@@ -49,7 +63,9 @@
 		<span
 			aria-hidden={true}
 			class={[
-				'ml-1 flex size-10 origin-left items-center justify-center rounded-full group-hover:scale-0 motion-safe:transition-[scale] motion-safe:duration-200 motion-safe:ease-in-out motion-reduce:group-hover:scale-100',
+				'ml-1 flex size-10 origin-left items-center justify-center rounded-full',
+				!disabled &&
+					'group-hover:scale-0 motion-safe:transition-[scale] motion-safe:duration-200 motion-safe:ease-in-out motion-reduce:group-hover:scale-100',
 				dynamicClass
 			]}
 		>

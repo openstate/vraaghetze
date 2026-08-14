@@ -7,25 +7,33 @@ import { enqueueMail, sendMail } from './outbox';
 // that address and replies from it are accepted as if from the assigned politician
 export const resolveMailAddress = (address: string) => env.DIVERSION_EMAIL || address;
 
+// the sign-in link is worded after the flow it was requested from
+const magicLinkCopy = {
+	confirm: (url: string) => ({
+		subject: 'Bevestig je vraag op VraagHetZe',
+		body: `Met dit e-mailadres is een vraag gesteld op VraagHetZe. Was jij dat? Bevestig je vraag via deze link: ${url}`
+	}),
+	follow: (url: string) => ({
+		subject: 'Volg een vraag op VraagHetZe',
+		body: `Met dit e-mailadres is aangegeven dat je een vraag op VraagHetZe wilt volgen. Bevestig via deze link en druk daarna op de bel bij de vraag: ${url}`
+	}),
+	login: (url: string) => ({
+		subject: 'Je inloglink voor VraagHetZe',
+		body: `Log hier in: ${url}`
+	})
+};
+
+export type MagicLinkPurpose = keyof typeof magicLinkCopy;
+
 type MagicLink = {
 	recipient: string;
 	url: string;
-	purpose: 'confirm' | 'login';
+	purpose: MagicLinkPurpose;
 	expiresAt: Date;
 };
 
-// sends the sign-in link, worded as a question confirmation when sent from the ask flow
 export function sendMagicLinkMail({ recipient, url, purpose, expiresAt }: MagicLink) {
-	const { subject, body } =
-		purpose === 'confirm'
-			? {
-					subject: 'Bevestig je vraag op VraagHetZe',
-					body: `Met dit e-mailadres is een vraag gesteld op VraagHetZe. Was jij dat? Bevestig je vraag via deze link: ${url}`
-				}
-			: {
-					subject: 'Je inloglink voor VraagHetZe',
-					body: `Log hier in: ${url}`
-				};
+	const { subject, body } = magicLinkCopy[purpose](url);
 
 	return sendMail({ kind: 'magic-link', recipient, subject, body, expiresAt });
 }
@@ -142,4 +150,30 @@ export function enqueueAnswerMail(tx: Transaction, question: AnsweredQuestion) {
 		body,
 		transaction: tx
 	});
+}
+
+// enqueues the same notification to everyone following the question
+export async function enqueueFollowerMails(tx: Transaction, question: AnsweredQuestion) {
+	const followers = await tx
+		.select({ name: schema.user.name, email: schema.user.email })
+		.from(schema.questionFollow)
+		.innerJoin(schema.user, eq(schema.questionFollow.userId, schema.user.id))
+		.where(eq(schema.questionFollow.questionId, question.id));
+
+	for (const follower of followers) {
+		const body = [
+			`Beste ${follower.name},`,
+			`De vraag "${question.title}" die je volgt is beantwoord door ${question.politicianName}. Je kunt het antwoord lezen op ${env.ORIGIN}/vragen/${question.slug}.`,
+			`Met vriendelijke groet,\nHet VraagHetZe-team`
+		].join('\n\n');
+
+		await enqueueMail({
+			kind: 'follow-notification',
+			questionId: question.id,
+			recipient: follower.email,
+			subject: 'Een vraag die je volgt is beantwoord',
+			body,
+			transaction: tx
+		});
+	}
 }

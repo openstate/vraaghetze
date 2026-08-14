@@ -16,6 +16,7 @@
 		'question-notification': 'Vraagmelding',
 		'moderation-notification': 'Moderatiemelding',
 		'answer-notification': 'Antwoordmelding',
+		'follow-notification': 'Volgmelding',
 		'magic-link': 'Inloglink'
 	};
 

@@ -8,7 +8,8 @@ import {
 	jsonb,
 	check,
 	customType,
-	index
+	index,
+	unique
 } from 'drizzle-orm/pg-core';
 import { account, session, user } from './auth.schema';
 import type { InboundEmail } from '../email/parse-inbound';
@@ -81,6 +82,24 @@ export const answer = pgTable(
 	]
 );
 
+export const questionFollow = pgTable(
+	'question_follow',
+	{
+		id: text().primaryKey(),
+		questionId: text()
+			.references(() => question.id, { onDelete: 'cascade' })
+			.notNull(),
+		userId: text()
+			.references(() => user.id, { onDelete: 'cascade' })
+			.notNull(),
+		createdAt: timestamp().defaultNow().notNull()
+	},
+	(table) => [
+		unique('question_follow_question_user_key').on(table.questionId, table.userId),
+		index('question_follow_user_id_idx').on(table.userId)
+	]
+);
+
 export const moderationAction = pgTable(
 	'moderation_action',
 	{
@@ -110,6 +129,7 @@ export type OutboxKind =
 	| 'question-notification'
 	| 'moderation-notification'
 	| 'answer-notification'
+	| 'follow-notification'
 	| 'magic-link';
 
 export type OutboxStatus = 'queued' | 'sending' | 'sent' | 'failed';
@@ -258,7 +278,19 @@ export const questionRelations = relations(question, ({ one, many }) => ({
 		relationName: 'assignedQuestions'
 	}),
 	moderationActions: many(moderationAction),
-	outboxMails: many(outbox)
+	outboxMails: many(outbox),
+	follows: many(questionFollow)
+}));
+
+export const questionFollowRelations = relations(questionFollow, ({ one }) => ({
+	question: one(question, {
+		fields: [questionFollow.questionId],
+		references: [question.id]
+	}),
+	user: one(user, {
+		fields: [questionFollow.userId],
+		references: [user.id]
+	})
 }));
 
 export const outboxRelations = relations(outbox, ({ one }) => ({
@@ -317,5 +349,6 @@ export const userRelations = relations(user, ({ one, many }) => ({
 	questions: many(question),
 	answers: many(answer),
 	assignedQuestions: many(question, { relationName: 'assignedQuestions' }),
-	moderationActions: many(moderationAction)
+	moderationActions: many(moderationAction),
+	follows: many(questionFollow)
 }));

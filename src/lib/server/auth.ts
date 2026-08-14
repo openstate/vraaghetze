@@ -4,10 +4,16 @@ import { admin, magicLink } from 'better-auth/plugins';
 import { db } from './db';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
-import { sendMagicLinkMail } from './email/templates';
+import { sendMagicLinkMail, type MagicLinkPurpose } from './email/templates';
 import { ac, defaultRole, roles } from '$lib/permissions';
 
 const MAGIC_LINK_EXPIRY_SECONDS = 30 * 60;
+
+// the flow that asked for the link, carried in the callback url the mail links to
+const purposeByGoal: Record<string, MagicLinkPurpose> = {
+	bevestigen: 'confirm',
+	volgen: 'follow'
+};
 
 export const auth = betterAuth({
 	baseURL: process.env.ORIGIN,
@@ -26,7 +32,7 @@ export const auth = betterAuth({
 				await sendMagicLinkMail({
 					recipient: email,
 					url,
-					purpose: callbackURL.searchParams.get('doel') === 'bevestigen' ? 'confirm' : 'login',
+					purpose: purposeByGoal[callbackURL.searchParams.get('doel') ?? ''] ?? 'login',
 					expiresAt: new Date(Date.now() + MAGIC_LINK_EXPIRY_SECONDS * 1000)
 				});
 			}

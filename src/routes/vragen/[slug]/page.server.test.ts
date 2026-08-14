@@ -1,7 +1,10 @@
-import { beforeEach, describe, expect, test } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { and, eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
+
+const sendSignInLink = vi.hoisted(() => vi.fn());
+vi.mock('$lib/server/auth', () => ({ sendSignInLink }));
 
 async function createUser(name: string, overrides: Partial<typeof schema.user.$inferInsert> = {}) {
 	const id = crypto.randomUUID();
@@ -66,11 +69,15 @@ async function getQuestionBySlug(slug: string) {
 
 type LoadData = Exclude<Awaited<ReturnType<typeof page.load>>, void>;
 
-function makeLoadEvent(slug: string, user: typeof schema.user.$inferSelect | null) {
+function makeLoadEvent(
+	slug: string,
+	user: typeof schema.user.$inferSelect | null,
+	search: string = ''
+) {
 	return {
 		params: { slug },
 		locals: { user: user ?? undefined },
-		url: new URL(`http://localhost/vragen/${slug}`)
+		url: new URL(`http://localhost/vragen/${slug}${search}`)
 	} as unknown as Parameters<typeof page.load>[0];
 }
 
@@ -85,14 +92,30 @@ function makeActionEvent(
 	return {
 		params: { slug },
 		locals: { user: user ?? undefined },
+		url: new URL(`http://localhost/vragen/${slug}`),
 		request: new Request(`http://localhost/vragen/${slug}`, { method: 'POST', body: formData })
 	} as unknown as Parameters<typeof page.actions.bevestigen>[0];
 }
 
+function getFollow(questionId: string, userId: string) {
+	return db
+		.select()
+		.from(schema.questionFollow)
+		.where(
+			and(
+				eq(schema.questionFollow.questionId, questionId),
+				eq(schema.questionFollow.userId, userId)
+			)
+		);
+}
+
 beforeEach(async () => {
+	sendSignInLink.mockClear();
+
 	await db.transaction(async (tx) => {
 		await tx.delete(schema.moderationAction);
 		await tx.delete(schema.inbox);
+		await tx.delete(schema.answer);
 		await tx.delete(schema.question);
 		await tx.delete(schema.user);
 		await tx.delete(schema.fraction);
@@ -206,5 +229,108 @@ describe('bevestigen action', () => {
 
 		expect(result).toMatchObject({ status: 400 });
 		expect((await getQuestionBySlug(question.slug)).verifiedAt).toBeNull();
+	});
+});
+
+describe('volgen action', () => {
+	test('follows the question for a signed-in visitor', async () => {
+		const politicianUser = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const follower = await createUser('Fatima Volger');
+		const question = await insertQuestion(asker.id, politicianUser.id);
+
+		const result = await page.actions.volgen(makeActionEvent(question.slug, follower));
+
+		expect(result).toEqual({ followed: true });
+		expect(await getFollow(question.id, follower.id)).toHaveLength(1);
+
+		const loaded = (await page.load(makeLoadEvent(question.slug, follower))) as LoadData;
+		expect(loaded).toMatchObject({ followers: 2, isFollowing: true });
+	});
+
+	// the refusals themselves are follows.follow()'s, so this only pins the 400 they become
+	test('answers a refused follow with a 400', async () => {
+		const politicianUser = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const question = await insertQuestion(asker.id, politicianUser.id);
+
+		const result = await page.actions.volgen(makeActionEvent(question.slug, asker));
+
+		expect(result).toMatchObject({ status: 400 });
+		expect(await getFollow(question.id, asker.id)).toHaveLength(0);
+	});
+
+	test('mails a sign-in link without following yet when nobody is signed in', async () => {
+		const politicianUser = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const question = await insertQuestion(asker.id, politicianUser.id);
+
+		const event = makeActionEvent(question.slug, null, { email: 'fatima@test.example' });
+		const result = await page.actions.volgen(event);
+
+		expect(result).toEqual({ email: 'fatima@test.example' });
+		expect(sendSignInLink).toHaveBeenCalledWith(
+			'fatima@test.example',
+			`http://localhost/vragen/${question.slug}?doel=volgen`
+		);
+
+		const follows = await db.select().from(schema.questionFollow);
+		expect(follows).toHaveLength(0);
+	});
+
+	test('answers an address with an account the same as one without', async () => {
+		const politicianUser = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const question = await insertQuestion(asker.id, politicianUser.id);
+
+		const known = await page.actions.volgen(
+			makeActionEvent(question.slug, null, { email: asker.email })
+		);
+		const unknown = await page.actions.volgen(
+			makeActionEvent(question.slug, null, { email: 'niemand@test.example' })
+		);
+
+		expect(known).toEqual({ email: asker.email });
+		expect(unknown).toEqual({ email: 'niemand@test.example' });
+	});
+
+	test('fails on an invalid e-mail address', async () => {
+		const politicianUser = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const question = await insertQuestion(asker.id, politicianUser.id);
+
+		const event = makeActionEvent(question.slug, null, { email: 'geen adres' });
+		const result = await page.actions.volgen(event);
+
+		expect(result).toMatchObject({ status: 400 });
+		expect(sendSignInLink).not.toHaveBeenCalled();
+	});
+});
+
+describe('ontvolgen action', () => {
+	test('requires a signed-in user', async () => {
+		const politicianUser = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const question = await insertQuestion(asker.id, politicianUser.id);
+
+		const event = makeActionEvent(question.slug, null);
+
+		await expect(page.actions.ontvolgen(event)).rejects.toMatchObject({ status: 401 });
+	});
+});
+
+describe('follow banner', () => {
+	test('asks for a press on the bell after arriving from the follow mail', async () => {
+		const politicianUser = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const follower = await createUser('Fatima Volger');
+		const question = await insertQuestion(asker.id, politicianUser.id);
+
+		const event = makeLoadEvent(question.slug, follower, '?doel=volgen');
+		expect(((await page.load(event)) as LoadData).banner).toBe('follow');
+
+		await page.actions.volgen(makeActionEvent(question.slug, follower));
+
+		expect(((await page.load(event)) as LoadData).banner).toBeNull();
 	});
 });

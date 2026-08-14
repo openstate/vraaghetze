@@ -68,7 +68,7 @@ export const nestAnswer = <Row extends AnswerRow>(rows: Row[]) =>
 	}));
 
 // what a question card renders, wherever questions are listed
-const cardColumns = {
+export const cardColumns = {
 	slug: schema.question.slug,
 	title: schema.question.title,
 	createdAt: schema.question.createdAt,
@@ -278,6 +278,8 @@ export async function bySlug(slug: string, viewerId: string | null) {
 			status: schema.question.status,
 			createdAt: schema.question.createdAt,
 			authorName: schema.user.name,
+			// the asker is mailed anyway and so never follows, but their id stays on the server
+			isAsker: sql<boolean>`coalesce(${schema.question.userId} = ${viewerId}, false)`,
 			assigneeName: politicianUser.name,
 			assigneeSlug: schema.politician.slug,
 			fraction: schema.fraction.abbreviation,

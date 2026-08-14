@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db, schema } from '$lib/server/db';
-import { enqueueAnswerMail, resolveMailAddress } from './templates';
+import { enqueueAnswerMail, enqueueFollowerMails, resolveMailAddress } from './templates';
 import {
 	dedupKey,
 	extractAddress,
@@ -117,8 +117,9 @@ async function processMail(mail: InboxRow) {
 			status: 'approved'
 		});
 
-		// notify the asker that their question has been answered
+		// notify the asker that their question has been answered, and everyone following it
 		await enqueueAnswerMail(tx, question);
+		await enqueueFollowerMails(tx, question);
 
 		await tx
 			.update(schema.inbox)
