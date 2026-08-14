@@ -139,10 +139,10 @@
 		{/if}
 	</div>
 
-	<ul class="mt-4 grid gap-4 md:col-span-2 md:grid-cols-2">
+	<ul class="mt-4 grid gap-4 md:col-span-2 md:grid-cols-3">
 		{#each otherQuestions as question (question.slug)}
 			<li>
-				<QuestionCard {question} />
+				<QuestionCard {question} featured />
 			</li>
 		{/each}
 	</ul>
