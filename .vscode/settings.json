@@ -1,12 +1,25 @@
 {
+	"js/ts.tsdk.path": "node_modules/typescript/lib",
+	"svelte.enable-ts-plugin": true,
+	"eslint.validate": ["javascript", "typescript", "svelte"],
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"[svelte]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
 	"files.associations": {
 		"*.css": "tailwindcss"
 	},
 	"explorer.fileNesting.enabled": true,
 	"explorer.fileNesting.patterns": {
+		".env": ".env.example",
+		".prettierrc": ".prettierignore",
+		"README.md": "LICENSE",
+		"docker-compose.yml": "docker-compose.dev.yml, Dockerfile, .dockerignore",
+		"package.json": "pnpm-lock.yaml, pnpm-workspace.yaml, .npmrc",
+		"svelte.config.js": "vite.config.ts",
+		"vitest.setup.ts": "vitest.worker.ts",
 		"*.ts": "${capture}.test.ts",
 		"+page.server.ts": "page.server.test.ts",
-		"+server.ts": "server.test.ts",
-		"vitest.setup.ts": "vitest.worker.ts"
+		"+server.ts": "server.test.ts"
 	}
 }
