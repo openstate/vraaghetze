@@ -3,6 +3,7 @@
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import Button from '$lib/components/button.svelte';
+	import Field from '$lib/components/field.svelte';
 
 	type Props = { followers: number; isFollowing: boolean; isSignedIn: boolean; canFollow: boolean };
 
@@ -54,31 +55,24 @@
 				</div>
 
 				{#if sentTo}
-					<Dialog.Description class="text-sm text-osf-canvas-600">
-						We hebben een link naar {sentTo} gestuurd. Klik erop en druk daarna nog een keer op de bel.
+					<Dialog.Description class="text-osf-canvas-600">
+						We hebben een link naar <span class="font-medium">{sentTo}</span> gestuurd. Klik erop en druk
+						daarna nog een keer op de bel.
 					</Dialog.Description>
 				{:else}
-					<Dialog.Description class="text-sm text-osf-canvas-600">
-						Vul je e-mailadres in. Je krijgt eerst een link om je adres te bevestigen, daarna een
-						mail zodra deze vraag beantwoord is.
+					<Dialog.Description class="text-osf-canvas-600">
+						Vul je e-mailadres in. Je krijgt eerst een link om je adres te bevestigen. Daarna
+						ontvang je een mail zodra deze vraag beantwoord is.
 					</Dialog.Description>
 
 					<form method="POST" action="?/volgen" use:enhance class="grid gap-4">
-						<label class="grid gap-1.5">
-							<span class="text-sm font-medium">Je e-mailadres</span>
-							<input
-								name="email"
-								type="email"
-								required
-								class="rounded border border-osf-canvas-200 px-3 py-2 focus:border-osf-violet-500 focus:outline-none"
-							/>
-						</label>
+						<Field name="email" label="Je e-mailadres" issues={error ? [error] : undefined}>
+							{#snippet children(control)}
+								<input {...control} type="email" required placeholder="sanne@voorbeeld.nl" />
+							{/snippet}
+						</Field>
 
-						{#if error}
-							<p class="text-sm text-osf-canvas-600">{error}</p>
-						{/if}
-
-						<Button type="submit" variant="primary" icon="mdi--bell-outline">Volgende</Button>
+						<Button type="submit" variant="primary">Stuur bevestigingslink</Button>
 					</form>
 				{/if}
 			</Dialog.Content>

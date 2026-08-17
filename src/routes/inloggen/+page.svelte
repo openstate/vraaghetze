@@ -3,14 +3,17 @@
 	import { invalidateAll } from '$app/navigation';
 	import { authClient } from '$lib/auth-client';
 	import Button from '$lib/components/button.svelte';
+	import Field from '$lib/components/field.svelte';
 	import Page from '$lib/components/page.svelte';
 
 	let { data } = $props();
 
 	let sent = $state(false);
+	let issues = $state<string[]>();
 
 	async function signIn(event: SubmitEvent) {
 		event.preventDefault();
+		issues = undefined;
 
 		const formData = new FormData(event.currentTarget as HTMLFormElement);
 
@@ -19,7 +22,7 @@
 			callbackURL: `${page.url.origin}/inloggen`
 		});
 
-		if (error) console.error(error);
+		if (error) issues = ['Er ging iets mis bij het versturen. Probeer het opnieuw.'];
 		else sent = true;
 	}
 
@@ -44,15 +47,11 @@
 		</p>
 	{:else}
 		<form onsubmit={signIn} class="grid max-w-sm gap-4">
-			<label class="grid gap-1.5">
-				<span class="text-sm font-medium">Je e-mailadres</span>
-				<input
-					name="email"
-					type="email"
-					required
-					class="rounded border border-osf-canvas-200 px-3 py-2 focus:border-osf-violet-500 focus:outline-none"
-				/>
-			</label>
+			<Field name="email" label="Je e-mailadres" {issues}>
+				{#snippet children(control)}
+					<input {...control} type="email" required placeholder="sanne@voorbeeld.nl" />
+				{/snippet}
+			</Field>
 
 			<Button type="submit" variant="primary" icon="mdi--arrow-right">Stuur inloglink</Button>
 		</form>
