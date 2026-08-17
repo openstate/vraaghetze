@@ -1,5 +1,5 @@
 // run with `pnpm test` or `pnpm test:watch`
-// run `pnpm test:reset` if db schema changed
+// run `pnpm test:setup` if db schema changed
 
 import 'dotenv/config';
 import { execSync } from 'node:child_process';
@@ -17,7 +17,7 @@ export default async function setup() {
 	const sql = postgres(process.env.DATABASE_URL);
 	try {
 		const [template] = await sql`SELECT 1 FROM pg_database WHERE datname = ${templateName}`;
-		if (template && !process.env.RESET) return;
+		if (template && !process.env.SETUP) return;
 
 		await sql`DROP DATABASE IF EXISTS ${sql(templateName)} WITH (FORCE)`;
 		await sql`CREATE DATABASE ${sql(templateName)}`;

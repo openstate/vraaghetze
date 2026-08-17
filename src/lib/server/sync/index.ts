@@ -112,4 +112,8 @@ export async function syncPoliticians() {
 	});
 
 	await syncAvatars(politicians);
+
+	console.log(
+		`Politician sync done: ${politicians.length} politicians, ${fractions.length} fractions, ${commissions.length} commissions`
+	);
 }
