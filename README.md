@@ -39,21 +39,23 @@ Make sure you have Node, pnpm and Docker installed.
    pnpm db:push
    ```
 
-5. Start the development server:
+5. Create `static/fonts/azurio.woff2`.
+
+6. Start the development server:
 
    ```bash
    pnpm dev
    ```
 
-6. Open http://localhost:5173 and wait for the logs to show the politician sync is done.
+7. Open http://localhost:5173 and wait for the logs to show the politician sync is done.
 
-7. Fill the database with test data:
+8. Fill the database with test data:
 
    ```bash
    pnpm db:seed
    ```
 
-8. Run the tests once:
+9. Run the tests once:
 
    ```bash
    pnpm test:setup
@@ -137,6 +139,14 @@ Both jobs also run once when the server handles its first request.
 ## Deployment
 
 `docker-compose.yml` defines three services: the database, a migration container and the application. The migration container automatically applies new database migrations and then stops. The application starts after that. Docker Compose reads `.env`.
+
+To deploy, on the server:
+
+1. `git pull`
+
+2. `sudo docker compose build node`
+
+3. `sudo docker compose up -d`
 
 ## Before the launch
 
