@@ -9,6 +9,6 @@ export const load: PageServerLoad = async ({ locals }) => {
 	return {
 		questions: await questions.listForUser(locals.user.id),
 		followed: await follows.listForUser(locals.user.id),
-		meta: { title: 'Jouw vragen' }
+		meta: { title: 'Mijn vragen' }
 	};
 };

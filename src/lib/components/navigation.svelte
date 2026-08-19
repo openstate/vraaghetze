@@ -51,10 +51,10 @@
 				<Button
 					href={resolve('/profiel')}
 					variant="primary"
-					icon="mdi--account-circle-outline"
+					icon="mdi--arrow-right"
 					class="ml-auto max-lg:hidden"
 				>
-					Jouw vragen
+					Mijn vragen
 				</Button>
 
 				<Collapsible.Trigger
@@ -68,8 +68,8 @@
 			<Collapsible.Content class="grid gap-5 border-b border-osf-canvas-200 px-6 py-6 lg:hidden">
 				{@render menuLinks()}
 
-				<Button href={resolve('/profiel')} variant="primary" icon="mdi--account-circle-outline">
-					Jouw vragen
+				<Button href={resolve('/profiel')} variant="primary" icon="mdi--arrow-right">
+					Mijn vragen
 				</Button>
 			</Collapsible.Content>
 		</header>

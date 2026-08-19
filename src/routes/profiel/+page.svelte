@@ -20,7 +20,7 @@
 
 <Page>
 	<div class="mb-8 flex flex-wrap items-center justify-between gap-4">
-		<h1 class="font-serif text-4xl">Jouw vragen</h1>
+		<h1 class="font-serif text-4xl">Mijn vragen</h1>
 		<Button onclick={signOut} variant="secondary">Uitloggen</Button>
 	</div>
 
