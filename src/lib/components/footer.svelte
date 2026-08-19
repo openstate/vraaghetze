@@ -1,5 +1,6 @@
 <script lang="ts">
 	import logo from '$lib/assets/logo.svg?raw';
+	import DonateButton from '$lib/components/donate-button.svelte';
 	import { resolve } from '$app/paths';
 
 	const platformLinks = [
@@ -68,7 +69,16 @@
 		<div
 			class="mt-20 flex flex-col gap-4 text-sm md:flex-row md:items-center md:justify-between lg:mt-28"
 		>
-			<p>Een project van Open State Foundation</p>
+			<div class="flex flex-wrap items-center gap-4">
+				<p>
+					Een project van
+					<a href="https://openstate.eu" target="_blank" class="hover:underline">
+						Open State Foundation
+					</a>
+				</p>
+
+				<DonateButton />
+			</div>
 
 			<ul class="flex flex-wrap gap-x-8 gap-y-2">
 				<li>
