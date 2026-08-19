@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { Meter } from 'bits-ui';
 	import Avatar from '$lib/components/avatar.svelte';
+	import Button from '$lib/components/button.svelte';
 	import LinkCard from '$lib/components/link-card.svelte';
 	import Page from '$lib/components/page.svelte';
 	import QuestionCard from '$lib/components/question-card.svelte';
@@ -54,30 +55,25 @@
 			</div>
 		</div>
 
-		{#if data.stats.total > 0}
-			<aside class="w-full sm:w-64 lg:self-center">
-				<h2
-					id="answered-label"
-					class="font-mono text-xs tracking-wide text-osf-canvas-500 uppercase"
-				>
-					Vragen beantwoord
-				</h2>
+		<aside class="w-full sm:w-64 lg:self-center">
+			<h2 id="answered-label" class="font-mono text-xs tracking-wide text-osf-canvas-500 uppercase">
+				Vragen beantwoord
+			</h2>
 
-				<p class="mt-3 font-serif text-4xl/none">
-					{data.stats.answered}&nbsp;van&nbsp;{data.stats.total}
-				</p>
+			<p class="mt-3 font-serif text-4xl/none">
+				{data.stats.answered}&nbsp;van&nbsp;{data.stats.total}
+			</p>
 
-				<Meter.Root
-					value={data.stats.answered}
-					max={data.stats.total}
-					aria-labelledby="answered-label"
-					class="mt-4 h-1.5 rounded-sm bg-osf-canvas-200"
-					title="{answeredShare}% beantwoord"
-				>
-					<div class="h-full rounded-sm bg-osf-shocking-pink" style:width="{answeredShare}%"></div>
-				</Meter.Root>
-			</aside>
-		{/if}
+			<Meter.Root
+				value={data.stats.answered}
+				max={data.stats.total}
+				aria-labelledby="answered-label"
+				class="mt-4 h-1.5 rounded-sm bg-osf-canvas-200"
+				title="{answeredShare}% beantwoord"
+			>
+				<div class="h-full rounded-sm bg-osf-shocking-pink" style:width="{answeredShare}%"></div>
+			</Meter.Root>
+		</aside>
 
 		{#if data.commissions.length > 0}
 			<div class="lg:col-start-1">
@@ -121,11 +117,20 @@
 				<div
 					class="flex min-h-32 flex-1 items-center justify-center rounded border border-osf-canvas-200 p-6 text-center"
 				>
-					<p class="font-serif text-xl/snug text-osf-canvas-500">
+					<a
+						href="{resolve('/vragen/stellen')}?aan={data.politician.slug}"
+						class="font-serif text-xl/snug text-osf-canvas-500 hover:underline"
+					>
 						Stel jij de {data.questions.length === 0 ? 'eerste' : 'volgende'} vraag aan {data
 							.politician.name}?
-					</p>
+					</a>
 				</div>
+			{/if}
+
+			{#if data.stats.total > data.questions.length}
+				<Button href={allQuestionsHref} variant="primary" icon="mdi--arrow-right" class="mt-2">
+					Bekijk alle {data.stats.total} vragen
+				</Button>
 			{/if}
 		</div>
 
