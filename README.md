@@ -33,33 +33,39 @@ Make sure you have Node, pnpm and Docker installed.
    pnpm db:start
    ```
 
-4. Write the schema to the database:
+4. Activate the `pg_trgm` extension:
+
+   ```bash
+   docker compose -f docker-compose.dev.yml exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm"'
+   ```
+
+5. Push the schema to the database:
 
    ```bash
    pnpm db:push
    ```
 
-5. Create `static/fonts/azurio.woff2`.
+6. Create `static/fonts/azurio.woff2`.
 
-6. Start the development server:
+7. Start the development server:
 
    ```bash
    pnpm dev
    ```
 
-7. Open http://localhost:5173 and wait for the logs to show the politician sync is done.
+8. Open http://localhost:5173 and wait for the logs to show the politician sync is done.
 
-8. Fill the database with test data:
+9. Fill the database with test data:
 
    ```bash
    pnpm db:seed
    ```
 
-9. Run the tests once:
+10. Run the tests once:
 
-   ```bash
-   pnpm test:setup
-   ```
+    ```bash
+    pnpm test:setup
+    ```
 
 ## Commands
 
