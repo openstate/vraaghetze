@@ -7,6 +7,7 @@ import type { Actions, PageServerLoad } from './$types';
 const moderationSchema = z.object({
 	questionId: z.string().min(1),
 	action: z.enum(['approved', 'rejected']),
+	rejectionReason: z.string().trim().optional(),
 	note: z.string().trim().optional()
 });
 
@@ -23,7 +24,8 @@ export const actions = {
 			questionId: result.data.questionId,
 			moderatorId: locals.user.id,
 			action: result.data.action,
-			note: result.data.note || undefined
+			note: result.data.note || undefined,
+			rejectionReason: result.data.rejectionReason
 		});
 
 		if ('error' in outcome)

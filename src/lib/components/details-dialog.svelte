@@ -1,10 +1,11 @@
 <script module lang="ts">
-	export type Detail = [label: string, value: string | Date | null];
+	export type Detail = [label: string, value: string | Date | null | HTMLSafeString];
 </script>
 
 <script lang="ts">
 	import { Dialog } from 'bits-ui';
 	import { formatDateTime } from '$lib/date-time';
+	import { HTMLSafeString } from '$lib/general';
 
 	type Props = { title: string; details: Detail[] };
 
@@ -49,7 +50,11 @@
 					<dd
 						class={[cellClass, valueClass, 'pb-2 sm:border-t sm:pt-2 sm:first-of-type:border-t-0']}
 					>
-						{value instanceof Date ? formatDateTime(value) : value}
+						{#if value instanceof HTMLSafeString}
+							{@html (value.value)}
+						{:else}
+							{value instanceof Date ? formatDateTime(value) : value}
+						{/if}
 					</dd>
 				{/each}
 			</dl>

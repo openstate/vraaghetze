@@ -203,9 +203,10 @@ type QuestionModeration = {
 	moderatorId: string;
 	action: 'approved' | 'rejected';
 	note?: string;
+	rejectionReason?: string
 };
 
-export function moderateQuestion({ questionId, moderatorId, action, note }: QuestionModeration) {
+export function moderateQuestion({ questionId, moderatorId, action, note, rejectionReason }: QuestionModeration) {
 	return db.transaction(async (tx) => {
 		// the guard makes double-clicks and concurrent moderators a no-op instead of a
 		// double action, and ensures only verified questions are ever approved/rejected
@@ -256,6 +257,7 @@ export function moderateQuestion({ questionId, moderatorId, action, note }: Ques
 			moderatorId,
 			questionId,
 			action,
+			rejectionReason,
 			note
 		});
 

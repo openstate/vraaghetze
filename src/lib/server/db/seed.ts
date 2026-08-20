@@ -17,10 +17,10 @@ import {
 	lastNames,
 	listAnswer,
 	rejectionNotes,
-	rejectionReasons,
 	topics,
 	type SeedQuestion
 } from './seed-corpus';
+import { allRejectionReasons } from '$lib/moderation';
 
 const ADMINS = [{ name: 'Open State Developers', email: 'developers@openstate.eu' }];
 
@@ -421,7 +421,7 @@ for (const [index, draft] of drafts.entries()) {
 			action: status,
 			// the queue form only submits a note today, so this column has no writer yet. it is
 			// filled here so the archive already shows what it will look like once it does
-			rejectionReason: status === 'rejected' && chance(0.6) ? pick(rejectionReasons) : null,
+			rejectionReason: status === 'rejected' && chance(0.6) ? pick(Object.keys(allRejectionReasons)) : null,
 			note: chance(status === 'rejected' ? 0.65 : 0.25)
 				? pick(status === 'rejected' ? rejectionNotes : approvalNotes)
 				: null,

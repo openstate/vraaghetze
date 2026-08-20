@@ -1783,17 +1783,6 @@ export const closingLines = [
 
 // --- MODERATION ---
 
-export const rejectionReasons = [
-	'Je vraag bevat persoonsgegevens van iemand anders. Stel je vraag opnieuw zonder die gegevens.',
-	'Je vraag is niet gericht aan een Kamerlid maar aan een uitvoeringsorganisatie. Neem daarvoor rechtstreeks contact op.',
-	'Je vraag bevat beledigende taal. Formuleer je vraag zakelijk en stel hem opnieuw.',
-	'Je vraag gaat over een individuele zaak. Kamerleden kunnen niet ingaan op persoonlijke dossiers.',
-	'Deze vraag is eerder gesteld en beantwoord. Bekijk het bestaande antwoord op de site.',
-	'Je vraag bevat commerciële promotie en past daarom niet op dit platform.',
-	'Je vraag is te onduidelijk om door te sturen. Formuleer preciezer wat je wilt weten.',
-	'Je vraag bevat een oproep die in strijd is met de spelregels van dit platform.'
-];
-
 export const approvalNotes = [
 	'Duidelijke vraag, past binnen de portefeuille van dit Kamerlid.',
 	'Iets ingekort in overleg niet nodig, tekst is helder genoeg.',
