@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
+import { rejectionReasonText } from '$lib/moderation';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -65,6 +66,14 @@ async function getQuestion(questionId: string) {
 		.from(schema.question)
 		.where(eq(schema.question.id, questionId));
 	return question;
+}
+
+async function getModerationAction(questionId: string) {
+	const [moderationAction] = await db
+		.select()
+		.from(schema.moderationAction)
+		.where(eq(schema.moderationAction.questionId, questionId));
+	return moderationAction;
 }
 
 type LoadData = Exclude<Awaited<ReturnType<typeof page.load>>, void>;
@@ -143,10 +152,42 @@ describe('default action', () => {
 		expect(result).toMatchObject({ status: 400 });
 	});
 
+	test('requires rejection reasons when rejecting', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const question = await createQuestion();
+		const event = makeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: '' });
+
+		const result = await page.actions.default(event);
+
+		expect(result).toMatchObject({ status: 400 });
+	});
+
+	test('stores rejection reasons when rejecting', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const question = await createQuestion();
+		const event = makeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'offensive' });
+
+		const result = await page.actions.default(event);
+
+		expect(result).toMatchObject({ moderated: question.id });
+		expect((await getModerationAction(question.id)).rejectionReason).toBe('offensive');
+	});
+
+	test('ignores rejection reasons when approving', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const question = await createQuestion();
+		const event = makeActionEvent(moderator, { questionId: question.id, action: 'approved', rejectionReason: 'offensive' });
+
+		const result = await page.actions.default(event);
+
+		expect(result).toMatchObject({ moderated: question.id });
+		expect((await getModerationAction(question.id)).rejectionReason).toBe('');
+	});
+
 	test('reports an already handled question', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const question = await createQuestion({ status: 'approved' });
-		const event = makeActionEvent(moderator, { questionId: question.id, action: 'rejected' });
+		const event = makeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'offensive' });
 
 		const result = await page.actions.default(event);
 

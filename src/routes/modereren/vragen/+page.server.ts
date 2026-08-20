@@ -4,12 +4,22 @@ import * as moderation from '$lib/server/moderation';
 import { validateForm } from '$lib/server/utils/forms';
 import type { Actions, PageServerLoad } from './$types';
 
-const moderationSchema = z.object({
-	questionId: z.string().min(1),
-	action: z.enum(['approved', 'rejected']),
-	rejectionReason: z.string().trim().optional(),
-	note: z.string().trim().optional()
-});
+const moderationSchema = z.union(
+	[
+		z.object({
+			questionId: z.string().min(1),
+			action: z.literal('approved'),
+			rejectionReason: z.string().optional().transform(_value => ''),
+			note: z.string().trim().optional()
+		}),
+		z.object({
+			questionId: z.string().min(1),
+			action: z.literal('rejected'),
+			rejectionReason: z.string().trim().nonempty(),
+			note: z.string().trim().optional()
+		})
+	]
+);
 
 export const load: PageServerLoad = async () => {
 	return { queue: await moderation.listQuestionQueue() };
