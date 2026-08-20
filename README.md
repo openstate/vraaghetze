@@ -68,6 +68,9 @@ Make sure you have Node, pnpm and Docker installed.
     pnpm test:setup
     ```
 
+1. To elevate a user to the `admin` role you can use `bin/make_admin.sh`
+
+
 ## Commands
 
 | Command            | Function                                                        |
