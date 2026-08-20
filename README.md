@@ -21,47 +21,48 @@ Make sure you have Node, pnpm and Docker installed.
 
 1. Copy `.env.example` to `.env`. A development environment needs values for `POSTGRES_*`, `DATABASE_URL`, `ORIGIN` and `BETTER_AUTH_SECRET`. Keep the other keys in the file empty.
 
-2. Install the dependencies:
+1. Install the dependencies:
 
    ```bash
    pnpm install
    ```
 
-3. Start the database:
+1. Start the database:
 
    ```bash
    pnpm db:start
    ```
 
-4. Activate the `pg_trgm` extension:
 
-   ```bash
-   docker compose -f docker-compose.dev.yml exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm"'
-   ```
-
-5. Push the schema to the database:
+1. Push the schema to the database:
 
    ```bash
    pnpm db:push
    ```
 
-6. Create `static/fonts/azurio.woff2`.
+1. Activate the `pg_trgm` extension:
 
-7. Start the development server:
+   ```bash
+   docker compose -f docker-compose.dev.yml exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm"'
+   ```
+
+1. Create `static/fonts/azurio.woff2`.
+
+1. Start the development server:
 
    ```bash
    pnpm dev
    ```
 
-8. Open http://localhost:5173 and wait for the logs to show the politician sync is done.
+1. Open http://localhost:5173 and wait for the logs to show the politician sync is done.
 
-9. Fill the database with test data:
+1. Fill the database with test data:
 
    ```bash
    pnpm db:seed
    ```
 
-10. Run the tests once:
+1. Run the tests once:
 
     ```bash
     pnpm test:setup
