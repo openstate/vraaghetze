@@ -3,8 +3,10 @@ import { z } from 'zod';
 import * as moderation from '$lib/server/moderation';
 import { validateForm } from '$lib/server/utils/forms';
 import type { Actions, PageServerLoad } from './$types';
+import { rejectionKeys } from '$lib/moderation';
 
-const moderationSchema = z.union(
+const moderationSchema = z.discriminatedUnion(
+	"action",
 	[
 		z.object({
 			questionId: z.string().min(1),
@@ -15,7 +17,12 @@ const moderationSchema = z.union(
 		z.object({
 			questionId: z.string().min(1),
 			action: z.literal('rejected'),
-			rejectionReason: z.string().trim().nonempty(),
+			rejectionReason: z.string().trim().nonempty().refine((str) => {
+				for (let reason of str.split(",")){
+					if (!rejectionKeys.includes(reason)) return false
+				}
+				return true
+			}),
 			note: z.string().trim().optional()
 		})
 	]

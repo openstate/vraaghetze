@@ -173,6 +173,16 @@ describe('default action', () => {
 		expect((await getModerationAction(question.id)).rejectionReason).toBe('offensive');
 	});
 
+	test('validates rejection reasons when rejecting', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const question = await createQuestion();
+		const event = makeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'i_do_not_exist' });
+
+		const result = await page.actions.default(event);
+
+		expect(result).toMatchObject({ status: 400 });
+	});
+
 	test('ignores rejection reasons when approving', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const question = await createQuestion();

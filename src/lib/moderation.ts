@@ -1,12 +1,14 @@
-export type rejectionKey = 
-  'spam_promotion' |
-  'spam_mass' |
-  'duplicate' |
-  'personal_attack' |
-  'offensive' |
-  'victimizing' |
-  'professional_secrecy';
-export type allRejectionReasonsType = Record<rejectionKey, string>;
+export const rejectionKeys = [
+  'spam_promotion',
+  'spam_mass',
+  'duplicate',
+  'personal_attack',
+  'offensive',
+  'victimizing',
+  'professional_secrecy'
+]
+export type rejectionKey = (typeof rejectionKeys)[number]
+export type allRejectionReasonsType = Record<rejectionKey, string>
 
 export const allRejectionReasons: allRejectionReasonsType = {
   'spam_promotion': 'Je vraag bevat commerciële promotie en past daarom niet op dit platform.',
