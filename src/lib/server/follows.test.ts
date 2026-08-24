@@ -2,37 +2,7 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as follows from './follows';
-
-async function createUser(name: string, overrides: Partial<typeof schema.user.$inferInsert> = {}) {
-	const id = crypto.randomUUID();
-
-	const [created] = await db
-		.insert(schema.user)
-		.values({ id, name, email: `${id}@test.example`, emailVerified: true, ...overrides })
-		.returning();
-
-	return created;
-}
-
-async function createPolitician() {
-	const politicianUser = await createUser('Jan Jansen', { role: 'politician' });
-
-	const fractionId = crypto.randomUUID();
-	await db
-		.insert(schema.fraction)
-		.values({ id: fractionId, slug: `tf-${fractionId}`, name: 'Testfractie', abbreviation: 'TF' });
-
-	const id = crypto.randomUUID();
-	await db.insert(schema.politician).values({
-		id,
-		slug: `jan-jansen-${id}`,
-		userId: politicianUser.id,
-		fractionId,
-		fractionRole: 'member'
-	});
-
-	return politicianUser;
-}
+import { createPolitician, createUser } from '$lib/test-utils';
 
 async function insertQuestion(
 	askerId: string,
@@ -93,7 +63,7 @@ beforeEach(async () => {
 
 describe('follow', () => {
 	test('follows a published question', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
 		const question = await insertQuestion(asker.id, politicianUser.id);
@@ -105,7 +75,7 @@ describe('follow', () => {
 	});
 
 	test('keeps a second press on the bell a single follow', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
 		const question = await insertQuestion(asker.id, politicianUser.id);
@@ -117,7 +87,7 @@ describe('follow', () => {
 	});
 
 	test('refuses the asker their own question', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
@@ -128,7 +98,7 @@ describe('follow', () => {
 	});
 
 	test('refuses an answered question', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
 		const question = await insertQuestion(asker.id, politicianUser.id);
@@ -141,7 +111,7 @@ describe('follow', () => {
 	});
 
 	test('ignores an answer that is still waiting for moderation', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
 		const question = await insertQuestion(asker.id, politicianUser.id);
@@ -153,7 +123,7 @@ describe('follow', () => {
 	});
 
 	test('hides an unpublished question behind the same error as a missing one', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
 		const pending = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
@@ -167,7 +137,7 @@ describe('follow', () => {
 
 describe('unfollow', () => {
 	test('removes the follow', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
 		const question = await insertQuestion(asker.id, politicianUser.id);
@@ -180,7 +150,7 @@ describe('unfollow', () => {
 	});
 
 	test('removes an answered question from the bookmarks', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
 		const question = await insertQuestion(asker.id, politicianUser.id);
@@ -191,7 +161,7 @@ describe('unfollow', () => {
 	});
 
 	test('leaves the follows of others alone', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
 		const stranger = await createUser('Sjaak Stranger');
@@ -205,7 +175,7 @@ describe('unfollow', () => {
 
 describe('countForQuestion', () => {
 	test('counts the asker as a follower', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
@@ -216,7 +186,7 @@ describe('countForQuestion', () => {
 	});
 
 	test('counts every follower and reports the viewer their own state', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
 		const stranger = await createUser('Sjaak Stranger');
@@ -237,7 +207,7 @@ describe('countForQuestion', () => {
 
 describe('listForUser', () => {
 	test('lists followed questions, answered ones included', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
 		const answered = await insertQuestion(asker.id, politicianUser.id);
@@ -254,7 +224,7 @@ describe('listForUser', () => {
 	});
 
 	test('leaves out what the user does not follow', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
 		const question = await insertQuestion(asker.id, politicianUser.id);

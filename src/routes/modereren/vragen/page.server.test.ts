@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
-import { createQuestion, getQuestion } from '$lib/test-utils';
+import { createQuestion, createUser, getQuestion } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -11,17 +11,6 @@ const testEnv = vi.hoisted(() => ({
 }));
 
 vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
-
-async function createUser(name: string, overrides: Partial<typeof schema.user.$inferInsert> = {}) {
-	const id = crypto.randomUUID();
-
-	const [created] = await db
-		.insert(schema.user)
-		.values({ id, name, email: `${id}@test.example`, emailVerified: true, ...overrides })
-		.returning();
-
-	return created;
-}
 
 async function getModerationAction(questionId: string) {
 	const [moderationAction] = await db

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as questions from './questions';
-import { getQuestionBySlug } from '$lib/test-utils';
+import { createPolitician, createUser, getQuestionBySlug } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -11,41 +11,6 @@ const testEnv = vi.hoisted(() => ({
 }));
 
 vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
-
-async function createUser(name: string, overrides: Partial<typeof schema.user.$inferInsert> = {}) {
-	const id = crypto.randomUUID();
-
-	const [created] = await db
-		.insert(schema.user)
-		.values({ id, name, email: `${id}@test.example`, emailVerified: true, ...overrides })
-		.returning();
-
-	return created;
-}
-
-async function createPolitician(overrides: Partial<typeof schema.politician.$inferInsert> = {}) {
-	const politicianUser = await createUser('Jan Jansen', { role: 'politician' });
-
-	const fractionId = crypto.randomUUID();
-	await db
-		.insert(schema.fraction)
-		.values({ id: fractionId, slug: `tf-${fractionId}`, name: 'Testfractie', abbreviation: 'TF' });
-
-	const id = crypto.randomUUID();
-	const [politician] = await db
-		.insert(schema.politician)
-		.values({
-			id,
-			slug: `jan-jansen-${id}`,
-			userId: politicianUser.id,
-			fractionId,
-			fractionRole: 'member',
-			...overrides
-		})
-		.returning();
-
-	return { politician, politicianUser };
-}
 
 async function insertQuestion(
 	askerId: string,
@@ -151,7 +116,7 @@ describe('create', () => {
 	});
 
 	test('rejects a question addressed to an inactive politician', async () => {
-		const { politician } = await createPolitician({ isActive: false });
+		const { politician } = await createPolitician('Jan Jansen', { isActive: false });
 		const asker = await createUser('Vera Vraagsteller');
 
 		const result = await questions.create({
@@ -365,7 +330,7 @@ describe('similarForFraction', () => {
 	});
 
 	test('answers with nothing for a Kamerlid that cannot be asked', async () => {
-		const { politician, politicianUser } = await createPolitician({ isActive: false });
+		const { politician, politicianUser } = await createPolitician('Jan Jansen', { isActive: false });
 		const asker = await createUser('Vera Vraagsteller');
 		await insertQuestion(asker.id, politicianUser.id, {
 			title: 'Moeten de toeslagen worden afgeschaft?',

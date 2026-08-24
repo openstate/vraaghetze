@@ -2,42 +2,7 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { db, schema } from '$lib/server/db';
 import { parseQuestionSearch, QUESTIONS_PER_PAGE } from '$lib/search';
 import { searchQuestions } from './questions';
-
-async function createUser(name: string, overrides: Partial<typeof schema.user.$inferInsert> = {}) {
-	const id = crypto.randomUUID();
-
-	const [created] = await db
-		.insert(schema.user)
-		.values({ id, name, email: `${id}@test.example`, emailVerified: true, ...overrides })
-		.returning();
-
-	return created;
-}
-
-async function createPolitician(overrides: Partial<typeof schema.politician.$inferInsert> = {}) {
-	const politicianUser = await createUser('Jan Jansen', { role: 'politician' });
-
-	const fractionId = crypto.randomUUID();
-	const [fraction] = await db
-		.insert(schema.fraction)
-		.values({ id: fractionId, slug: `tf-${fractionId}`, name: 'Testfractie', abbreviation: 'TF' })
-		.returning();
-
-	const id = crypto.randomUUID();
-	const [politician] = await db
-		.insert(schema.politician)
-		.values({
-			id,
-			slug: `jan-jansen-${id}`,
-			userId: politicianUser.id,
-			fractionId,
-			fractionRole: 'member',
-			...overrides
-		})
-		.returning();
-
-	return { politician, politicianUser, fraction };
-}
+import { createPolitician, createUser } from '$lib/test-utils';
 
 async function insertQuestion(
 	askerId: string,

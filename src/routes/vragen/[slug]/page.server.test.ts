@@ -2,41 +2,10 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
-import { getQuestionBySlug } from '$lib/test-utils';
+import { createPolitician, createUser, getQuestionBySlug } from '$lib/test-utils';
 
 const sendSignInLink = vi.hoisted(() => vi.fn());
 vi.mock('$lib/server/auth', () => ({ sendSignInLink }));
-
-async function createUser(name: string, overrides: Partial<typeof schema.user.$inferInsert> = {}) {
-	const id = crypto.randomUUID();
-
-	const [created] = await db
-		.insert(schema.user)
-		.values({ id, name, email: `${id}@test.example`, emailVerified: true, ...overrides })
-		.returning();
-
-	return created;
-}
-
-async function createPolitician() {
-	const politicianUser = await createUser('Jan Jansen', { role: 'politician' });
-
-	const fractionId = crypto.randomUUID();
-	await db
-		.insert(schema.fraction)
-		.values({ id: fractionId, slug: `tf-${fractionId}`, name: 'Testfractie', abbreviation: 'TF' });
-
-	const id = crypto.randomUUID();
-	await db.insert(schema.politician).values({
-		id,
-		slug: `jan-jansen-${id}`,
-		userId: politicianUser.id,
-		fractionId,
-		fractionRole: 'member'
-	});
-
-	return politicianUser;
-}
 
 async function insertQuestion(
 	askerId: string,
@@ -120,7 +89,7 @@ beforeEach(async () => {
 
 describe('load', () => {
 	test('serves an approved question to an anonymous visitor', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
@@ -130,7 +99,7 @@ describe('load', () => {
 	});
 
 	test('hides an invisible question behind the same 404 as a missing one', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser} = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const pending = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
 
@@ -145,7 +114,7 @@ describe('load', () => {
 
 describe('bevestigen action', () => {
 	test('requires a signed-in user', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt: null });
 
@@ -156,7 +125,7 @@ describe('bevestigen action', () => {
 	});
 
 	test('verifies the question when the owner confirms', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt: null });
 
@@ -168,7 +137,7 @@ describe('bevestigen action', () => {
 	});
 
 	test('answers someone else than the owner with a 404 without verifying', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const stranger = await createUser('Sjaak Stranger');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt: null });
@@ -180,7 +149,7 @@ describe('bevestigen action', () => {
 	});
 
 	test('answers someone else than the owner with a 404 without deleting', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const stranger = await createUser('Sjaak Stranger');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt: null });
@@ -192,7 +161,7 @@ describe('bevestigen action', () => {
 	});
 
 	test('confirms an already verified question again without touching the timestamp', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const verifiedAt = new Date('2026-07-01T12:00:00Z');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt });
@@ -205,7 +174,7 @@ describe('bevestigen action', () => {
 	});
 
 	test('deletes the question and redirects when the owner declines', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt: null });
 
@@ -216,7 +185,7 @@ describe('bevestigen action', () => {
 	});
 
 	test('fails on an invalid choice', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt: null });
 
@@ -230,7 +199,7 @@ describe('bevestigen action', () => {
 
 describe('volgen action', () => {
 	test('follows the question for a signed-in visitor', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
 		const question = await insertQuestion(asker.id, politicianUser.id);
@@ -246,7 +215,7 @@ describe('volgen action', () => {
 
 	// the refusals themselves are follows.follow()'s, so this only pins the 400 they become
 	test('answers a refused follow with a 400', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
@@ -257,7 +226,7 @@ describe('volgen action', () => {
 	});
 
 	test('mails a sign-in link without following yet when nobody is signed in', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
@@ -275,7 +244,7 @@ describe('volgen action', () => {
 	});
 
 	test('answers an address with an account the same as one without', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
@@ -291,7 +260,7 @@ describe('volgen action', () => {
 	});
 
 	test('fails on an invalid e-mail address', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
@@ -305,7 +274,7 @@ describe('volgen action', () => {
 
 describe('ontvolgen action', () => {
 	test('requires a signed-in user', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
@@ -317,7 +286,7 @@ describe('ontvolgen action', () => {
 
 describe('follow banner', () => {
 	test('asks for a press on the bell after arriving from the follow mail', async () => {
-		const politicianUser = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
 		const question = await insertQuestion(asker.id, politicianUser.id);

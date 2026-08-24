@@ -1,15 +1,44 @@
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 
-export async function createUser(name: string) {
-  const id = crypto.randomUUID();
 
-  const [created] = await db
-    .insert(schema.user)
-    .values({ id, name, email: `${id}@test.example`, emailVerified: true })
+export async function createUser(name: string, overrides: Partial<typeof schema.user.$inferInsert> = {}) {
+	const id = crypto.randomUUID();
+
+	const [created] = await db
+		.insert(schema.user)
+		.values({ id, name, email: `${id}@test.example`, emailVerified: true, ...overrides })
+		.returning();
+
+	return created;
+}
+
+export async function createPolitician(
+  name: string = 'Jan Jansen',
+  overrides: Partial<typeof schema.politician.$inferInsert> = {}
+) {
+  const politicianUser = await createUser(name, { role: 'politician' });
+
+  const fractionId = crypto.randomUUID();
+  const [fraction] = await db
+    .insert(schema.fraction)
+    .values({ id: fractionId, slug: `tf-${fractionId}`, name: 'Testfractie', abbreviation: 'TF' })
     .returning();
 
-  return created;
+  const id = crypto.randomUUID();
+  const [politician] = await db
+    .insert(schema.politician)
+    .values({
+      id,
+      slug: `kamerlid-${id}`,
+      userId: politicianUser.id,
+      fractionId,
+      fractionRole: 'member',
+      ...overrides
+    })
+    .returning();
+
+  return { politician, politicianUser, fraction };
 }
 
 export async function createQuestion(

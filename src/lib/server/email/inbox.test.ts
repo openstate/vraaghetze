@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import { receiveInboundEmail } from './inbox';
 import type { InboundEmail } from './parse-inbound';
-import { createQuestion } from '$lib/test-utils';
+import { createQuestion, createUser } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -13,17 +13,6 @@ const testEnv = vi.hoisted(() => ({
 }));
 
 vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
-
-async function createUser(name: string) {
-	const id = crypto.randomUUID();
-
-	const [created] = await db
-		.insert(schema.user)
-		.values({ id, name, email: `${id}@test.example`, emailVerified: true })
-		.returning();
-
-	return created;
-}
 
 async function myCreateQuestion(overrides: Partial<typeof schema.question.$inferInsert> = {}) {
 	return createQuestion({

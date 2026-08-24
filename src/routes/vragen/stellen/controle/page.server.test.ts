@@ -1,47 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import { QUESTION_TITLE_MAX_LENGTH } from '$lib/ask';
 import * as page from './+page.server';
-import { getQuestionBySlug } from '$lib/test-utils';
+import { createPolitician, createUser, getQuestionBySlug } from '$lib/test-utils';
 
 const sendSignInLink = vi.hoisted(() => vi.fn());
 vi.mock('$lib/server/auth', () => ({ sendSignInLink }));
-
-async function createUser(name: string, overrides: Partial<typeof schema.user.$inferInsert> = {}) {
-	const id = crypto.randomUUID();
-
-	const [created] = await db
-		.insert(schema.user)
-		.values({ id, name, email: `${id}@test.example`, emailVerified: true, ...overrides })
-		.returning();
-
-	return created;
-}
-
-async function createPolitician(overrides: Partial<typeof schema.politician.$inferInsert> = {}) {
-	const politicianUser = await createUser('Jan Jansen', { role: 'politician' });
-
-	const fractionId = crypto.randomUUID();
-	await db
-		.insert(schema.fraction)
-		.values({ id: fractionId, slug: `tf-${fractionId}`, name: 'Testfractie', abbreviation: 'TF' });
-
-	const id = crypto.randomUUID();
-	const [politician] = await db
-		.insert(schema.politician)
-		.values({
-			id,
-			slug: `jan-jansen-${id}`,
-			userId: politicianUser.id,
-			fractionId,
-			fractionRole: 'member',
-			...overrides
-		})
-		.returning();
-
-	return { politician, politicianUser };
-}
 
 async function insertQuestion(
 	askerId: string,
@@ -218,7 +182,7 @@ describe('default action', () => {
 	});
 
 	test('rejects an inactive politician with a field issue', async () => {
-		const { politician } = await createPolitician({ isActive: false });
+		const { politician } = await createPolitician('Jan Jansen', { isActive: false });
 		const asker = await createUser('Vera Vraagsteller');
 		const event = makeActionEvent(asker, {
 			...questionFields,
