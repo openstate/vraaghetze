@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
+import { getQuestionBySlug } from '$lib/test-utils';
 
 const sendSignInLink = vi.hoisted(() => vi.fn());
 vi.mock('$lib/server/auth', () => ({ sendSignInLink }));
@@ -59,11 +60,6 @@ async function insertQuestion(
 		})
 		.returning();
 
-	return question;
-}
-
-async function getQuestionBySlug(slug: string) {
-	const [question] = await db.select().from(schema.question).where(eq(schema.question.slug, slug));
 	return question;
 }
 

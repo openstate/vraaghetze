@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 
 export async function createUser(name: string) {
@@ -51,4 +52,29 @@ export async function createQuestion(
     .returning();
 
   return { question, asker, politician };
+}
+
+export async function getQuestion(questionId: string) {
+  const [question] = await db
+    .select()
+    .from(schema.question)
+    .where(eq(schema.question.id, questionId));
+  return question;
+}
+
+export async function getQuestionBySlug(slug: string) {
+  const [question] = await db.select().from(schema.question).where(eq(schema.question.slug, slug));
+  return question;
+}
+
+export async function getAnswer(answerId: string) {
+  const [answer] = await db.select().from(schema.answer).where(eq(schema.answer.id, answerId));
+  return answer;
+}
+
+export async function getAnswerAudit(answerId: string) {
+  return db
+    .select()
+    .from(schema.moderationAction)
+    .where(eq(schema.moderationAction.answerId, answerId));
 }

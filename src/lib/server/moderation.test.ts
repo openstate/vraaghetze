@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as moderation from './moderation';
-import { createQuestion, createUser } from '$lib/test-utils';
+import { createQuestion, createUser, getAnswer, getAnswerAudit, getQuestion } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -30,28 +30,8 @@ async function createAnswer(
 	return answer;
 }
 
-async function getQuestion(questionId: string) {
-	const [question] = await db
-		.select()
-		.from(schema.question)
-		.where(eq(schema.question.id, questionId));
-	return question;
-}
-
-async function getAnswer(answerId: string) {
-	const [answer] = await db.select().from(schema.answer).where(eq(schema.answer.id, answerId));
-	return answer;
-}
-
 async function getEnqueuedMails(questionId: string) {
 	return db.select().from(schema.outbox).where(eq(schema.outbox.questionId, questionId));
-}
-
-async function getAnswerAudit(answerId: string) {
-	return db
-		.select()
-		.from(schema.moderationAction)
-		.where(eq(schema.moderationAction.answerId, answerId));
 }
 
 beforeEach(async () => {

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as questions from './questions';
+import { getQuestionBySlug } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -68,11 +69,6 @@ async function insertQuestion(
 		})
 		.returning();
 
-	return question;
-}
-
-async function getQuestionBySlug(slug: string) {
-	const [question] = await db.select().from(schema.question).where(eq(schema.question.slug, slug));
 	return question;
 }
 

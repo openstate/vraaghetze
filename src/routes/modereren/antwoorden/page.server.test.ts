@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
+import { getAnswer } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -63,11 +64,6 @@ async function createAnswer(overrides: Partial<typeof schema.answer.$inferInsert
 		})
 		.returning();
 
-	return answer;
-}
-
-async function getAnswer(answerId: string) {
-	const [answer] = await db.select().from(schema.answer).where(eq(schema.answer.id, answerId));
 	return answer;
 }
 

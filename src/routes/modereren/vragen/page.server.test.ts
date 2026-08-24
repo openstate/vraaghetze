@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
-import { createQuestion } from '$lib/test-utils';
+import { createQuestion, getQuestion } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -21,14 +21,6 @@ async function createUser(name: string, overrides: Partial<typeof schema.user.$i
 		.returning();
 
 	return created;
-}
-
-async function getQuestion(questionId: string) {
-	const [question] = await db
-		.select()
-		.from(schema.question)
-		.where(eq(schema.question.id, questionId));
-	return question;
 }
 
 async function getModerationAction(questionId: string) {
