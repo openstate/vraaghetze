@@ -82,16 +82,41 @@
       </label>
 
       <div class="flex flex-wrap gap-2">
-        <Button type="submit" name="action" value="approved" variant="primary">
-          Keur goed
-        </Button>
+        <ModerationDialog
+          title="Bevestigen"
+          triggerTitle="Keur goed"
+          triggerVariant="primary"
+          actionValue="approved"
+        >
+          {#snippet children()}
+            <p>Na goedkeuren zal de vraag naar het kamerlid gestuurd worden. Weet je zeker
+              dat je deze vraag wilt goedkeuren?
+            </p>
+          {/snippet}
+
+        </ModerationDialog>
         <ModerationDialog
           title="Geef reden(en) van afwijzing"
           triggerTitle="Wijs af"
+          triggerVariant="secondary"
           actionValue="rejected"
-          reasons={allRejectionReasons}
-          bind:selected={selectedRejections}
-        />
+          buttonDisabled={selectedRejections.length == 0}
+        >
+          {#snippet children()}
+            {#each Object.entries(allRejectionReasons) as [key, title]}
+              <label>
+                <input
+                  type="checkbox"
+                  name="reasons"
+                  value={key}
+                  bind:group={selectedRejections}
+                />
+                <span class="min-w-0 flex-1" title={title}>{title}</span>
+              </label>
+            {/each}
+
+          {/snippet}
+        </ModerationDialog>
       </div>
     </form>
   </article>

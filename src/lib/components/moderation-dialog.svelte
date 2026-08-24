@@ -1,23 +1,23 @@
 <script lang="ts">
 	import { Dialog } from 'bits-ui';
-	import type { allRejectionReasonsType } from '$lib/moderation';
 	import Button from './button.svelte';
+	import type { Snippet } from 'svelte';
 
 	type Props = {
     title: string;
     triggerTitle: string;
+    triggerVariant: "primary" | "secondary";
     actionValue: string;
-    reasons: allRejectionReasonsType;
-    selected: string[];
+    buttonDisabled?: boolean;
+    children: Snippet;
   };
 
-	let { title, triggerTitle, actionValue, reasons, selected = $bindable() }: Props = $props();
-  let disabled = $derived(selected.length == 0)
+	let { title, triggerTitle, triggerVariant, actionValue, buttonDisabled, children }: Props = $props();
 </script>
 
 <Dialog.Root>
 	<Dialog.Trigger>
-    <Button type="button" name="action" variant="secondary"
+    <Button type="button" name="action" variant={triggerVariant}
             title={triggerTitle} aria-label={triggerTitle}>
       {triggerTitle}
     </Button>
@@ -40,26 +40,16 @@
 				</Dialog.Close>
 			</div>
       <div class="flex flex-col items-start gap-1 pb-11 pt-7 ps-6">
-        {#each Object.entries(reasons) as [key, title]}
-          <label>
-            <input
-              type="checkbox"
-              name="reasons"
-              value={key}
-              bind:group={selected}
-            />
-            <span class="min-w-0 flex-1" title={title}>{title}</span>
-          </label>
-        {/each}
+        {@render children()}
         <Button
             type="submit"
             name="action"
             value={actionValue}
             variant="primary"
-            class="mt-3 {disabled ? 'disabled:opacity-40' : ''}"
-            disabled={disabled}
+            class="mt-3 {buttonDisabled ? 'disabled:opacity-40' : ''}"
+            disabled={buttonDisabled}
         >
-          Bevestigen
+          {triggerTitle}
         </Button>
       </div>
 		</Dialog.Content>
