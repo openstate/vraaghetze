@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import { receiveInboundEmail } from './inbox';
 import type { InboundEmail } from './parse-inbound';
+import { createQuestion } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -24,27 +25,13 @@ async function createUser(name: string) {
 	return created;
 }
 
-async function createQuestion(overrides: Partial<typeof schema.question.$inferInsert> = {}) {
-	const asker = await createUser('Vera Vraagsteller');
-	const politician = await createUser('Jan Jansen');
-	const id = crypto.randomUUID();
-
-	const [question] = await db
-		.insert(schema.question)
-		.values({
-			id,
-			userId: asker.id,
-			assigneeId: politician.id,
-			title: 'Wat vindt u van de toeslagen?',
-			body: 'Graag een toelichting.',
-			slug: `testvraag-${id}`,
-			status: 'approved',
-			emailToken: crypto.randomUUID(),
-			...overrides
-		})
-		.returning();
-
-	return { question, asker, politician };
+async function myCreateQuestion(overrides: Partial<typeof schema.question.$inferInsert> = {}) {
+	return createQuestion({
+		verifiedAt: null,
+		status: 'approved',
+		emailToken: crypto.randomUUID(),
+		...overrides
+	}, false)
 }
 
 function makeEmail(
@@ -88,7 +75,7 @@ afterEach(() => {
 
 describe('receiveInboundEmail', () => {
 	test('stores the answer for moderation without notifying anyone', async () => {
-		const { question, politician } = await createQuestion();
+		const { question, politician } = await myCreateQuestion();
 
 		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
 
@@ -118,7 +105,7 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('stores a second reply as long as nothing has been published', async () => {
-		const { question, politician } = await createQuestion();
+		const { question, politician } = await myCreateQuestion();
 
 		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
 		await receiveInboundEmail(
@@ -135,7 +122,7 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('ignores a duplicate delivery of the same mail', async () => {
-		const { question, politician } = await createQuestion();
+		const { question, politician } = await myCreateQuestion();
 		const email = makeEmail(politician.email, question.emailToken);
 
 		await receiveInboundEmail(email);
@@ -157,7 +144,7 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('ignores mail without an answer token', async () => {
-		const { politician } = await createQuestion();
+		const { politician } = await myCreateQuestion();
 
 		await receiveInboundEmail(makeEmail(politician.email, null));
 
@@ -167,7 +154,7 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('ignores auto-replies', async () => {
-		const { question, politician } = await createQuestion();
+		const { question, politician } = await myCreateQuestion();
 		const email = makeEmail(politician.email, question.emailToken, {
 			headers: 'Precedence: bulk'
 		});
@@ -180,7 +167,7 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('ignores bounces with an empty envelope sender', async () => {
-		const { question, politician } = await createQuestion();
+		const { question, politician } = await myCreateQuestion();
 		const email = makeEmail(politician.email, question.emailToken);
 		email.envelope = { ...email.envelope, from: '' };
 
@@ -192,7 +179,7 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('ignores mail from an unverified sender', async () => {
-		const { question, politician } = await createQuestion();
+		const { question, politician } = await myCreateQuestion();
 		const email = makeEmail(politician.email, question.emailToken, {
 			dkim: '{@test.example : fail}'
 		});
@@ -215,7 +202,7 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('ignores replies to a question that is not approved', async () => {
-		const { question, politician } = await createQuestion({ status: 'pending' });
+		const { question, politician } = await myCreateQuestion({ status: 'pending' });
 
 		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
 
@@ -225,7 +212,7 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('ignores replies to an already answered question', async () => {
-		const { question, politician } = await createQuestion();
+		const { question, politician } = await myCreateQuestion();
 		await db.insert(schema.answer).values({
 			id: crypto.randomUUID(),
 			questionId: question.id,
@@ -242,7 +229,7 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('ignores mail from someone other than the assigned politician', async () => {
-		const { question } = await createQuestion();
+		const { question } = await myCreateQuestion();
 		const stranger = await createUser('Sjaak Stranger');
 
 		await receiveInboundEmail(makeEmail(stranger.email, question.emailToken));
@@ -253,7 +240,7 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('ignores mail with an empty reply text', async () => {
-		const { question, politician } = await createQuestion();
+		const { question, politician } = await myCreateQuestion();
 		const email = makeEmail(politician.email, question.emailToken, { text: '' });
 
 		await receiveInboundEmail(email);
@@ -265,7 +252,7 @@ describe('receiveInboundEmail', () => {
 
 	test('accepts replies from the diversion address when DIVERSION_EMAIL is set', async () => {
 		testEnv.DIVERSION_EMAIL = 'divert@test.example';
-		const { question } = await createQuestion();
+		const { question } = await myCreateQuestion();
 
 		await receiveInboundEmail(makeEmail(testEnv.DIVERSION_EMAIL, question.emailToken));
 

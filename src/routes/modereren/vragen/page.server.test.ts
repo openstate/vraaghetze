@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
-import { rejectionReasonText } from '$lib/moderation';
+import { createQuestion } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -21,43 +21,6 @@ async function createUser(name: string, overrides: Partial<typeof schema.user.$i
 		.returning();
 
 	return created;
-}
-
-async function createQuestion(overrides: Partial<typeof schema.question.$inferInsert> = {}) {
-	const asker = await createUser('Vera Vraagsteller');
-	const politician = await createUser('Jan Jansen');
-
-	const fractionId = crypto.randomUUID();
-	await db
-		.insert(schema.fraction)
-		.values({ id: fractionId, slug: `tf-${fractionId}`, name: 'Testfractie', abbreviation: 'TF' });
-
-	const politicianId = crypto.randomUUID();
-	await db.insert(schema.politician).values({
-		id: politicianId,
-		slug: `jan-jansen-${politicianId}`,
-		userId: politician.id,
-		fractionId,
-		fractionRole: 'member'
-	});
-
-	const id = crypto.randomUUID();
-
-	const [question] = await db
-		.insert(schema.question)
-		.values({
-			id,
-			userId: asker.id,
-			assigneeId: politician.id,
-			title: 'Wat vindt u van de toeslagen?',
-			body: 'Graag een toelichting.',
-			slug: `testvraag-${id}`,
-			verifiedAt: new Date(),
-			...overrides
-		})
-		.returning();
-
-	return question;
 }
 
 async function getQuestion(questionId: string) {
@@ -115,7 +78,7 @@ beforeEach(async () => {
 describe('load', () => {
 	test('returns the queue to a moderator', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const question = await createQuestion();
+		const { question } = await createQuestion();
 
 		const result = (await page.load(makeLoadEvent(moderator))) as LoadData;
 
@@ -125,7 +88,7 @@ describe('load', () => {
 
 describe('default action', () => {
 	test('fails without a signed-in user', async () => {
-		const question = await createQuestion();
+		const { question } = await createQuestion();
 		const event = makeActionEvent(null, { questionId: question.id, action: 'approved' });
 
 		expect(await statusOf(page.actions.default(event))).toBe(400);
@@ -134,7 +97,7 @@ describe('default action', () => {
 
 	test('moderates a question for a moderator', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const question = await createQuestion();
+		const { question } = await createQuestion();
 		const event = makeActionEvent(moderator, { questionId: question.id, action: 'approved' });
 
 		const result = await page.actions.default(event);
@@ -154,7 +117,7 @@ describe('default action', () => {
 
 	test('requires rejection reasons when rejecting', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const question = await createQuestion();
+		const { question } = await createQuestion();
 		const event = makeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: '' });
 
 		const result = await page.actions.default(event);
@@ -164,7 +127,7 @@ describe('default action', () => {
 
 	test('stores rejection reasons when rejecting', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const question = await createQuestion();
+		const { question } = await createQuestion();
 		const event = makeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'offensive' });
 
 		const result = await page.actions.default(event);
@@ -175,7 +138,7 @@ describe('default action', () => {
 
 	test('validates rejection reasons when rejecting', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const question = await createQuestion();
+		const { question } = await createQuestion();
 		const event = makeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'i_do_not_exist' });
 
 		const result = await page.actions.default(event);
@@ -185,7 +148,7 @@ describe('default action', () => {
 
 	test('ignores rejection reasons when approving', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const question = await createQuestion();
+		const { question } = await createQuestion();
 		const event = makeActionEvent(moderator, { questionId: question.id, action: 'approved', rejectionReason: 'offensive' });
 
 		const result = await page.actions.default(event);
@@ -196,7 +159,7 @@ describe('default action', () => {
 
 	test('reports an already handled question', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const question = await createQuestion({ status: 'approved' });
+		const { question } = await createQuestion({ status: 'approved' });
 		const event = makeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'offensive' });
 
 		const result = await page.actions.default(event);
@@ -207,7 +170,7 @@ describe('default action', () => {
 
 	test('reports an unverified question', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const question = await createQuestion({ verifiedAt: null });
+		const { question } = await createQuestion({ verifiedAt: null });
 		const event = makeActionEvent(moderator, { questionId: question.id, action: 'approved' });
 
 		const result = await page.actions.default(event);

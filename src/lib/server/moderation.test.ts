@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as moderation from './moderation';
+import { createQuestion, createUser } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -10,54 +11,6 @@ const testEnv = vi.hoisted(() => ({
 }));
 
 vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
-
-async function createUser(name: string) {
-	const id = crypto.randomUUID();
-
-	const [created] = await db
-		.insert(schema.user)
-		.values({ id, name, email: `${id}@test.example`, emailVerified: true })
-		.returning();
-
-	return created;
-}
-
-async function createQuestion(overrides: Partial<typeof schema.question.$inferInsert> = {}) {
-	const asker = await createUser('Vera Vraagsteller');
-	const politician = await createUser('Jan Jansen');
-
-	const fractionId = crypto.randomUUID();
-	await db
-		.insert(schema.fraction)
-		.values({ id: fractionId, slug: `tf-${fractionId}`, name: 'Testfractie', abbreviation: 'TF' });
-
-	const politicianId = crypto.randomUUID();
-	await db.insert(schema.politician).values({
-		id: politicianId,
-		slug: `jan-jansen-${politicianId}`,
-		userId: politician.id,
-		fractionId,
-		fractionRole: 'member'
-	});
-
-	const id = crypto.randomUUID();
-
-	const [question] = await db
-		.insert(schema.question)
-		.values({
-			id,
-			userId: asker.id,
-			assigneeId: politician.id,
-			title: 'Wat vindt u van de toeslagen?',
-			body: 'Graag een toelichting.',
-			slug: `testvraag-${id}`,
-			verifiedAt: new Date(),
-			...overrides
-		})
-		.returning();
-
-	return { question, asker, politician };
-}
 
 async function createAnswer(
 	question: { id: string; assigneeId: string },
