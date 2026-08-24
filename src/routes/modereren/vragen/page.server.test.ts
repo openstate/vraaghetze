@@ -127,6 +127,37 @@ describe('default action', () => {
 		expect(result).toMatchObject({ status: 400 });
 	});
 
+	test('handles multiple valid rejection reasons', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const { question } = await createQuestion();
+		const event = makeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'offensive,duplicate' });
+
+		const result = await page.actions.default(event);
+
+		expect(result).toMatchObject({ moderated: question.id });
+		expect((await getModerationAction(question.id)).rejectionReason).toBe('offensive,duplicate');
+	});
+
+	test('rejects multiple rejection reasons if one is invalid (1)', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const { question } = await createQuestion();
+		const event = makeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'i_do_not_exist,duplicate' });
+
+		const result = await page.actions.default(event);
+
+		expect(result).toMatchObject({ status: 400 });
+	});
+
+	test('rejects multiple rejection reasons if one is invalid (2)', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const { question } = await createQuestion();
+		const event = makeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'offensive,i_do_not_exist' });
+
+		const result = await page.actions.default(event);
+
+		expect(result).toMatchObject({ status: 400 });
+	});
+
 	test('ignores rejection reasons when approving', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const { question } = await createQuestion();
