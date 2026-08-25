@@ -25,6 +25,15 @@
 
 	const currentTab = $derived(page.url.pathname.split('/')[2] ?? 'vragen');
 </script>
+<style>
+	:global(.tabs_list) {width: fit-content;}
+	@media screen and (max-width: 480px) {
+		:global(.tabs_list) {
+			width: auto;
+			flex-wrap: wrap;
+		}
+	}
+</style>
 
 <Page width="wide">
 	<h1 class="mb-8 font-serif text-4xl">Moderatie</h1>
@@ -38,7 +47,7 @@
 			goto(perPage ? `${href}?per=${perPage}` : href, { keepFocus: true, noScroll: true });
 		}}
 	>
-		<Tabs.List class="mb-8 flex w-fit gap-1 rounded bg-osf-canvas-100 p-1">
+		<Tabs.List class="mb-8 flex gap-1 rounded bg-osf-canvas-100 p-1 tabs_list">
 			{#each tabs as tab (tab.value)}
 				<Tabs.Trigger
 					value={tab.value}
