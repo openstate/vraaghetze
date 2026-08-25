@@ -11,6 +11,13 @@
 
 	const search = new SearchForm({ term: () => data.query.term });
 </script>
+<style>
+	.politicians_list {display: grid;}
+	@media screen and (max-width: 480px) {
+		.politicians_list {display: block;}
+		.politicians_list li {margin-bottom: 1em;}
+	}
+</style>
 
 <Page width="wide">
 	<h1 class="mb-8 font-serif text-4xl">Kamerleden</h1>
@@ -20,7 +27,7 @@
 		action={resolve('/politici')}
 		bind:this={search.form}
 		{...search.events}
-		class="grid items-start gap-x-10 gap-y-6 lg:grid-cols-[1fr_17rem] lg:grid-rows-[auto_1fr]"
+		class="items-start gap-x-10 gap-y-6 lg:grid-cols-[1fr_17rem] lg:grid-rows-[auto_1fr] politicians_list"
 	>
 		<search class="lg:col-start-1">
 			<label class="relative block">
@@ -73,7 +80,7 @@
 			{#if data.politicians.length === 0}
 				<p class="text-osf-canvas-500">Geen kamerleden gevonden. Pas de zoekterm of filters aan.</p>
 			{:else}
-				<ul class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+				<ul class="gap-4 sm:grid-cols-2 xl:grid-cols-3 politicians_list">
 					{#each data.politicians as politician (politician.id)}
 						<li>
 							<PoliticianCard {politician} />
