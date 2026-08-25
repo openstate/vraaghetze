@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Avatar from '$lib/components/avatar.svelte';
-	import Button from '$lib/components/button.svelte';
 	import ModerationDialog from '$lib/components/moderation-dialog.svelte';
 	import { allRejectionReasons } from '$lib/moderation.js';
 	import { formatDateLong } from '$lib/date-time';
@@ -93,7 +92,6 @@
               dat je deze vraag wilt goedkeuren?
             </p>
           {/snippet}
-
         </ModerationDialog>
         <ModerationDialog
           title="Geef reden(en) van afwijzing"
@@ -114,7 +112,6 @@
                 <span class="min-w-0 flex-1" title={title}>{title}</span>
               </label>
             {/each}
-
           {/snippet}
         </ModerationDialog>
       </div>

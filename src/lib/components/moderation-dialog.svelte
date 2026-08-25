@@ -16,7 +16,7 @@
 </script>
 
 <Dialog.Root>
-	<Dialog.Trigger>
+	<Dialog.Trigger type="button">
     <Button type="button" name="action" variant={triggerVariant}
             title={triggerTitle} aria-label={triggerTitle}>
       {triggerTitle}
@@ -33,6 +33,7 @@
 				<Dialog.Title class="font-medium">{title}</Dialog.Title>
 
 				<Dialog.Close
+          type="button"
 					aria-label="Sluiten"
 					class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-sm text-osf-canvas-500 hover:bg-osf-canvas-100 hover:text-osf-violet-900"
 				>
