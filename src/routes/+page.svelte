@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from "$app/environment";
 	import { resolve } from '$app/paths';
 	import openStateLogo from '$lib/assets/open-state-logo.svg?raw';
 	import sparks from '$lib/assets/sparks.svg';
@@ -7,6 +8,7 @@
 	import Button from '$lib/components/button.svelte';
 	import HeroPlanes from '$lib/components/hero-planes.svelte';
 	import QuestionCard from '$lib/components/question-card.svelte';
+	import { onMount } from "svelte";
 
 	let { data } = $props();
 
@@ -45,6 +47,41 @@
 				'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut blandit ex a congue dignissim. Maecenas vitae lobortis ligula.'
 		}
 	];
+
+	if (browser) {
+		onMount(() => {
+			const form = document.getElementById('mc-embedded-subscribe-form');
+			const emailInput = <HTMLInputElement>document.getElementById('mce-EMAIL');
+			const errorResponse = document.getElementById('mce-error-response');
+
+			if (form && emailInput && errorResponse) {
+				form.addEventListener('submit', function(e) {
+					const email = emailInput.value.trim();
+					const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+					errorResponse.style.display = 'none';
+
+					// Validate email is not empty
+					if (!email) {
+						e.preventDefault();
+						e.stopPropagation();
+						errorResponse.textContent = 'Dit is een verplicht veld.';
+						errorResponse.style.display = 'block';
+						return;
+					}
+
+					// Validate email format
+					if (!emailRegex.test(email)) {
+						e.preventDefault();
+						e.stopPropagation();
+						errorResponse.textContent = 'Dit is een ongeldig e-mailadres.';
+						errorResponse.style.display = 'block';
+						return;
+					}
+				});
+			}
+		});
+	}
 </script>
 
 <section class="relative overflow-hidden bg-osf-canvas-50">
@@ -245,21 +282,31 @@
 				purus non.
 			</p>
 
-			<!-- TODO: hook this up to VraagHetZe blog in Mailchimp. see: https://github.com/openstate/open-state-theme-2026/blob/5c255c841eee2772503111eb5f67e8076db8334b/resources/views/partials/newsletter.blade.php -->
-			<div
-				class="mx-auto mt-10 flex max-w-md flex-col gap-2 rounded border border-osf-canvas-200 bg-osf-neutral-50 p-2 md:flex-row md:items-center md:justify-between md:gap-8 md:pl-5"
-			>
-				<label class="min-w-0 grow">
-					<span class="sr-only">Je e-mailadres</span>
-					<input
-						type="email"
-						autocomplete="email"
-						placeholder="Je emailadres"
-						class="w-full px-3 py-2.5 text-sm text-osf-violet-900 placeholder:text-osf-canvas-400 focus:outline-none md:p-0"
-					/>
-				</label>
-				<Button variant="primary" class="shrink-0 max-md:w-full">Aanmelden</Button>
-			</div>
+			<form action="https://openstate.us4.list-manage.com/subscribe/post?u=03355fd4f1a7935cae63b21aa&amp;id=2f09e8274d" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank" novalidate>
+				<div
+					class="mx-auto mt-10 flex max-w-md flex-col gap-2 rounded border border-osf-canvas-200 bg-osf-neutral-50 p-2 md:flex-row md:items-center md:justify-between md:gap-8 md:pl-5"
+				>
+					<label class="min-w-0 grow">
+						<span class="sr-only">Je e-mailadres</span>
+						<input
+							type="email"
+							autocomplete="email"
+							placeholder="Je emailadres"
+							class="w-full px-3 py-2.5 text-sm text-osf-violet-900 placeholder:text-osf-canvas-400 focus:outline-none md:p-0"
+							name="EMAIL"
+							id="mce-EMAIL"
+						/>
+					</label>
+					<Button variant="primary" class="shrink-0 max-md:w-full" name="subscribe" id="mc-embedded-subscribe" 	>Aanmelden</Button>
+				</div>
+				<div style="position: absolute; left: -5000px;" aria-hidden="true">
+					<input type="text" name="b_03355fd4f1a7935cae63b21aa_2f09e8274d" tabindex="-1" value="">
+				</div>
+				<div id="mce-responses" class="clear mt-[8px]">
+					<div class="response text-white" id="mce-error-response" style="display:none"></div>
+					<div class="response text-white" id="mce-success-response" style="display:none"></div>
+				</div>
+			</form>
 		</div>
 	</div>
 </section>
@@ -297,3 +344,6 @@
 		</div>
 	</div>
 </section>
+{#if browser}
+<script src='https://s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js'></script>
+{/if}
