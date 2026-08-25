@@ -8,7 +8,6 @@
 	import Button from '$lib/components/button.svelte';
 	import HeroPlanes from '$lib/components/hero-planes.svelte';
 	import QuestionCard from '$lib/components/question-card.svelte';
-	import { onMount } from "svelte";
 
 	let { data } = $props();
 
@@ -47,41 +46,6 @@
 				'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut blandit ex a congue dignissim. Maecenas vitae lobortis ligula.'
 		}
 	];
-
-	if (browser) {
-		onMount(() => {
-			const form = document.getElementById('mc-embedded-subscribe-form');
-			const emailInput = <HTMLInputElement>document.getElementById('mce-EMAIL');
-			const errorResponse = document.getElementById('mce-error-response');
-
-			if (form && emailInput && errorResponse) {
-				form.addEventListener('submit', function(e) {
-					const email = emailInput.value.trim();
-					const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-					errorResponse.style.display = 'none';
-
-					// Validate email is not empty
-					if (!email) {
-						e.preventDefault();
-						e.stopPropagation();
-						errorResponse.textContent = 'Dit is een verplicht veld.';
-						errorResponse.style.display = 'block';
-						return;
-					}
-
-					// Validate email format
-					if (!emailRegex.test(email)) {
-						e.preventDefault();
-						e.stopPropagation();
-						errorResponse.textContent = 'Dit is een ongeldig e-mailadres.';
-						errorResponse.style.display = 'block';
-						return;
-					}
-				});
-			}
-		});
-	}
 </script>
 
 <section class="relative overflow-hidden bg-osf-canvas-50">
@@ -297,7 +261,7 @@
 							id="mce-EMAIL"
 						/>
 					</label>
-					<Button variant="primary" class="shrink-0 max-md:w-full" name="subscribe" id="mc-embedded-subscribe" 	>Aanmelden</Button>
+					<Button type="submit" variant="primary" class="shrink-0 max-md:w-full" name="subscribe" id="mc-embedded-subscribe">Aanmelden</Button>
 				</div>
 				<div style="position: absolute; left: -5000px;" aria-hidden="true">
 					<input type="text" name="b_03355fd4f1a7935cae63b21aa_2f09e8274d" tabindex="-1" value="">
