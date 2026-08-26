@@ -36,15 +36,14 @@
 
 		const step = submitAskStep(formElement, details, FIELDS);
 		issues = step.issues;
+		// If no errors, and the logged in user has no name yet, store it (perform the default form action by returning)
+		if (step.valid && data.user && !data.user.name) return
+
+		event.preventDefault()
 		if (!step.valid) return;
 
-		if (data.user && !data.user.name) {
-			// If no errors, and the logged in user has no name yet, store it (perform the default form action)
-		} else {
-			event.preventDefault()
-			// eslint-disable-next-line svelte/no-navigation-without-resolve
-			goto(stepHref('controle', draft));
-		}
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		goto(stepHref('controle', draft));
 	}
 </script>
 
