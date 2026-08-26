@@ -32,15 +32,19 @@
 	const persist = () => writeDetails(details);
 
 	function next(event: SubmitEvent) {
-		event.preventDefault();
 		persist();
 
 		const step = submitAskStep(formElement, details, FIELDS);
 		issues = step.issues;
 		if (!step.valid) return;
 
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto(stepHref('controle', draft));
+		if (data.user && !data.user.name) {
+			// If no errors, and the logged in user has no name yet, store it (perform the default form action)
+		} else {
+			event.preventDefault()
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			goto(stepHref('controle', draft));
+		}
 	}
 </script>
 
@@ -48,6 +52,7 @@
 
 <form
 	bind:this={formElement}
+	method="POST"
 	onsubmit={next}
 	oninput={persist}
 	onchange={persist}
@@ -70,6 +75,9 @@
 		{/snippet}
 	</Field>
 
+	{#if data.user}
+		<p class="text-osf-canvas-600">Je e-mailadres: {data.user.email}</p>
+	{:else}
 	<Field name="email" label="Je e-mailadres" issues={issues.email}>
 		{#snippet children(control)}
 			<input
@@ -82,6 +90,7 @@
 			/>
 		{/snippet}
 	</Field>
+	{/if}
 
 	<div class="mt-2 flex flex-wrap items-center justify-end gap-3">
 		<Button variant="secondary" class="mr-auto" href={stepHref('vraag', draft)}>Vorige</Button>

@@ -13,7 +13,7 @@ export const load: LayoutLoad = async ({ data, parent, url }) => {
 		const draft = { ...draftFromUrl(url), aan: data.politician?.slug ?? '' };
 
 		// a signed-in asker has no personal details left to fill in
-		if (step.id === 'gegevens' && user) redirect(307, stepHref('controle', draft));
+		if (step.id === 'gegevens' && user && user.name) redirect(307, stepHref('controle', draft));
 
 		// a step ahead of the answers goes back to the one still owed, exactly as the nav offers them
 		if (stepIsAhead(step.id, draft)) redirect(307, stepHref(stepToAnswer(draft), draft));
