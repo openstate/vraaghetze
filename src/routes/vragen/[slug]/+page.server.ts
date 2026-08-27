@@ -10,7 +10,7 @@ const RELATED_QUESTIONS = 3;
 export const load: PageServerLoad = async ({ params, locals, url }) => {
 	const viewerId = locals.user?.id ?? null;
 
-	const result = await questions.bySlug(params.slug, viewerId);
+	const result = await questions.bySlug(params.slug, viewerId, locals.user?.role == 'admin');
 	if (!result) error(404, 'Vraag niet gevonden');
 
 	const needsConfirm = viewerId ? await questions.pendingConfirmation(params.slug, viewerId) : null;

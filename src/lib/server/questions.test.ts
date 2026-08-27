@@ -359,7 +359,7 @@ describe('visibility', () => {
 		const approved = await insertQuestion(asker.id, politicianUser.id);
 		await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
 
-		const list = await questions.listForPolitician(politician.slug, 10);
+		const list = await questions.listForPolitician(politician.slug, 10, asker.id, false);
 
 		expect(list.map((row) => row.slug)).toEqual([approved.slug]);
 	});

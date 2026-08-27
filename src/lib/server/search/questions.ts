@@ -12,6 +12,7 @@ import { type QuestionSearchQuery } from '$lib/search';
 import type { Pagination } from '$lib/pagination';
 import { TIME_ZONE } from '$lib/date-time';
 import { activeFractions, matchesTerm } from './index';
+import type { User } from '../auth';
 
 const columns = [
 	{ column: schema.question.title, weight: 3 },
@@ -36,19 +37,23 @@ const midnight = (date: SQL) =>
 	// the utc moment a Dutch calendar day starts
 	sql`((${date})::timestamp at time zone ${TIME_ZONE}) at time zone 'UTC'`;
 
-function joinSearchTables<Query extends PgSelect>(query: Query, viewerId: string | null) {
+function joinSearchTables<Query extends PgSelect>(query: Query, viewerId: string | null, isAdmin: boolean) {
 	return query
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
-		.leftJoin(schema.answer, latestAnswer(viewerId));
+		.leftJoin(schema.answer, latestAnswer(viewerId, isAdmin));
 }
 
 type SkipFacet = 'status' | 'fraction' | 'politician';
 
-function searchConditions(query: QuestionSearchQuery, viewerId: string | null, skip?: SkipFacet) {
-	const conditions: (SQL | undefined)[] = [isVisibleTo(schema.question, viewerId)];
+function searchConditions(query: QuestionSearchQuery, viewerId: string | null, isAdmin: boolean, skip?: SkipFacet) {
+	const conditions: (SQL | undefined)[] = [isVisibleTo(schema.question, viewerId, isAdmin)];
+
+	if (!isAdmin) {
+		conditions.push(viewerId ? eq(schema.question.userId, viewerId) : eq(schema.user.id, "teaser"))
+	}
 
 	if (query.term) conditions.push(matchesQuestion(query.term));
 
@@ -81,8 +86,10 @@ function searchOrderBy(query: QuestionSearchQuery) {
 export function searchQuestions(
 	query: QuestionSearchQuery,
 	{ page, perPage }: Pagination,
-	viewerId: string | null
+	viewer: User | null | undefined
 ) {
+	const viewerId = viewer?.id ?? null
+	const isAdmin = viewer?.role == 'admin'
 	return db.transaction(async (tx) => {
 		const rows = await joinSearchTables(
 			tx
@@ -99,17 +106,19 @@ export function searchQuestions(
 				})
 				.from(schema.question)
 				.$dynamic(), // so joinSearchTables can keep building on this query
-			viewerId
+			viewerId,
+			isAdmin
 		)
-			.where(searchConditions(query, viewerId))
+			.where(searchConditions(query, viewerId, isAdmin))
 			.orderBy(...searchOrderBy(query))
 			.limit(perPage)
 			.offset((page - 1) * perPage);
 
 		const [{ total }] = await joinSearchTables(
 			tx.select({ total: count() }).from(schema.question).$dynamic(),
-			viewerId
-		).where(searchConditions(query, viewerId));
+			viewerId,
+			isAdmin
+		).where(searchConditions(query, viewerId, isAdmin));
 
 		const [answerCounts] = await joinSearchTables(
 			tx
@@ -121,21 +130,24 @@ export function searchQuestions(
 				})
 				.from(schema.question)
 				.$dynamic(),
-			viewerId
-		).where(searchConditions(query, viewerId, 'status'));
+			viewerId,
+			isAdmin
+		).where(searchConditions(query, viewerId, isAdmin, 'status'));
 
 		const fractionCounts = await joinSearchTables(
 			tx.select({ slug: schema.fraction.slug, total: count() }).from(schema.question).$dynamic(),
-			viewerId
+			viewerId,
+			isAdmin
 		)
-			.where(searchConditions(query, viewerId, 'fraction'))
+			.where(searchConditions(query, viewerId, isAdmin, 'fraction'))
 			.groupBy(schema.fraction.slug);
 
 		const politicianCounts = await joinSearchTables(
 			tx.select({ slug: schema.politician.slug, total: count() }).from(schema.question).$dynamic(),
-			viewerId
+			viewerId,
+			isAdmin
 		)
-			.where(searchConditions(query, viewerId, 'politician'))
+			.where(searchConditions(query, viewerId, isAdmin, 'politician'))
 			.groupBy(schema.politician.slug);
 
 		const fractions = await activeFractions(tx);

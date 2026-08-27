@@ -3,6 +3,7 @@ import { db, schema } from '$lib/server/db';
 import { parseQuestionSearch, QUESTIONS_PER_PAGE } from '$lib/search';
 import { searchQuestions } from './questions';
 import { createPolitician, createUser } from '$lib/test-utils';
+import type { User } from '../auth';
 
 async function insertQuestion(
 	askerId: string,
@@ -46,12 +47,12 @@ async function insertAnswer(
 
 function runSearch(
 	params: string,
-	viewerId: string | null = null,
+	viewer: User | null = null,
 	pagination = { page: 1, perPage: QUESTIONS_PER_PAGE }
 ) {
 	const query = parseQuestionSearch(new URL(`https://vraaghetze.nu/vragen${params}`));
 
-	return searchQuestions(query, pagination, viewerId);
+	return searchQuestions(query, pagination, viewer);
 }
 
 const slugsOf = (rows: { slug: string }[]) => rows.map((row) => row.slug).sort();
@@ -74,8 +75,8 @@ describe('searchQuestions', () => {
 		const pending = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
 
 		const anonymous = await runSearch('');
-		const owner = await runSearch('', asker.id);
-		const stranger = await runSearch('', politicianUser.id);
+		const owner = await runSearch('', asker);
+		const stranger = await runSearch('', politicianUser);
 
 		expect(slugsOf(anonymous.questions)).toEqual([approved.slug]);
 		expect(slugsOf(owner.questions)).toEqual([approved.slug, pending.slug].sort());
@@ -158,7 +159,7 @@ describe('searchQuestions', () => {
 			createdAt: new Date('2026-05-02T10:00:00Z')
 		});
 
-		const own = await runSearch('', politicianUser.id);
+		const own = await runSearch('', politicianUser);
 		const anonymous = await runSearch('', null);
 
 		expect(own.questions).toHaveLength(1);

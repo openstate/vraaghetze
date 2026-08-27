@@ -18,6 +18,8 @@ import { sendConfirmationMail } from '$lib/server/email/templates';
 import { splitWords } from '$lib/server/search';
 import { slugify, slugifyUnique } from '$lib/server/utils/slug';
 import { hasPermission } from '$lib/permissions';
+import type { User } from './auth';
+import { drizzleQueryToSQLString } from '$lib/general';
 
 export const politicianUser = alias(schema.user, 'politicianUser');
 export const newerAnswer = alias(schema.answer, 'newerAnswer');
@@ -25,15 +27,22 @@ export const newerAnswer = alias(schema.answer, 'newerAnswer');
 // approved rows for everyone, a signed-in user also sees their own regardless of status
 export const isVisibleTo = (
 	table: typeof schema.question | typeof schema.answer | typeof newerAnswer,
-	viewerId: string | null
-) => or(eq(table.status, 'approved'), viewerId ? eq(table.userId, viewerId) : undefined);
+	viewerId: string | null,
+	isAdmin: boolean
+) => {
+	if (isAdmin) {
+		return or()
+	} else {
+		return eq(table.userId, viewerId || 'teaser');
+	}
+}
 
 // a politician can follow up on a pending or rejected answer, so a question may have several.
 // join only the newest visible one, otherwise the question repeats once per answer
-export const latestAnswer = (viewerId: string | null) =>
+export const latestAnswer = (viewerId: string | null, isAdmin: boolean) =>
 	and(
 		eq(schema.answer.questionId, schema.question.id),
-		isVisibleTo(schema.answer, viewerId),
+		isVisibleTo(schema.answer, viewerId, isAdmin),
 		notExists(
 			db
 				.select({ newer: sql`1` })
@@ -41,7 +50,7 @@ export const latestAnswer = (viewerId: string | null) =>
 				.where(
 					and(
 						eq(newerAnswer.questionId, schema.question.id),
-						isVisibleTo(newerAnswer, viewerId),
+						isVisibleTo(newerAnswer, viewerId, isAdmin),
 						gt(newerAnswer.createdAt, schema.answer.createdAt)
 					)
 				)
@@ -82,7 +91,7 @@ export const cardColumns = {
 };
 
 // the public record of what this politician was asked
-export async function listForPolitician(slug: string, limit: number) {
+export async function listForPolitician(slug: string, limit: number, viewerId: string | null, isAdmin: boolean) {
 	const rows = await db
 		.select(cardColumns)
 		.from(schema.question)
@@ -90,8 +99,9 @@ export async function listForPolitician(slug: string, limit: number) {
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
-		.leftJoin(schema.answer, latestAnswer(null))
-		.where(and(eq(schema.politician.slug, slug), eq(schema.question.status, 'approved')))
+		.leftJoin(schema.answer, latestAnswer(null, false))
+		.where(and(eq(schema.politician.slug, slug), eq(schema.question.status, 'approved'),
+			(isAdmin ? undefined : eq(schema.user.id, viewerId ?? 'teaser'))))
 		.orderBy(desc(schema.question.createdAt))
 		.limit(limit);
 
@@ -99,7 +109,7 @@ export async function listForPolitician(slug: string, limit: number) {
 }
 
 // the homepage showcase, so only publicly answered questions, the freshest answer first
-export async function listAnswered(limit: number) {
+export async function listAnswered(limit: number, user?: User) {
 	const rows = await db
 		.select(cardColumns)
 		.from(schema.question)
@@ -107,8 +117,11 @@ export async function listAnswered(limit: number) {
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
-		.innerJoin(schema.answer, latestAnswer(null))
-		.where(eq(schema.question.status, 'approved'))
+		.innerJoin(schema.answer, latestAnswer(null, user?.role == 'admin'))
+		.where(and(
+			eq(schema.question.status, 'approved'),
+			(user ? eq(schema.user.id, user.id) : eq(schema.user.id, "teaser"))
+		))
 		.orderBy(desc(schema.answer.createdAt))
 		.limit(limit);
 
@@ -177,7 +190,7 @@ async function rankedByTerms(terms: Set<string>, scope: SQL, limit: number) {
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
-		.leftJoin(schema.answer, latestAnswer(null))
+		.leftJoin(schema.answer, latestAnswer(null, false))
 		.where(
 			and(
 				// approved only and no viewer, so this shows nothing /vragen does not already show
@@ -198,6 +211,7 @@ async function rankedByTerms(terms: Set<string>, scope: SQL, limit: number) {
 
 // what else was asked about the same subject, shown under a question
 export async function relatedTo(slug: string, limit: number) {
+	return []; // teaser
 	const [source] = await db
 		// every non-stop word of the title and body
 		.select({ lexemes: sql<string[]>`tsvector_to_array(${schema.question.searchVector})` })
@@ -221,6 +235,7 @@ const SIMILAR_MAX_WORDS = 12;
 // the sibling of relatedTo for people who have no question yet, so duplicates surface
 // before one is created
 export async function similarForFraction(text: string, politicianId: string, limit: number) {
+	return []; // teaser
 	const words = splitWords(text).filter(isSubjectWord).slice(0, SIMILAR_MAX_WORDS);
 	if (words.length === 0) return [];
 
@@ -247,13 +262,13 @@ export async function statsForPolitician(slug: string) {
 		.from(schema.question)
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		// no viewer, so this joins the newest approved answer and nothing else
-		.leftJoin(schema.answer, latestAnswer(null))
+		.leftJoin(schema.answer, latestAnswer(null, false))
 		.where(and(eq(schema.politician.slug, slug), eq(schema.question.status, 'approved')));
 
 	return stats;
 }
 
-export async function listForUser(userId: string) {
+export async function listForUser(userId: string, isAdmin: boolean) {
 	const rows = await db
 		// the owner's own list is the one place a card also shows the moderation status
 		.select({ ...cardColumns, status: schema.question.status })
@@ -262,7 +277,7 @@ export async function listForUser(userId: string) {
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
-		.leftJoin(schema.answer, latestAnswer(userId))
+		.leftJoin(schema.answer, latestAnswer(userId, isAdmin))
 		// no status filter: the owner sees all their own questions, verified or not
 		.where(eq(schema.question.userId, userId))
 		.orderBy(desc(schema.question.createdAt));
@@ -270,7 +285,7 @@ export async function listForUser(userId: string) {
 	return nestAnswer(rows);
 }
 
-export async function bySlug(slug: string, viewerId: string | null) {
+export async function bySlug(slug: string, viewerId: string | null, isAdmin: boolean) {
 	const [question] = await db
 		.select({
 			id: schema.question.id,
@@ -291,7 +306,7 @@ export async function bySlug(slug: string, viewerId: string | null) {
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
-		.where(and(eq(schema.question.slug, slug), isVisibleTo(schema.question, viewerId)))
+		.where(and(eq(schema.question.slug, slug), isVisibleTo(schema.question, viewerId, isAdmin)))
 		.limit(1);
 
 	// the question doesn't exist or the viewer can't see it, which is indistinguishable on purpose
@@ -307,7 +322,7 @@ export async function bySlug(slug: string, viewerId: string | null) {
 		})
 		.from(schema.answer)
 		.innerJoin(schema.user, eq(schema.answer.userId, schema.user.id))
-		.where(and(eq(schema.answer.questionId, question.id), isVisibleTo(schema.answer, viewerId)))
+		.where(and(eq(schema.answer.questionId, question.id), isVisibleTo(schema.answer, viewerId, isAdmin)))
 		// a follow-up reply supersedes the one before it
 		.orderBy(desc(schema.answer.createdAt))
 		.limit(1);

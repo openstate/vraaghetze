@@ -40,6 +40,8 @@ export const auth = betterAuth({
 	]
 });
 
+export type User = typeof auth.$Infer.Session.user;
+
 export async function sendSignInLink(email: string, callbackURL: string) {
 	const { request } = getRequestEvent();
 	try {

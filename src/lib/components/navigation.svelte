@@ -13,6 +13,7 @@
 	let expanded = $state(false);
 
 	afterNavigate(() => (expanded = false));
+	const teaserText = "Op dit moment kun je alleen de door jezelf gestelde vragen zien. Na officiele lancering van VraagHetZe zullen alle gestelde vragen zichtbaar worden."
 </script>
 
 {#snippet menuLinks()}
@@ -75,3 +76,13 @@
 		</header>
 	{/snippet}
 </Collapsible.Root>
+<!-- Teaser -->
+ <p class="mx-auto w-full px-6 text-center pt-3 pb-3"
+    style="background-color:var(--color-osf-blue-200);color:var(--color-osf-blue-800)">
+		{#if page.data.user?.role == 'admin'}
+		Dit is de pre-launch site. Bezoekers die geen admin zijn zien de volgende tekst in deze balk:<br>
+		{teaserText}
+		{:else}
+		{teaserText}
+		{/if}
+</p>
