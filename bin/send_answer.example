@@ -1,0 +1,30 @@
+#!/bin/bash
+# Copy this file and change the following variables as required.
+# .gitignore has an entry for bin/send_answer*.sh so adhere to this naming.
+FROM_NAME="Jan Jansen"
+FROM_DOMAIN=openstate.eu
+FROM_EMAIL="name+diversion@$FROM_DOMAIN"
+EMAIL_TOKEN="email_token from question table"
+SUBJECT="Re: Uw vraag"
+TEXT="This is my answer"
+
+
+# Get environment variables
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+source "$ROOT_DIR/.env"
+
+PARAMS=(
+  -H 'Content-type: multipart/form-data'
+  -F headers="From: $FROM_NAME <$FROM_EMAIL>"
+  -F dkim="{@$FROM_DOMAIN : pass}"
+  -F SPF=pass
+  -F to="antwoord+$EMAIL_TOKEN@vraaghetze.nu"
+  -F from="$FROM_NAME <$FROM_EMAIL>"
+  -F subject="$SUBJECT"
+  -F text="$TEXT"
+  -F sender_ip=127.0.0.1
+  -F envelope="{ \"from\": \"$FROM_EMAIL\", \"to\": [\"antwoord+$EMAIL_TOKEN@vraaghetze.nu\"] }"
+  -F charsets="{ \"to\": \"UTF-8\", \"subject\": \"UTF-8\" }"
+)
+curl -X POST "http://localhost:5173/api/sendgrid/inbound?token=$INBOUND_MAIL_TOKEN" "${PARAMS[@]}"

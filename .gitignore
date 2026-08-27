@@ -18,6 +18,9 @@ Thumbs.db
 !.env.example
 !.env.test
 
+# bin
+bin/send_answer*.sh
+
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
