@@ -69,7 +69,7 @@ export async function unfollow(slug: string, userId: string) {
 	return removed.length > 0;
 }
 
-export async function listForUser(userId: string) {
+export async function listForUser(userId: string, isAdmin: boolean) {
 	const rows = await db
 		.select(cardColumns)
 		.from(schema.questionFollow)
@@ -78,7 +78,7 @@ export async function listForUser(userId: string) {
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
-		.leftJoin(schema.answer, latestAnswer(null))
+		.leftJoin(schema.answer, latestAnswer(null, isAdmin))
 		.where(and(eq(schema.questionFollow.userId, userId), eq(schema.question.status, 'approved')))
 		.orderBy(desc(schema.questionFollow.createdAt));
 

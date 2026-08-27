@@ -3,9 +3,10 @@ import type { PageServerLoad } from './$types';
 
 const ANSWERED_QUESTIONS = 4;
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ parent }) => {
+	const { user } = await parent(); // For teaser
 	const answered = await questions.listAnswered(ANSWERED_QUESTIONS);
 	const statValues = await questions.questionStats();
 
-	return { questions: answered, statValues };
+	return { questions: answered, statValues, user };
 };
