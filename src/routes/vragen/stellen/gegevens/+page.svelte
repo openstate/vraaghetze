@@ -34,7 +34,8 @@
 	function next(event: SubmitEvent) {
 		persist();
 
-		const step = submitAskStep(formElement, details, FIELDS);
+		const useFields = data.user ? FIELDS.filter(v => v != 'email') : FIELDS
+		const step = submitAskStep(formElement, details, useFields);
 		issues = step.issues;
 		// If no errors, and the logged in user has no name yet, store it (perform the default form action by returning)
 		if (step.valid && data.user && !data.user.name) return
