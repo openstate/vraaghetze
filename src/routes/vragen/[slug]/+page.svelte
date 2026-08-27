@@ -68,6 +68,7 @@
 			<hr class="mx-6 my-3 border-osf-canvas-200 sm:mx-8" />
 
 			<div class="p-6 sm:p-8">
+				<!-- teaser: data.answer is null for non-admins -->
 				{#if data.answer}
 					<p class="mb-6 whitespace-pre-wrap">{data.answer.body}</p>
 				{/if}

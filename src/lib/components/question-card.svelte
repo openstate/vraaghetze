@@ -81,6 +81,7 @@
 		{/if}
 
 		<div class={['p-6', featured && '@2xl:flex @2xl:flex-col @2xl:justify-between @2xl:p-8']}>
+			<!-- teaser: question.answer is null for non-admins -->
 			{#if question.answer}
 				<p
 					class={[
