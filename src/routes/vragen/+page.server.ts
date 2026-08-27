@@ -8,7 +8,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	const pagination = { page: parsePagination(url).page, perPage: QUESTIONS_PER_PAGE }; // hardcode perPage
 
-	const result = await searchQuestions(query, pagination, locals.user?.id ?? null);
+	const result = await searchQuestions(query, pagination, locals.user);
 
 	return { ...result, query, ...pagination, meta: { title: 'Vragen & Antwoorden' } };
 };
