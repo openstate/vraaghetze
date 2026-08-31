@@ -73,11 +73,11 @@ async function processMail(mail: InboxRow) {
 		.limit(1);
 
 	if (!question) {
-		return settle(mail, 'ignored', 'Vraag onbekend');
+		return settle(mail, 'ignored', `Vraag onbekend (id=${mail.token})`);
 	}
 
 	if (question.status !== 'approved') {
-		return settle(mail, 'ignored', 'Vraag niet goedgekeurd');
+		return settle(mail, 'ignored', `Vraag niet goedgekeurd (status=${question.status})`);
 	}
 
 	const [publishedAnswer] = await db
@@ -87,11 +87,11 @@ async function processMail(mail: InboxRow) {
 		.limit(1);
 
 	if (publishedAnswer) {
-		return settle(mail, 'ignored', 'Vraag al beantwoord');
+		return settle(mail, 'ignored', `Vraag al beantwoord (id=${publishedAnswer.id})`);
 	}
 
 	if (mail.fromAddress !== resolveMailAddress(question.politicianEmail).toLowerCase()) {
-		return settle(mail, 'ignored', 'Afzender is niet het Kamerlid');
+		return settle(mail, 'ignored', `Afzender is niet het Kamerlid (${mail.fromAddress} versus ${resolveMailAddress(question.politicianEmail).toLowerCase()})`);
 	}
 
 	const replyText = extractReplyText(email.text);
