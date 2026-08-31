@@ -124,7 +124,7 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 
 	const approvalBody = [
 		`Beste ${asker.name},`,
-		`Je vraag "${question.title}" is goedgekeurd door onze moderatoren en doorgestuurd naar ${politician.name}. Je vraag staat nu openbaar op ${env.ORIGIN}/vragen/${question.slug}.`,
+		`Je vraag "${question.title}" is goedgekeurd door onze moderatoren en doorgestuurd naar ${politician.name}. Na lancering van ons platform zal je vraag openbaar staan op ${env.ORIGIN}/vragen/${question.slug}.`,
 		`Zodra ${politician.name} antwoordt, ontvang je daarvan een e-mail.`,
 		`Met vriendelijke groet,\nHet VraagHetZe-team`
 	].join('\n\n');
