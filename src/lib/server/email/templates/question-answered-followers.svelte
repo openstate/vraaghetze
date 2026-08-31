@@ -9,7 +9,7 @@
 </script>
 Beste {followerName},
 
-De vraag "{questionTitle}" die je volgt is beantwoord door {politicianName}. Je kunt het antwoord lezen op {@html questionUrl}.
+De vraag "{questionTitle}" die je volgt is beantwoord door {politicianName}. Na de officiële lancering van VraagHetZe op 28 september kun je het antwoord lezen op {@html questionUrl}.
 
 Met vriendelijke groet,
 
