@@ -15,6 +15,10 @@
 		received: { label: 'Ontvangen', tone: 'neutral' },
 		processed: { label: 'Verwerkt', tone: 'positive' },
 		ignored: { label: 'Genegeerd', tone: 'neutral' },
+		ignored_dkim_failure: { label: 'Genegeerd', tone: 'neutral' },
+		ignored_question_not_approved: { label: 'Genegeerd', tone: 'neutral' },
+		ignored_question_already_answered: { label: 'Genegeerd', tone: 'neutral' },
+		ignored_different_sender: { label: 'Genegeerd', tone: 'neutral' },
 		failed: { label: 'Mislukt', tone: 'danger' }
 	};
 

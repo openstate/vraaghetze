@@ -156,7 +156,13 @@ export const outbox = pgTable(
 	(table) => [index('outbox_sweep_idx').on(table.status, table.nextAttemptAt)]
 );
 
-export type InboxStatus = 'received' | 'processed' | 'ignored' | 'failed';
+export type InboxIgnoreReasons =
+	'ignored'
+	| 'ignored_dkim_failure'
+	| 'ignored_question_not_approved'
+	| 'ignored_question_already_answered'
+	| 'ignored_different_sender'
+export type InboxStatus = InboxIgnoreReasons | 'received' | 'processed' | 'failed';
 
 export const inbox = pgTable('inbox', {
 	id: text().primaryKey(),

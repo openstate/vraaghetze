@@ -11,6 +11,7 @@ import {
 	isSenderVerified,
 	type InboundEmail
 } from './parse-inbound';
+import type { InboxIgnoreReasons } from '$lib/server/db/app.schema';
 
 const politicianUser = alias(schema.user, 'politicianUser');
 
@@ -57,7 +58,7 @@ async function processMail(mail: InboxRow) {
 	}
 
 	if (!mail.dkimVerified) {
-		return settle(mail, 'ignored', 'Afzender niet geverifieerd');
+		return settle(mail, 'ignored_dkim_failure', 'Afzender niet geverifieerd');
 	}
 
 	const [question] = await db
@@ -77,7 +78,7 @@ async function processMail(mail: InboxRow) {
 	}
 
 	if (question.status !== 'approved') {
-		return settle(mail, 'ignored', `Vraag niet goedgekeurd (status=${question.status})`);
+		return settle(mail, 'ignored_question_not_approved', `Vraag niet goedgekeurd (status=${question.status})`);
 	}
 
 	const [publishedAnswer] = await db
@@ -87,11 +88,11 @@ async function processMail(mail: InboxRow) {
 		.limit(1);
 
 	if (publishedAnswer) {
-		return settle(mail, 'ignored', `Vraag al beantwoord (id=${publishedAnswer.id})`);
+		return settle(mail, 'ignored_question_already_answered', `Vraag al beantwoord (id=${publishedAnswer.id})`);
 	}
 
 	if (mail.fromAddress !== resolveMailAddress(question.politicianEmail).toLowerCase()) {
-		return settle(mail, 'ignored', `Afzender is niet het Kamerlid (${mail.fromAddress} versus ${resolveMailAddress(question.politicianEmail).toLowerCase()})`);
+		return settle(mail, 'ignored_different_sender', `Afzender is niet het Kamerlid (${mail.fromAddress} versus ${resolveMailAddress(question.politicianEmail).toLowerCase()})`);
 	}
 
 	const replyText = extractReplyText(email.text);
@@ -119,7 +120,7 @@ async function processMail(mail: InboxRow) {
 	});
 }
 
-function settle(mail: InboxRow, status: 'ignored' | 'failed', reason: string) {
+function settle(mail: InboxRow, status: InboxIgnoreReasons | 'failed', reason: string) {
 	return db
 		.update(schema.inbox)
 		.set({ status, reason, processedAt: new Date() })

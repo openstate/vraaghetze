@@ -176,7 +176,7 @@ describe('receiveInboundEmail', () => {
 		await receiveInboundEmail(email);
 
 		const stored = await getInboxRow(politician.email);
-		expect(stored.status).toBe('ignored');
+		expect(stored.status).toBe('ignored_dkim_failure');
 		expect(stored.answerId).toBeNull();
 	});
 
@@ -196,7 +196,7 @@ describe('receiveInboundEmail', () => {
 		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
 
 		const stored = await getInboxRow(politician.email);
-		expect(stored.status).toBe('ignored');
+		expect(stored.status).toBe('ignored_question_not_approved');
 		expect(stored.answerId).toBeNull();
 	});
 
@@ -213,7 +213,7 @@ describe('receiveInboundEmail', () => {
 		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
 
 		const stored = await getInboxRow(politician.email);
-		expect(stored.status).toBe('ignored');
+		expect(stored.status).toBe('ignored_question_already_answered');
 		expect(stored.answerId).toBeNull();
 	});
 
@@ -224,7 +224,7 @@ describe('receiveInboundEmail', () => {
 		await receiveInboundEmail(makeEmail(stranger.email, question.emailToken));
 
 		const stored = await getInboxRow(stranger.email);
-		expect(stored.status).toBe('ignored');
+		expect(stored.status).toBe('ignored_different_sender');
 		expect(stored.answerId).toBeNull();
 	});
 

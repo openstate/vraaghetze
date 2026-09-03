@@ -627,7 +627,7 @@ const strays: {
 	},
 	{
 		reason: 'Afzender niet geverifieerd',
-		status: 'ignored',
+		status: 'ignored_dkim_failure',
 		from: 'kamerlid@tweedekamer.nl.example.net',
 		text: 'Bij dezen mijn antwoord op de gestelde vraag.',
 		// signed by a domain that isn't the from domain, so alignment fails
@@ -642,7 +642,7 @@ const strays: {
 	},
 	{
 		reason: 'Vraag al beantwoord',
-		status: 'ignored',
+		status: 'ignored_question_already_answered',
 		target: 'answered',
 		// checked before the sender, so a fraction employee gets this far
 		from: 'medewerker@tweedekamer.nl',
@@ -650,7 +650,7 @@ const strays: {
 	},
 	{
 		reason: 'Afzender is niet het Kamerlid',
-		status: 'ignored',
+		status: 'ignored_different_sender',
 		from: 'voorlichting@tweedekamer.nl',
 		text: 'Namens het Kamerlid stuur ik u onderstaand antwoord.'
 	},

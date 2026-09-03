@@ -50,6 +50,10 @@
 		received: 'Onafgehandelde e-mail',
 		processed: 'Verwerkte e-mail',
 		ignored: 'Genegeerde e-mail',
+		ignored_dkim_failure: 'Genegeerde e-mail',
+		ignored_question_not_approved: 'Genegeerde e-mail',
+		ignored_question_already_answered: 'Genegeerde e-mail',
+		ignored_different_sender: 'Genegeerde e-mail',
 		failed: 'Mislukte e-mail'
 	} satisfies Record<Row['status'], string>;
 
