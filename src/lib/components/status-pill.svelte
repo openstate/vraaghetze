@@ -18,7 +18,7 @@
 		ignored_dkim_failure: { label: 'Genegeerd', tone: 'neutral' },
 		ignored_question_not_approved: { label: 'Genegeerd', tone: 'neutral' },
 		ignored_question_already_answered: { label: 'Genegeerd', tone: 'neutral' },
-		ignored_different_sender: { label: 'Genegeerd', tone: 'neutral' },
+		ignored_different_sender: { label: 'Andere Afzender', tone: 'warning' },
 		failed: { label: 'Mislukt', tone: 'danger' }
 	};
 

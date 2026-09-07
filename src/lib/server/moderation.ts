@@ -93,6 +93,33 @@ export function listAnswerQueue() {
 		.orderBy(asc(schema.answer.createdAt));
 }
 
+export type ListAnswerType = Awaited<ReturnType<typeof listAnswerQueue>>[number];
+
+export function getAnswer(answerId: string) {
+	return db
+		.select({
+			id: schema.answer.id,
+			body: schema.answer.body,
+			createdAt: schema.answer.createdAt,
+			questionTitle: schema.question.title,
+			questionBody: schema.question.body,
+			questionSlug: schema.question.slug,
+			questionCreatedAt: schema.question.createdAt,
+			authorName: schema.user.name,
+			politicianName: politicianUser.name,
+			politicianSlug: schema.politician.slug,
+			fraction: schema.fraction.abbreviation,
+			fractionName: schema.fraction.name
+		})
+		.from(schema.answer)
+		.innerJoin(schema.question, eq(schema.answer.questionId, schema.question.id))
+		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
+		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
+		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
+		.where(and(eq(schema.answer.id, answerId), eq(schema.answer.status, 'pending')));
+}
+
 // the sizes behind the tab labels, so a moderator sees what is waiting from any page
 export function countQueues() {
 	return db.transaction(async (tx) => {
@@ -169,6 +196,15 @@ export function listInbox({ page, perPage }: Pagination) {
 
 		return { rows, total };
 	});
+}
+
+export async function getInboxMail(id: string) {
+	const [mail] = await db
+		.select()
+		.from(schema.inbox)
+		.where(eq(schema.inbox.id, id))
+		.limit(1);
+	return mail
 }
 
 export function listOutbox({ page, perPage }: Pagination) {

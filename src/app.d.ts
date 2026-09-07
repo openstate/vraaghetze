@@ -15,6 +15,7 @@ declare global {
 		interface PageData {
 			user?: User;
 			meta?: { title: string };
+			flash?: { type: 'success' | 'error' | 'neutral'; message: string };
 		}
 
 		// interface Error {}

@@ -53,13 +53,13 @@ export const answerColumns = {
 	answerCreatedAt: schema.answer.createdAt
 };
 
-type AnswerRow = {
+type AnswerRowLimited = {
 	answerBody: string | null;
 	answerCreatedAt: Date | null;
 };
 
 // fold the flat left-joined answer columns into a nested object, null when unanswered
-export const nestAnswer = <Row extends AnswerRow>(rows: Row[]) =>
+export const nestAnswer = <Row extends AnswerRowLimited>(rows: Row[]) =>
 	rows.map(({ answerBody, answerCreatedAt, ...question }) => ({
 		...question,
 		answer:

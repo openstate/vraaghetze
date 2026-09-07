@@ -59,13 +59,15 @@
 
 	function details(row: Row) {
 		return [
+			['Id', row.id, true],
 			['Afzender', row.fromAddress],
 			['Onderwerp', row.subject],
 			['Inhoud', row.body],
 			['Status', inboxStatusPills[row.status].label],
 			['Reden', row.reason],
 			['Ontvangen op', row.receivedAt],
-			['Afgehandeld op', row.processedAt]
+			['Afgehandeld op', row.processedAt],
+			['Actionable', row.status == 'ignored_different_sender', true]
 		] satisfies Detail[];
 	}
 </script>

@@ -7,9 +7,11 @@
 	import favicon512 from '$lib/assets/favicon-512.png';
 	import BrandBar from '$lib/components/brand-bar.svelte';
 	import Button from '$lib/components/button.svelte';
+	import FlashMessage from '$lib/components/flash-message.svelte';
 	import Footer from '$lib/components/footer.svelte';
 	import Loading from '$lib/components/loading.svelte';
 	import Navigation from '$lib/components/navigation.svelte';
+	import { getFlash } from 'sveltekit-flash-message';
 	import { page } from '$app/state';
 
 	let { children } = $props();
@@ -19,6 +21,7 @@
 			? `${page.data.meta.title} – VraagHetZe`
 			: 'VraagHetZe – Antwoorden van Kamerleden voor iedereen'
 	);
+	const flash = getFlash(page);
 </script>
 
 <svelte:head>
@@ -37,6 +40,10 @@
 <BrandBar />
 
 <Navigation class={page.url.pathname === '/' ? 'bg-osf-canvas-50!' : ''} />
+
+{#if $flash}
+	<FlashMessage type={$flash.type} message={$flash.message} />
+{/if}
 
 <main id="inhoud" tabindex="-1" class="grow">
 	{@render children()}

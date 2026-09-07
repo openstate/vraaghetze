@@ -17,6 +17,8 @@ const politicianUser = alias(schema.user, 'politicianUser');
 
 type InboxRow = typeof schema.inbox.$inferSelect;
 
+type ignorableErrors = 'wrong_sender';
+
 export async function receiveInboundEmail(email: InboundEmail) {
 	// store first, process second
 	const [stored] = await db
@@ -46,7 +48,7 @@ export async function receiveInboundEmail(email: InboundEmail) {
 	}
 }
 
-async function processMail(mail: InboxRow) {
+export async function processMail(mail: InboxRow, ignoreErrors: ignorableErrors[] = []) {
 	const email = mail.payload;
 
 	if (!mail.token) {
@@ -91,7 +93,8 @@ async function processMail(mail: InboxRow) {
 		return settle(mail, 'ignored_question_already_answered', `Vraag al beantwoord (id=${publishedAnswer.id})`);
 	}
 
-	if (mail.fromAddress !== resolveMailAddress(question.politicianEmail).toLowerCase()) {
+	if (mail.fromAddress !== resolveMailAddress(question.politicianEmail).toLowerCase() &&
+		!ignoreErrors.includes('wrong_sender')) {
 		return settle(mail, 'ignored_different_sender', `Afzender is niet het Kamerlid (${mail.fromAddress} versus ${resolveMailAddress(question.politicianEmail).toLowerCase()})`);
 	}
 
@@ -101,9 +104,8 @@ async function processMail(mail: InboxRow) {
 		return settle(mail, 'ignored', 'Leeg antwoord');
 	}
 
+	const answerId = crypto.randomUUID();
 	await db.transaction(async (tx) => {
-		const answerId = crypto.randomUUID();
-
 		// a politician often sends an automatic reply before the real one and the two can't be
 		// told apart reliably, so the answer waits for a moderator instead of going public
 		await tx.insert(schema.answer).values({
@@ -117,12 +119,16 @@ async function processMail(mail: InboxRow) {
 			.update(schema.inbox)
 			.set({ status: 'processed', reason: null, answerId, processedAt: new Date() })
 			.where(eq(schema.inbox.id, mail.id));
+
 	});
+
+	return answerId as string;
 }
 
-function settle(mail: InboxRow, status: InboxIgnoreReasons | 'failed', reason: string) {
-	return db
+async function settle(mail: InboxRow, status: InboxIgnoreReasons | 'failed', reason: string) {
+	await db
 		.update(schema.inbox)
 		.set({ status, reason, processedAt: new Date() })
 		.where(eq(schema.inbox.id, mail.id));
+	return null;
 }

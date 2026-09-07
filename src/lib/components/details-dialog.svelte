@@ -1,15 +1,26 @@
 <script module lang="ts">
-	export type Detail = [label: string, value: string | Date | null | HTMLSafeString];
+	import { enhance } from '$app/forms';
+
+	export type Detail = [
+		label: string,
+		value: string | Date | null | HTMLSafeString | boolean,
+		hidden?: boolean
+	];
+	let disabled = $state(false);
 </script>
 
 <script lang="ts">
 	import { Dialog } from 'bits-ui';
 	import { formatDateTime } from '$lib/date-time';
 	import { HTMLSafeString } from '$lib/general';
+	import Button from './button.svelte';
 
 	type Props = { title: string; details: Detail[] };
 
 	let { title, details }: Props = $props();
+
+	const actionable = $derived(details.find(c => c[0] == 'Actionable')?.[1])
+	const detailId = $derived((actionable && details.find(c => c[0] == 'Id')?.[1]) || '')
 
 	const cellClass = 'border-osf-canvas-200';
 	const valueClass = 'font-medium wrap-anywhere whitespace-pre-wrap';
@@ -43,7 +54,7 @@
 			</div>
 
 			<dl class="grid overflow-y-auto p-6 pt-0 text-sm sm:grid-cols-[minmax(0,1fr)_2fr]">
-				{#each details.filter(([, value]) => value) as [label, value] (label)}
+				{#each details.filter(([, value, hidden]) => value && !hidden) as [label, value] (label)}
 					<dt class={[cellClass, 'border-t pt-2 pr-6 first-of-type:border-t-0 sm:pb-2']}>
 						{label}
 					</dt>
@@ -58,6 +69,34 @@
 					</dd>
 				{/each}
 			</dl>
+			{#if actionable}
+			<div class="grid overflow-y-auto p-6 pt-0 text-sm">
+				<h1>Acties</h1>
+				<p>Dit antwoord is genegeerd om de gemelde reden maar kan indien gewenst toch verwerkt
+					worden.</p>
+				<ul class="space-y-1 text-body list-disc list-inside text-sm mb-3">
+					<li>Indien <strong>status=Andere Afzender</strong> dan wordt het antwoord verwerkt alsof het oorspronkelijke kamerlid
+						waaraan de vraag gesteld was hem beantwoord heeft.</li>
+				</ul>
+				<form
+					method="POST"
+					use:enhance={() => {
+						disabled = true;
+
+						return async ({ update }) => {
+							await update();
+							disabled = false;
+						};
+					}}>
+					<input type="hidden" name="inboxId" value={detailId}>
+					<input type="hidden" name="returnTo" value={encodeURIComponent(window.location.href)}>
+					<Button type="submit" variant="primary" name="action" value="process_anyway"
+						disabled={disabled} class={disabled ? 'disabled:opacity-40' : ''}>
+						Toch verwerken
+					</Button>
+				</form>
+			</div>
+			{/if}
 		</Dialog.Content>
 	</Dialog.Portal>
 </Dialog.Root>
