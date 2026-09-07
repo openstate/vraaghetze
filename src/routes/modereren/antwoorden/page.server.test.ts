@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
-import { createUser, getAnswer } from '$lib/test-utils';
+import { createCookiesStub, createUser, getAnswer } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -76,7 +75,8 @@ function makeActionEvent(
 
 	return {
 		locals: { user: user ?? undefined },
-		request: new Request('http://localhost/modereren', { method: 'POST', body: formData })
+		request: new Request('http://localhost/modereren', { method: 'POST', body: formData }),
+		cookies: createCookiesStub()
 	} as unknown as Parameters<typeof page.actions.default>[0];
 }
 

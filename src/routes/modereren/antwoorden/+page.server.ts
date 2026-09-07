@@ -1,4 +1,5 @@
 import { fail } from '@sveltejs/kit';
+import { setFlash } from 'sveltekit-flash-message/server';
 import { z } from 'zod';
 import * as moderation from '$lib/server/moderation';
 import { validateForm } from '$lib/server/utils/forms';
@@ -14,7 +15,7 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions = {
-	default: async ({ request, locals }) => {
+	default: async ({ request, locals, cookies }) => {
 		const result = await validateForm(request, moderationSchema);
 		if (!result.valid || !locals.user) return fail(400, { error: 'Ongeldige aanvraag.' });
 
@@ -25,6 +26,13 @@ export const actions = {
 		});
 
 		if ('error' in outcome) return fail(409, { error: 'Dit antwoord is al behandeld.' });
+
+		const message = result.data.action == 'approved' ?
+			'Je hebt het antwoord goedgekeurd' :
+			'Je hebt het antwoord afgewezen';
+	  const flashType = result.data.action == 'approved' ? 'success' : 'neutral'
+
+		setFlash({ type: flashType, message: message }, cookies);
 		return { moderated: result.data.answerId };
 	}
 } satisfies Actions;

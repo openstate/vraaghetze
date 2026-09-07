@@ -107,3 +107,18 @@ export async function getAnswerAudit(answerId: string) {
     .from(schema.moderationAction)
     .where(eq(schema.moderationAction.answerId, answerId));
 }
+
+export function createCookiesStub(initialCookies = {}) {
+  const store = new Map(Object.entries(initialCookies));
+
+  return {
+    get: (name: string) => store.get(name),
+    getAll: () => Array.from(store.entries()).map(([name, value]) => ({ name, value })),
+    set: (name: string, value: string) => {
+      store.set(name, String(value));
+    },
+    delete: (name: string) => {
+      store.delete(name);
+    }
+  };
+}

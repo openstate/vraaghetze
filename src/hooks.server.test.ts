@@ -28,7 +28,9 @@ const moderationRoutes = [
 	'/modereren',
 	'/modereren/vragen',
 	'/modereren/antwoorden',
-	'/modereren/inbox'
+	'/modereren/archief',
+	'/modereren/inbox',
+	'/modereren/outbox'
 ];
 
 describe('handleAuthorization', () => {
