@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as moderation from './moderation';
-import { createQuestion, createUser, getAnswer, getAnswerAudit, getQuestion } from '$lib/test-utils';
+import { createAnswer, createQuestion, createUser, getAnswer, getAnswerAudit, getQuestion } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -11,24 +11,6 @@ const testEnv = vi.hoisted(() => ({
 }));
 
 vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
-
-async function createAnswer(
-	question: { id: string; assigneeId: string },
-	overrides: Partial<typeof schema.answer.$inferInsert> = {}
-) {
-	const [answer] = await db
-		.insert(schema.answer)
-		.values({
-			id: crypto.randomUUID(),
-			questionId: question.id,
-			userId: question.assigneeId,
-			body: 'Mijn antwoord op uw vraag.',
-			...overrides
-		})
-		.returning();
-
-	return answer;
-}
 
 async function getEnqueuedMails(questionId: string) {
 	return db.select().from(schema.outbox).where(eq(schema.outbox.questionId, questionId));

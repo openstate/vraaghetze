@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { db, schema } from '$lib/server/db';
 import { QUESTION_TITLE_MAX_LENGTH } from '$lib/ask';
 import * as page from './+page.server';
-import { createPolitician, createUser, getQuestionBySlug } from '$lib/test-utils';
+import { createPolitician, createUser, getQuestionBySlug, makeActionEvent } from '$lib/test-utils';
 
 const sendSignInLink = vi.hoisted(() => vi.fn());
 vi.mock('$lib/server/auth', () => ({ sendSignInLink }));
@@ -42,21 +42,15 @@ function makeLoadEvent(politician: Chosen, search = '') {
 	} as unknown as Parameters<typeof page.load>[0];
 }
 
-function makeActionEvent(
+function myMakeActionEvent(
 	user: typeof schema.user.$inferSelect | null,
 	fields: Record<string, string> = {}
 ) {
-	const formData = new FormData();
-	for (const [name, value] of Object.entries(fields)) formData.set(name, value);
-
-	return {
-		locals: { user: user ?? undefined },
-		url: new URL('http://localhost/vragen/stellen/controle'),
-		request: new Request('http://localhost/vragen/stellen/controle', {
-			method: 'POST',
-			body: formData
-		})
-	} as unknown as Parameters<typeof page.actions.default>[0];
+	return makeActionEvent<typeof page.actions.default>(
+		`http://localhost/vragen/stellen/controle`,
+		user,
+		fields,
+	);
 }
 
 const questionFields = {
@@ -116,7 +110,7 @@ describe('default action', () => {
 	test('creates the question and redirects a signed-in asker', async () => {
 		const { politician } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
-		const event = makeActionEvent(asker, {
+		const event = myMakeActionEvent(asker, {
 			...questionFields,
 			email: asker.email,
 			politicianId: politician.id
@@ -136,7 +130,7 @@ describe('default action', () => {
 	test('sends a confirmation link for an anonymous asker', async () => {
 		const { politician } = await createPolitician();
 		const email = `nieuw-${crypto.randomUUID()}@test.example`;
-		const event = makeActionEvent(null, { ...questionFields, email, politicianId: politician.id });
+		const event = myMakeActionEvent(null, { ...questionFields, email, politicianId: politician.id });
 
 		const result = await page.actions.default(event);
 
@@ -152,7 +146,7 @@ describe('default action', () => {
 	test('masks a forbidden asker email exactly like a sent confirmation', async () => {
 		const { politician } = await createPolitician();
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const event = makeActionEvent(null, {
+		const event = myMakeActionEvent(null, {
 			...questionFields,
 			email: moderator.email,
 			politicianId: politician.id
@@ -169,7 +163,7 @@ describe('default action', () => {
 
 	test('refuses a signed-in user without ask permission', async () => {
 		const { politician, politicianUser } = await createPolitician();
-		const event = makeActionEvent(politicianUser, {
+		const event = myMakeActionEvent(politicianUser, {
 			...questionFields,
 			email: politicianUser.email,
 			politicianId: politician.id
@@ -184,7 +178,7 @@ describe('default action', () => {
 	test('rejects an inactive politician with a field issue', async () => {
 		const { politician } = await createPolitician('Jan Jansen', { isActive: false });
 		const asker = await createUser('Vera Vraagsteller');
-		const event = makeActionEvent(asker, {
+		const event = myMakeActionEvent(asker, {
 			...questionFields,
 			email: asker.email,
 			politicianId: politician.id
@@ -202,7 +196,7 @@ describe('default action', () => {
 	test('refuses a question longer than the shared limit', async () => {
 		const { politician } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
-		const event = makeActionEvent(asker, {
+		const event = myMakeActionEvent(asker, {
 			...questionFields,
 			title: 'a'.repeat(QUESTION_TITLE_MAX_LENGTH + 1),
 			email: asker.email,
@@ -217,7 +211,7 @@ describe('default action', () => {
 
 	test('fails on an invalid form', async () => {
 		const asker = await createUser('Vera Vraagsteller');
-		const event = makeActionEvent(asker, { email: 'geen-email' });
+		const event = myMakeActionEvent(asker, { email: 'geen-email' });
 
 		const result = await page.actions.default(event);
 

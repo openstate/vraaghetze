@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
-import { createPolitician, createUser, getQuestionBySlug } from '$lib/test-utils';
+import { createPolitician, createUser, getQuestionBySlug, makeActionEvent } from '$lib/test-utils';
 
 const sendSignInLink = vi.hoisted(() => vi.fn());
 vi.mock('$lib/server/auth', () => ({ sendSignInLink }));
@@ -46,20 +46,17 @@ function makeLoadEvent(
 	} as unknown as Parameters<typeof page.load>[0];
 }
 
-function makeActionEvent(
+function myMakeActionEvent(
 	slug: string,
 	user: typeof schema.user.$inferSelect | null,
 	fields: Record<string, string> = {}
 ) {
-	const formData = new FormData();
-	for (const [name, value] of Object.entries(fields)) formData.set(name, value);
-
-	return {
-		params: { slug },
-		locals: { user: user ?? undefined },
-		url: new URL(`http://localhost/vragen/${slug}`),
-		request: new Request(`http://localhost/vragen/${slug}`, { method: 'POST', body: formData })
-	} as unknown as Parameters<typeof page.actions.bevestigen>[0];
+	return makeActionEvent<typeof page.actions.bevestigen>(
+		`http://localhost/vragen/${slug}`,
+		user,
+		fields,
+		slug
+	);
 }
 
 function getFollow(questionId: string, userId: string) {
@@ -118,7 +115,7 @@ describe('bevestigen action', () => {
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt: null });
 
-		const event = makeActionEvent(question.slug, null, { keuze: 'ja' });
+		const event = myMakeActionEvent(question.slug, null, { keuze: 'ja' });
 
 		await expect(page.actions.bevestigen(event)).rejects.toMatchObject({ status: 401 });
 		expect((await getQuestionBySlug(question.slug)).verifiedAt).toBeNull();
@@ -129,7 +126,7 @@ describe('bevestigen action', () => {
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt: null });
 
-		const event = makeActionEvent(question.slug, asker, { keuze: 'ja' });
+		const event = myMakeActionEvent(question.slug, asker, { keuze: 'ja' });
 		const result = await page.actions.bevestigen(event);
 
 		expect(result).toEqual({ confirmed: true });
@@ -142,7 +139,7 @@ describe('bevestigen action', () => {
 		const stranger = await createUser('Sjaak Stranger');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt: null });
 
-		const event = makeActionEvent(question.slug, stranger, { keuze: 'ja' });
+		const event = myMakeActionEvent(question.slug, stranger, { keuze: 'ja' });
 
 		await expect(page.actions.bevestigen(event)).rejects.toMatchObject({ status: 404 });
 		expect((await getQuestionBySlug(question.slug)).verifiedAt).toBeNull();
@@ -154,7 +151,7 @@ describe('bevestigen action', () => {
 		const stranger = await createUser('Sjaak Stranger');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt: null });
 
-		const event = makeActionEvent(question.slug, stranger, { keuze: 'nee' });
+		const event = myMakeActionEvent(question.slug, stranger, { keuze: 'nee' });
 
 		await expect(page.actions.bevestigen(event)).rejects.toMatchObject({ status: 404 });
 		expect(await getQuestionBySlug(question.slug)).toBeDefined();
@@ -166,7 +163,7 @@ describe('bevestigen action', () => {
 		const verifiedAt = new Date('2026-07-01T12:00:00Z');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt });
 
-		const event = makeActionEvent(question.slug, asker, { keuze: 'ja' });
+		const event = myMakeActionEvent(question.slug, asker, { keuze: 'ja' });
 		const result = await page.actions.bevestigen(event);
 
 		expect(result).toEqual({ confirmed: true });
@@ -178,7 +175,7 @@ describe('bevestigen action', () => {
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt: null });
 
-		const event = makeActionEvent(question.slug, asker, { keuze: 'nee' });
+		const event = myMakeActionEvent(question.slug, asker, { keuze: 'nee' });
 
 		await expect(page.actions.bevestigen(event)).rejects.toMatchObject({ status: 303 });
 		expect(await getQuestionBySlug(question.slug)).toBeUndefined();
@@ -189,7 +186,7 @@ describe('bevestigen action', () => {
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id, { verifiedAt: null });
 
-		const event = makeActionEvent(question.slug, asker, { keuze: 'misschien' });
+		const event = myMakeActionEvent(question.slug, asker, { keuze: 'misschien' });
 		const result = await page.actions.bevestigen(event);
 
 		expect(result).toMatchObject({ status: 400 });
@@ -204,7 +201,7 @@ describe('volgen action', () => {
 		const follower = await createUser('Fatima Volger');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
-		const result = await page.actions.volgen(makeActionEvent(question.slug, follower));
+		const result = await page.actions.volgen(myMakeActionEvent(question.slug, follower));
 
 		expect(result).toEqual({ followed: true });
 		expect(await getFollow(question.id, follower.id)).toHaveLength(1);
@@ -219,7 +216,7 @@ describe('volgen action', () => {
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
-		const result = await page.actions.volgen(makeActionEvent(question.slug, asker));
+		const result = await page.actions.volgen(myMakeActionEvent(question.slug, asker));
 
 		expect(result).toMatchObject({ status: 400 });
 		expect(await getFollow(question.id, asker.id)).toHaveLength(0);
@@ -230,7 +227,7 @@ describe('volgen action', () => {
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
-		const event = makeActionEvent(question.slug, null, { email: 'fatima@test.example' });
+		const event = myMakeActionEvent(question.slug, null, { email: 'fatima@test.example' });
 		const result = await page.actions.volgen(event);
 
 		expect(result).toEqual({ email: 'fatima@test.example' });
@@ -249,10 +246,10 @@ describe('volgen action', () => {
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
 		const known = await page.actions.volgen(
-			makeActionEvent(question.slug, null, { email: asker.email })
+			myMakeActionEvent(question.slug, null, { email: asker.email })
 		);
 		const unknown = await page.actions.volgen(
-			makeActionEvent(question.slug, null, { email: 'niemand@test.example' })
+			myMakeActionEvent(question.slug, null, { email: 'niemand@test.example' })
 		);
 
 		expect(known).toEqual({ email: asker.email });
@@ -264,7 +261,7 @@ describe('volgen action', () => {
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
-		const event = makeActionEvent(question.slug, null, { email: 'geen adres' });
+		const event = myMakeActionEvent(question.slug, null, { email: 'geen adres' });
 		const result = await page.actions.volgen(event);
 
 		expect(result).toMatchObject({ status: 400 });
@@ -278,7 +275,7 @@ describe('ontvolgen action', () => {
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
-		const event = makeActionEvent(question.slug, null);
+		const event = myMakeActionEvent(question.slug, null);
 
 		await expect(page.actions.ontvolgen(event)).rejects.toMatchObject({ status: 401 });
 	});
@@ -294,7 +291,7 @@ describe('follow banner', () => {
 		const event = makeLoadEvent(question.slug, follower, '?doel=volgen');
 		expect(((await page.load(event)) as LoadData).banner).toBe('follow');
 
-		await page.actions.volgen(makeActionEvent(question.slug, follower));
+		await page.actions.volgen(myMakeActionEvent(question.slug, follower));
 
 		expect(((await page.load(event)) as LoadData).banner).toBeNull();
 	});

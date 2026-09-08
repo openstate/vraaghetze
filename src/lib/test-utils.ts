@@ -83,6 +83,31 @@ export async function createQuestion(
   return { question, asker, politician };
 }
 
+export async function createAnswer(
+  question: { id: string; assigneeId: string },
+  overrides: Partial<typeof schema.answer.$inferInsert> = {}
+) {
+  const [answer] = await db
+    .insert(schema.answer)
+    .values({
+      id: crypto.randomUUID(),
+      questionId: question.id,
+      userId: question.assigneeId,
+      body: 'Mijn antwoord op uw vraag.',
+      ...overrides
+    })
+    .returning();
+
+  return answer;
+}
+
+export async function createAnswerAndQuestion(overrides: Partial<typeof schema.answer.$inferInsert> = {}) {
+  const { question } = await createQuestion({status: 'approved'})
+  const answer = await createAnswer(question, overrides);
+
+  return answer;
+}
+
 export async function getQuestion(questionId: string) {
   const [question] = await db
     .select()
@@ -121,4 +146,31 @@ export function createCookiesStub(initialCookies = {}) {
       store.delete(name);
     }
   };
+}
+
+export function makeActionEvent<T extends (...args: any) => any>(
+  url: string,
+  user: typeof schema.user.$inferSelect | null,
+  fields: Record<string, string> = {},
+  slug?: string
+) {
+  const formData = new FormData();
+  for (const [name, value] of Object.entries(fields)) formData.set(name, value);
+
+  const result =  {
+    locals: { user: user ?? undefined },
+    url: new URL(url),
+    request: new Request(url, { method: 'POST', body: formData }),
+    cookies: createCookiesStub()
+  } as unknown as Parameters<T>[0];
+  if (slug) {
+      result.params = { slug }
+  }
+
+  return result;
+}
+
+export async function statusOf(handlerResult: unknown) {
+  const outcome = await Promise.resolve(handlerResult).catch((thrown) => thrown);
+  return (outcome as { status?: number } | null)?.status ?? 200;
 }

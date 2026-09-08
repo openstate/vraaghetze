@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
-import { createCookiesStub, createUser, getAnswer } from '$lib/test-utils';
+import { createAnswerAndQuestion, createUser, getAnswer, makeActionEvent, statusOf } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -11,73 +11,21 @@ const testEnv = vi.hoisted(() => ({
 
 vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
 
-async function createAnswer(overrides: Partial<typeof schema.answer.$inferInsert> = {}) {
-	const asker = await createUser('Vera Vraagsteller');
-	const politician = await createUser('Jan Jansen');
-
-	const fractionId = crypto.randomUUID();
-	await db
-		.insert(schema.fraction)
-		.values({ id: fractionId, slug: `tf-${fractionId}`, name: 'Testfractie', abbreviation: 'TF' });
-
-	const politicianId = crypto.randomUUID();
-	await db.insert(schema.politician).values({
-		id: politicianId,
-		slug: `jan-jansen-${politicianId}`,
-		userId: politician.id,
-		fractionId,
-		fractionRole: 'member'
-	});
-
-	const questionId = crypto.randomUUID();
-	await db.insert(schema.question).values({
-		id: questionId,
-		userId: asker.id,
-		assigneeId: politician.id,
-		title: 'Wat vindt u van de toeslagen?',
-		body: 'Graag een toelichting.',
-		slug: `testvraag-${questionId}`,
-		status: 'approved',
-		verifiedAt: new Date()
-	});
-
-	const [answer] = await db
-		.insert(schema.answer)
-		.values({
-			id: crypto.randomUUID(),
-			questionId,
-			userId: politician.id,
-			body: 'Mijn antwoord op uw vraag.',
-			...overrides
-		})
-		.returning();
-
-	return answer;
-}
-
 type LoadData = Exclude<Awaited<ReturnType<typeof page.load>>, void>;
-
-async function statusOf(handlerResult: unknown) {
-	const outcome = await Promise.resolve(handlerResult).catch((thrown) => thrown);
-	return (outcome as { status?: number } | null)?.status ?? 200;
-}
 
 function makeLoadEvent(user: typeof schema.user.$inferSelect | null) {
 	return { locals: { user: user ?? undefined } } as unknown as Parameters<typeof page.load>[0];
 }
 
-function makeActionEvent(
+function myMakeActionEvent(
 	user: typeof schema.user.$inferSelect | null,
 	fields: Record<string, string> = {}
 ) {
-	const formData = new FormData();
-	for (const [name, value] of Object.entries(fields)) formData.set(name, value);
-
-	return {
-		locals: { user: user ?? undefined },
-		request: new Request('http://localhost/modereren', { method: 'POST', body: formData }),
-		cookies: createCookiesStub()
-	} as unknown as Parameters<typeof page.actions.default>[0];
+	return makeActionEvent<typeof page.actions.default>(
+		`http://localhost/modereren`,
+		user,
+		fields,
+	);
 }
 
 beforeEach(async () => {
@@ -95,7 +43,7 @@ beforeEach(async () => {
 describe('load', () => {
 	test('returns the queue to a moderator', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const answer = await createAnswer();
+		const answer = await createAnswerAndQuestion();
 
 		const result = (await page.load(makeLoadEvent(moderator))) as LoadData;
 
@@ -105,8 +53,8 @@ describe('load', () => {
 
 describe('default action', () => {
 	test('fails without a signed-in user', async () => {
-		const answer = await createAnswer();
-		const event = makeActionEvent(null, { answerId: answer.id, action: 'approved' });
+		const answer = await createAnswerAndQuestion();
+		const event = myMakeActionEvent(null, { answerId: answer.id, action: 'approved' });
 
 		expect(await statusOf(page.actions.default(event))).toBe(400);
 		expect(await getAnswer(answer.id)).toMatchObject({ status: 'pending' });
@@ -114,8 +62,8 @@ describe('default action', () => {
 
 	test('moderates an answer for a moderator', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const answer = await createAnswer();
-		const event = makeActionEvent(moderator, { answerId: answer.id, action: 'approved' });
+		const answer = await createAnswerAndQuestion();
+		const event = myMakeActionEvent(moderator, { answerId: answer.id, action: 'approved' });
 
 		const result = await page.actions.default(event);
 
@@ -125,7 +73,7 @@ describe('default action', () => {
 
 	test('fails on an invalid form', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const event = makeActionEvent(moderator, { action: 'iets-anders' });
+		const event = myMakeActionEvent(moderator, { action: 'iets-anders' });
 
 		const result = await page.actions.default(event);
 
@@ -134,8 +82,8 @@ describe('default action', () => {
 
 	test('reports an already handled answer', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const answer = await createAnswer({ status: 'rejected' });
-		const event = makeActionEvent(moderator, { answerId: answer.id, action: 'approved' });
+		const answer = await createAnswerAndQuestion({ status: 'rejected' });
+		const event = myMakeActionEvent(moderator, { answerId: answer.id, action: 'approved' });
 
 		const result = await page.actions.default(event);
 
