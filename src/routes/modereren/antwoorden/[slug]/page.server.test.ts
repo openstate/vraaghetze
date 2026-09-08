@@ -13,18 +13,26 @@ vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
 
 type LoadData = Exclude<Awaited<ReturnType<typeof page.load>>, void>;
 
-function makeLoadEvent(user: typeof schema.user.$inferSelect | null) {
-	return { locals: { user: user ?? undefined } } as unknown as Parameters<typeof page.load>[0];
+function makeLoadEvent(
+  slug: string,
+  user: typeof schema.user.$inferSelect | null
+) {
+	return {
+		params: { slug },
+    locals: { user: user ?? undefined }
+  } as unknown as Parameters<typeof page.load>[0];
 }
 
 function myMakeActionEvent(
+  slug: string,
 	user: typeof schema.user.$inferSelect | null,
 	fields: Record<string, string> = {}
 ) {
 	return makeActionEvent<typeof page.actions.default>(
-		`http://localhost/modereren/antwoorden`,
+		`http://localhost/modereren/antwoorden/${slug}`,
 		user,
 		fields,
+    slug
 	);
 }
 
@@ -45,16 +53,17 @@ describe('load', () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const answer = await createAnswerAndQuestion();
 
-		const result = (await page.load(makeLoadEvent(moderator))) as LoadData;
-
-		expect(result.queue).toMatchObject([{ id: answer.id }]);
+		const result = (await page.load(makeLoadEvent(answer.id, moderator))) as LoadData;
+    // The answer inside the load function does not have all the properties
+    let expectedAnswer = (({ questionId, searchVector, status, updatedAt, userId, ...object }) => object)(answer);
+		expect(result.answer).toMatchObject(expectedAnswer);
 	});
 });
 
 describe('default action', () => {
 	test('fails without a signed-in user', async () => {
 		const answer = await createAnswerAndQuestion();
-		const event = myMakeActionEvent(null, { answerId: answer.id, action: 'approved' });
+		const event = myMakeActionEvent(answer.id, null, { answerId: answer.id, action: 'approved' });
 
 		expect(await statusOf(page.actions.default(event))).toBe(400);
 		expect(await getAnswer(answer.id)).toMatchObject({ status: 'pending' });
@@ -63,7 +72,7 @@ describe('default action', () => {
 	test('moderates an answer for a moderator', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const answer = await createAnswerAndQuestion();
-		const event = myMakeActionEvent(moderator, { answerId: answer.id, action: 'approved' });
+		const event = myMakeActionEvent(answer.id, moderator, { answerId: answer.id, action: 'approved' });
 
 		const result = await page.actions.default(event);
 
@@ -73,7 +82,7 @@ describe('default action', () => {
 
 	test('fails on an invalid form', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const event = myMakeActionEvent(moderator, { action: 'iets-anders' });
+		const event = myMakeActionEvent('1234', moderator, { action: 'iets-anders' });
 
 		const result = await page.actions.default(event);
 
@@ -83,7 +92,7 @@ describe('default action', () => {
 	test('reports an already handled answer', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const answer = await createAnswerAndQuestion({ status: 'rejected' });
-		const event = myMakeActionEvent(moderator, { answerId: answer.id, action: 'approved' });
+		const event = myMakeActionEvent(answer.id, moderator, { answerId: answer.id, action: 'approved' });
 
 		const result = await page.actions.default(event);
 
