@@ -70,8 +70,8 @@
 				{/each}
 			</dl>
 			{#if actionable}
-			<div class="grid overflow-y-auto p-6 pt-0 text-sm">
-				<h1>Acties</h1>
+			<div class="grid p-6 pt-0 text-sm">
+				<h2 class="font-serif text-xl">Acties</h2>
 				<p>Dit antwoord is genegeerd om de gemelde reden maar kan indien gewenst toch verwerkt
 					worden.</p>
 				<ul class="space-y-1 text-body list-disc list-inside text-sm mb-3">
