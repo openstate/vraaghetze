@@ -18,6 +18,7 @@
 {#snippet menuLinks()}
 	<a href={resolve('/vragen')}>Vragen & Antwoorden</a>
 	<a href={resolve('/politici')}>Kamerleden</a>
+	<a href={resolve('/hoe-werkt-het')}>Hoe werkt het?</a>
 	<a href={resolve('/over')}>Over ons</a>
 	{#if hasPermission(page.data.user, { question: ['moderate'] })}
 		<a href={resolve('/modereren')}>Moderatie</a>
@@ -34,7 +35,7 @@
 	{#snippet child({ props: rootProps })}
 		<header {...rootProps} {...props} class={['relative bg-osf-neutral-50', props.class]}>
 			<nav
-				class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-5 lg:grid lg:grid-cols-[1fr_2fr_1fr]"
+				class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-5 lg:grid lg:grid-cols-[1fr_5fr_2fr] xl:grid-cols-[1fr_3fr_1fr]"
 			>
 				<h1>
 					<a href={resolve('/')} class="block w-fit [&>svg]:h-6 [&>svg]:w-auto">
@@ -44,7 +45,7 @@
 					</a>
 				</h1>
 
-				<div class="justify-center gap-8 max-lg:hidden lg:flex xl:gap-16">
+				<div class="justify-center gap-8 max-lg:hidden lg:flex xl:gap-12">
 					{@render menuLinks()}
 				</div>
 
