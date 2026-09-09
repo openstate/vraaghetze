@@ -31,19 +31,19 @@
 
 	const steps = [
 		{
-			title: 'Lorem ipsum dolor',
+			title: 'Kies een Kamerlid',
 			description:
-				'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut blandit ex a congue dignissim. Maecenas vitae lobortis ligula.'
+				'Blader door de Tweede Kamer. Filter op commissies en fracties. Kies het Kamerlid dat het meeste weet over jouw onderwerp.'
 		},
 		{
-			title: 'Lorem ipsum dolor',
+			title: 'Stel je vraag',
 			description:
-				'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut blandit ex a congue dignissim. Maecenas vitae lobortis ligula.'
+				'Kort en duidelijk, in je eigen woorden en met een vraagteken. Klaar!'
 		},
 		{
-			title: 'Lorem ipsum dolor',
+			title: 'Je krijgt een reactie',
 			description:
-				'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut blandit ex a congue dignissim. Maecenas vitae lobortis ligula.'
+				'Het Kamerlid antwoordt, zichtbaar voor iedereen die hetzelfde wil weten.'
 		}
 	];
 </script>
@@ -59,12 +59,11 @@
 		<p
 			class="mx-auto max-w-2xl text-center font-serif text-[2.75rem] leading-[1.2] text-balance md:text-6xl"
 		>
-			Wat wil jij de politiek vragen?
+			Wat vraag jij de politiek?
 		</p>
 
 		<p class="mx-auto mt-8 max-w-lg text-center max-md:text-lg">
-			Stel jouw vraag aan een politicus en ontvang een direct antwoord. Lees mee met anderen en
-			ontdek wat er speelt.
+			Stel hier eenvoudig je vraag aan een Tweede Kamerlid. Publiek gesteld, publiek beantwoord.
 		</p>
 
 		<form
@@ -184,7 +183,7 @@
 			<p class="font-mono text-xs font-semibold text-osf-shocking-pink">Hoe werkt het</p>
 
 			<h2 class="mt-4 max-w-sm font-serif text-3xl md:text-4xl">
-				Lorem ipsum dolor sit amet consectetur
+				Van vraag naar antwoord, in drie simpele stappen
 			</h2>
 
 			<div class="mt-10 grid gap-5">
@@ -242,8 +241,7 @@
 			<h2 class="mt-4 font-serif text-3xl md:text-4xl">Blijf op de hoogte</h2>
 
 			<p class="mx-auto mt-4 max-w-md">
-				Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam nulla ipsum, ultricies vel
-				purus non.
+				Opvallende vragen, antwoorden en nieuws over het platform en events.
 			</p>
 
 			<form action="https://openstate.us4.list-manage.com/subscribe/post?u=03355fd4f1a7935cae63b21aa&amp;id=2f09e8274d" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank" novalidate>
@@ -285,16 +283,14 @@
 
 		<div class="flex flex-col items-start gap-4 lg:mt-8">
 			<p>
-				Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse finibus quis odio nec
-				finibus. Quisque volutpat consequat risus, non aliquet felis semper vitae. Vestibulum ante
-				ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Mauris porttitor
-				lorem at lacus lobortis condimentum.
+				Het vertrouwen in de politiek staat onder druk. Het online debat met Kamerleden speelt zich vooral af op polariserende
+				sociale media, waar een serieus gesprek nauwelijks te voeren is. Wie een Kamerlid mailt, krijgt vaak geen antwoord.
+				Veel Kamerleden ontvangen dagelijks meer dan honderd e-mails.
 			</p>
 
 			<p>
-				Mauris hendrerit diam sed eros elementum facilisis. Duis convallis posuere nulla. Sed
-				dignissim lacinia tortor, ac auctor felis rutrum ac. Proin in sapien lacinia nisl rutrum
-				condimentum in vitae lacus. Maecenas vitae.
+				VraagHetZe maakt de politiek weer toegankelijk. Iedereen kan een vraag stellen, en Kamerleden beantwoorden die in het
+				openbaar, zichtbaar voor iedereen. Zo ontstaat er weer een gelijk speelveld voor het publieke gesprek.
 			</p>
 
 			<Button
