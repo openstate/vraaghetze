@@ -9,7 +9,7 @@
 </script>
 Beste {askerName},
 
-Goed nieuws! Je vraag op VraagHetZe ("{questionTitle}") is geaccepteerd en doorgestuurd naar {politicianName}. Je vraag staat nu openbaar op ons platform ({questionUrl}) en je vindt je vraag ook terug onder "Mijn vragen" in het menu.
+Goed nieuws! Je vraag op VraagHetZe ("{questionTitle}") is geaccepteerd en doorgestuurd naar {politicianName}. Je vraag staat nu openbaar op ons platform ({@html questionUrl}) en je vindt je vraag ook terug onder "Mijn vragen" in het menu.
 
 Wij hopen dat je snel een reactie ontvangt via ons platform. Als dit langer dan twee weken duurt zullen we één keer een herinneringsmail sturen naar {politicianName}.
 

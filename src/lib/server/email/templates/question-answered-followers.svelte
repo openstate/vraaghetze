@@ -9,7 +9,7 @@
 </script>
 Beste {followerName},
 
-De vraag "{questionTitle}" die je volgt is beantwoord door {politicianName}. Je kunt het antwoord lezen op ${questionUrl}.
+De vraag "{questionTitle}" die je volgt is beantwoord door {politicianName}. Je kunt het antwoord lezen op {@html questionUrl}.
 
 Met vriendelijke groet,
 

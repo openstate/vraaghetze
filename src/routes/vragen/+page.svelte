@@ -34,6 +34,7 @@
 		<Button
 			href={resolve('/vragen/stellen')}
 			variant="primary"
+			icon="mdi--arrow-right"
 			class="ml-auto max-lg:hidden"
 		>
 			Stel een vraag

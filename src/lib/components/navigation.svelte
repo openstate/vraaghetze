@@ -49,14 +49,25 @@
 					{@render menuLinks()}
 				</div>
 
-				<Button
-					href={resolve('/profiel')}
-					variant="primary"
-					icon="mdi--arrow-right"
-					class="ml-auto max-lg:hidden"
-				>
-					Mijn vragen
-				</Button>
+				<div class="flex justify-end">
+					<Button
+						href={resolve('/mijn-vragen')}
+						variant="primary"
+						class="max-lg:hidden"
+					>
+						Mijn vragen
+					</Button>
+					{#if page.data.user}
+						<Button
+							href={resolve('/profiel')}
+							variant="primary"
+							class="ml-2 max-lg:hidden"
+							spanPadding="px-2"
+						>
+							<span class="iconify size-6 mdi--user-outline"></span>
+						</Button>
+					{/if}
+				</div>
 
 				<Collapsible.Trigger
 					aria-label={expanded ? 'Menu sluiten' : 'Menu openen'}

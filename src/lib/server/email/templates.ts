@@ -19,7 +19,7 @@ import { rejectionReasonTexts } from '$lib/moderation';
 export const resolveMailAddress = (address: string) => env.DIVERSION_EMAIL || address;
 
 const stripComments = (body: string) => {
-	return body.replace(/<!--[\[\]]*-->/g, '');
+	return body.replace(/<!--[^-]*-->/g, '');
 }
 
 // the sign-in link is worded after the flow it was requested from

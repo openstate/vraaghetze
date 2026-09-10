@@ -4,6 +4,7 @@
 	type Props = ButtonRootProps & {
 		variant: 'primary' | 'secondary';
 		icon?: string;
+		spanPadding?: string;
 	};
 
 	let {
@@ -11,6 +12,7 @@
 		icon,
 		disabled,
 		class: className = '',
+		spanPadding = 'px-4.5',
 		children,
 		...rest
 	}: Props = $props();
@@ -52,7 +54,8 @@
 
 	<span
 		class={[
-			'flex h-10 items-center justify-center rounded-sm px-4.5 text-sm leading-0 font-medium',
+			'flex h-10 items-center justify-center rounded-sm text-sm leading-0 font-medium',
+			spanPadding,
 			dynamicClass
 		]}
 	>

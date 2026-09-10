@@ -23,7 +23,7 @@ Na controle voldoet je vraag helaas niet aan onze moderatierichtlijnen om de vol
 - {reason}
 {/each}
 
-Je bent van harte welkom om een nieuwe vraag te stellen. Houd daarbij rekening met ons richtlijnen ({moderationUrl}), dan is de kans groter dat je vraag wél wordt doorgestuurd naar een Kamerlid.
+Je bent van harte welkom om een nieuwe vraag te stellen. Houd daarbij rekening met ons richtlijnen ({@html moderationUrl}), dan is de kans groter dat je vraag wél wordt doorgestuurd naar een Kamerlid.
 
 Heb je vragen over deze beslissing? Neem gerust contact met ons op via contact@openstate.eu. 
 

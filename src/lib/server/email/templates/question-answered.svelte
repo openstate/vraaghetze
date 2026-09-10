@@ -9,7 +9,7 @@
 </script>
 Beste {askerName},
 
-Je vraag "{questionTitle}" is beantwoord door {politicianName}. Je kunt het antwoord lezen op {questionUrl}.
+Je vraag "{questionTitle}" is beantwoord door {politicianName}. Je kunt het antwoord lezen op {@html questionUrl}.
 
 Met vriendelijke groet,
 
