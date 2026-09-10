@@ -2,26 +2,38 @@ import { eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { db, schema, type Transaction } from '$lib/server/db';
 import { enqueueMail, sendMail } from './outbox';
+import MagicLinkConfirm from './templates/magic-link-confirm.svelte';
+import MagicLinkFollow from './templates/magic-link-follow.svelte';
+import MagicLinkLogin from './templates/magic-link-login.svelte';
 import QuestionConfirmation from './templates/question-confirmation.svelte';
+import QuestionPolitician from './templates/question-politician.svelte';
+import QuestionApproved from './templates/question-approved.svelte';
+import QuestionRejected from './templates/question-rejected.svelte';
+import QuestionAnswered from './templates/question-answered.svelte';
+import QuestionAnsweredFollowers from './templates/question-answered-followers.svelte';
 import { render } from 'svelte/server';
 
 // pre-launch safety: when DIVERSION_EMAIL is set, all politician-facing mail goes to
 // that address and replies from it are accepted as if from the assigned politician
 export const resolveMailAddress = (address: string) => env.DIVERSION_EMAIL || address;
 
+const stripComments = (body: string) => {
+	return body.replace(/<!--[\[\]]*-->/g, '');
+}
+
 // the sign-in link is worded after the flow it was requested from
 const magicLinkCopy = {
 	confirm: (url: string) => ({
 		subject: 'Bevestig je vraag op VraagHetZe',
-		body: `Met dit e-mailadres is een vraag gesteld op VraagHetZe. Was jij dat? Bevestig je vraag via deze link: ${url}`
+		body: stripComments(render(MagicLinkConfirm, { props: {url: url}}).body)
 	}),
 	follow: (url: string) => ({
 		subject: 'Volg een vraag op VraagHetZe',
-		body: `Met dit e-mailadres is aangegeven dat je een vraag op VraagHetZe wilt volgen. Bevestig via deze link en druk daarna op de bel bij de vraag: ${url}`
+		body: stripComments(render(MagicLinkFollow, { props: {url: url}}).body)
 	}),
 	login: (url: string) => ({
 		subject: 'Je inloglink voor VraagHetZe',
-		body: `Log hier in: ${url}`
+		body: stripComments(render(MagicLinkLogin, { props: {url: url}}).body)
 	})
 };
 
@@ -67,16 +79,16 @@ export async function sendConfirmationMail(question: VerifiedQuestion) {
 		askerName: asker.name,
 		politicianName: politician.name,
 		questionTitle: question.title,
-		questionHref: `${env.ORIGIN}/vragen/${question.slug}`
+		questionUrl: `${env.ORIGIN}/vragen/${question.slug}`,
+		moderationUrl: `${env.ORIGIN}/moderatie`
 	}});
-	const body = result.body.replace(/<!--[\[\]]*-->/g, '');
 
 	return sendMail({
 		kind: 'question-confirmation',
 		questionId: question.id,
 		recipient: asker.email,
 		subject: 'We hebben je vraag op VraagHetZe ontvangen',
-		body
+		body: stripComments(result.body)
 	});
 }
 
@@ -104,16 +116,13 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 		.where(eq(schema.user.id, question.assigneeId))
 		.limit(1);
 
-	const questionBody = [
-		`Beste ${politician.name},`,
-		`${asker.name} stelt u via VraagHetZe de volgende vraag:`,
-		`"${question.title}"`,
-		`"${question.body}"`,
-		`U kunt antwoorden door simpelweg deze e-mail te beantwoorden. Uw antwoord wordt eerst door onze moderatoren gecontroleerd en verschijnt daarna openbaar bij de vraag op ${env.ORIGIN}/vragen/${question.slug}.`,
-		`Met vriendelijke groet,\nHet VraagHetZe-team`
-	]
-		.filter(Boolean)
-		.join('\n\n');
+	const resultPolitician = render(QuestionPolitician, { props: {
+		askerName: asker.name,
+		politicianName: politician.name,
+		questionTitle: question.title,
+		questionBody: question.body,
+		questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
+	}});
 
 	await enqueueMail({
 		kind: 'question-notification',
@@ -121,24 +130,23 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 		recipient: resolveMailAddress(politician.email),
 		replyTo: `antwoord+${question.emailToken}@${env.EMAIL_DOMAIN}`,
 		subject: `Nieuwe vraag via VraagHetZe van ${asker.name}`,
-		body: questionBody,
+		body: stripComments(resultPolitician.body),
 		transaction: tx
 	});
 
-	const approvalBody = [
-		`Beste ${asker.name},`,
-		`Goed nieuws! Je vraag op VraagHetZe is geaccepteerd en doorgestuurd naar ${politician.name}. Je vraag staat nu openbaar op ${env.ORIGIN}/vragen/${question.slug} en je vindt je vraag ook terug onder "Mijn vragen" in het menu.`,
-		`Wij hopen dat je snel een reactie ontvangt via ons platform. Als dit langer dan twee weken duurt zullen we één keer een herinneringsmail sturen naar ${politician.name}.`,
-		`Het kan gebeuren dat het Kamerlid niet reageert. We hebben geen invloed op het reactiegedrag van Kamerleden, dit mogen zij zelf bepalen. De vraag blijft wel open staan op het platform en het wordt zichtbaar in het profiel van het Kamerlid dat zij een vraag niet hebben beantwoord.`,
-		`Met vriendelijke groet,\nHet VraagHetZe-team`
-	].join('\n\n');
+	const resultAsker = render(QuestionApproved, { props: {
+		askerName: asker.name,
+		politicianName: politician.name,
+		questionTitle: question.title,
+		questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
+	}});
 
 	await enqueueMail({
 		kind: 'moderation-notification',
 		questionId: question.id,
 		recipient: asker.email,
 		subject: 'Je vraag op VraagHetZe is goedgekeurd',
-		body: approvalBody,
+		body: stripComments(resultAsker.body),
 		transaction: tx
 	});
 }
@@ -157,21 +165,19 @@ export async function enqueueRejectionMail(tx: Transaction, question: ModeratedQ
 		.where(eq(schema.user.id, question.assigneeId))
 		.limit(1);
 
-	const body = [
-		`Beste ${asker.name},`,
-		`Bedankt voor je vraag "${question.title}" aan ${politician.name} op VraagHetZe`,
-		`Na controle voldoet je vraag helaas niet aan onze moderatierichtlijnen`,
-		`Je vraag "${question.title}" is beoordeeld door onze moderatoren en helaas niet goedgekeurd, omdat deze niet voldeed aan de spelregels. De vraag is daarom niet doorgestuurd en wordt niet openbaar gemaakt.`,
-		`Je kunt altijd een nieuwe vraag stellen via ${env.ORIGIN}/vragen/stellen.`,
-		`Met vriendelijke groet,\nHet VraagHetZe-team`
-	].join('\n\n');
+	const result = render(QuestionRejected, { props: {
+		askerName: asker.name,
+		politicianName: politician.name,
+		questionTitle: question.title,
+		questionBody: question.body
+	}});
 
 	return enqueueMail({
 		kind: 'moderation-notification',
 		questionId: question.id,
 		recipient: asker.email,
 		subject: 'Je vraag op VraagHetZe is niet goedgekeurd',
-		body,
+		body: stripComments(result.body),
 		transaction: tx
 	});
 }
@@ -187,18 +193,19 @@ type AnsweredQuestion = {
 
 // enqueues a notification to the asker that their question received a public answer
 export function enqueueAnswerMail(tx: Transaction, question: AnsweredQuestion) {
-	const body = [
-		`Beste ${question.askerName},`,
-		`Je vraag "${question.title}" is beantwoord door ${question.politicianName}. Je kunt het antwoord lezen op ${env.ORIGIN}/vragen/${question.slug}.`,
-		`Met vriendelijke groet,\nHet VraagHetZe-team`
-	].join('\n\n');
+	const result = render(QuestionAnswered, { props: {
+		askerName: question.askerName,
+		politicianName: question.politicianName,
+		questionTitle: question.title,
+		questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
+	}});
 
 	return enqueueMail({
 		kind: 'answer-notification',
 		questionId: question.id,
 		recipient: question.askerEmail,
 		subject: 'Je vraag op VraagHetZe is beantwoord',
-		body,
+		body: stripComments(result.body),
 		transaction: tx
 	});
 }
@@ -212,18 +219,19 @@ export async function enqueueFollowerMails(tx: Transaction, question: AnsweredQu
 		.where(eq(schema.questionFollow.questionId, question.id));
 
 	for (const follower of followers) {
-		const body = [
-			`Beste ${follower.name},`,
-			`De vraag "${question.title}" die je volgt is beantwoord door ${question.politicianName}. Je kunt het antwoord lezen op ${env.ORIGIN}/vragen/${question.slug}.`,
-			`Met vriendelijke groet,\nHet VraagHetZe-team`
-		].join('\n\n');
+		const result = render(QuestionAnsweredFollowers, { props: {
+			followerName: follower.name,
+			politicianName: question.politicianName,
+			questionTitle: question.title,
+			questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
+		}});
 
 		await enqueueMail({
 			kind: 'follow-notification',
 			questionId: question.id,
 			recipient: follower.email,
 			subject: 'Een vraag die je volgt is beantwoord',
-			body,
+			body: stripComments(result.body),
 			transaction: tx
 		});
 	}
