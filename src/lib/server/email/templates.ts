@@ -2,6 +2,8 @@ import { eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { db, schema, type Transaction } from '$lib/server/db';
 import { enqueueMail, sendMail } from './outbox';
+import QuestionConfirmation from './templates/question-confirmation.svelte';
+import { render } from 'svelte/server';
 
 // pre-launch safety: when DIVERSION_EMAIL is set, all politician-facing mail goes to
 // that address and replies from it are accepted as if from the assigned politician
@@ -61,12 +63,13 @@ export async function sendConfirmationMail(question: VerifiedQuestion) {
 		.where(eq(schema.user.id, question.assigneeId))
 		.limit(1);
 
-	const body = [
-		`Beste ${asker.name},`,
-		`We hebben je vraag "${question.title}" aan ${politician.name} ontvangen. Onze moderatoren beoordelen je vraag eerst aan de hand van de spelregels; je vraag is daarom nog niet openbaar.`,
-		`Zodra je vraag is goedgekeurd, sturen we deze door naar ${politician.name} en krijg je daarvan bericht. Je kunt je vraag alvast teruglezen op ${env.ORIGIN}/vragen/${question.slug}.`,
-		`Met vriendelijke groet,\nHet VraagHetZe-team`
-	].join('\n\n');
+	const result = render(QuestionConfirmation, { props: {
+		askerName: asker.name,
+		politicianName: politician.name,
+		questionTitle: question.title,
+		questionHref: `${env.ORIGIN}/vragen/${question.slug}`
+	}});
+	const body = result.body.replace(/<!--[\[\]]*-->/g, '');
 
 	return sendMail({
 		kind: 'question-confirmation',
@@ -124,8 +127,9 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 
 	const approvalBody = [
 		`Beste ${asker.name},`,
-		`Je vraag "${question.title}" is goedgekeurd door onze moderatoren en doorgestuurd naar ${politician.name}. Je vraag staat nu openbaar op ${env.ORIGIN}/vragen/${question.slug}.`,
-		`Zodra ${politician.name} antwoordt, ontvang je daarvan een e-mail.`,
+		`Goed nieuws! Je vraag op VraagHetZe is geaccepteerd en doorgestuurd naar ${politician.name}. Je vraag staat nu openbaar op ${env.ORIGIN}/vragen/${question.slug} en je vindt je vraag ook terug onder "Mijn vragen" in het menu.`,
+		`Wij hopen dat je snel een reactie ontvangt via ons platform. Als dit langer dan twee weken duurt zullen we één keer een herinneringsmail sturen naar ${politician.name}.`,
+		`Het kan gebeuren dat het Kamerlid niet reageert. We hebben geen invloed op het reactiegedrag van Kamerleden, dit mogen zij zelf bepalen. De vraag blijft wel open staan op het platform en het wordt zichtbaar in het profiel van het Kamerlid dat zij een vraag niet hebben beantwoord.`,
 		`Met vriendelijke groet,\nHet VraagHetZe-team`
 	].join('\n\n');
 
@@ -147,8 +151,16 @@ export async function enqueueRejectionMail(tx: Transaction, question: ModeratedQ
 		.where(eq(schema.user.id, question.userId))
 		.limit(1);
 
+	const [politician] = await tx
+		.select({ name: schema.user.name, email: schema.user.email })
+		.from(schema.user)
+		.where(eq(schema.user.id, question.assigneeId))
+		.limit(1);
+
 	const body = [
 		`Beste ${asker.name},`,
+		`Bedankt voor je vraag "${question.title}" aan ${politician.name} op VraagHetZe`,
+		`Na controle voldoet je vraag helaas niet aan onze moderatierichtlijnen`,
 		`Je vraag "${question.title}" is beoordeeld door onze moderatoren en helaas niet goedgekeurd, omdat deze niet voldeed aan de spelregels. De vraag is daarom niet doorgestuurd en wordt niet openbaar gemaakt.`,
 		`Je kunt altijd een nieuwe vraag stellen via ${env.ORIGIN}/vragen/stellen.`,
 		`Met vriendelijke groet,\nHet VraagHetZe-team`
