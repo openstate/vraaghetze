@@ -239,7 +239,7 @@ type QuestionModeration = {
 	moderatorId: string;
 	action: 'approved' | 'rejected';
 	note?: string;
-	rejectionReason?: string
+	rejectionReason: string
 };
 
 export function moderateQuestion({ questionId, moderatorId, action, note, rejectionReason }: QuestionModeration) {
@@ -299,7 +299,7 @@ export function moderateQuestion({ questionId, moderatorId, action, note, reject
 
 		// enqueue notification emails to asker/politician on the moderated question
 		if (action === 'approved') await enqueueApprovalMails(tx, question);
-		else await enqueueRejectionMail(tx, question);
+		else await enqueueRejectionMail(tx, question, rejectionReason);
 
 		return { action };
 	});

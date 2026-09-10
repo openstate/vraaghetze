@@ -12,6 +12,7 @@ import QuestionRejected from './templates/question-rejected.svelte';
 import QuestionAnswered from './templates/question-answered.svelte';
 import QuestionAnsweredFollowers from './templates/question-answered-followers.svelte';
 import { render } from 'svelte/server';
+import { rejectionReasonTexts } from '$lib/moderation';
 
 // pre-launch safety: when DIVERSION_EMAIL is set, all politician-facing mail goes to
 // that address and replies from it are accepted as if from the assigned politician
@@ -152,7 +153,7 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 }
 
 // enqueues a rejection notice to the asker, no mail to the politician
-export async function enqueueRejectionMail(tx: Transaction, question: ModeratedQuestion) {
+export async function enqueueRejectionMail(tx: Transaction, question: ModeratedQuestion, rejectionReason: string) {
 	const [asker] = await tx
 		.select({ name: schema.user.name, email: schema.user.email })
 		.from(schema.user)
@@ -169,7 +170,9 @@ export async function enqueueRejectionMail(tx: Transaction, question: ModeratedQ
 		askerName: asker.name,
 		politicianName: politician.name,
 		questionTitle: question.title,
-		questionBody: question.body
+		questionBody: question.body,
+		moderationUrl: `${env.ORIGIN}/moderatie`,
+		rejectionReasons: rejectionReasonTexts(rejectionReason)
 	}});
 
 	return enqueueMail({

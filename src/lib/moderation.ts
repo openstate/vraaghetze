@@ -27,9 +27,9 @@ export const allRejectionReasons: allRejectionReasonsType = {
 // 	'Je vraag is te onduidelijk om door te sturen. Formuleer preciezer wat je wilt weten.',
 // 	'Je vraag bevat een oproep die in strijd is met de spelregels van dit platform.'
 
-export const rejectionReasonText = (rejectionReason?: string | null) => {
-  if (!rejectionReason) return ''
+export const rejectionReasonTexts = (rejectionReason?: string | null) => {
+  if (!rejectionReason) return []
 
   let reasons: rejectionKey[] = rejectionReason.split(',').map(reason => reason as rejectionKey)
-  return reasons.map(reason => allRejectionReasons[reason]).join("<br/>")
+  return reasons.map(reason => allRejectionReasons[reason])
 }

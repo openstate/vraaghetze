@@ -3,10 +3,13 @@
     askerName: string,
     politicianName: string,
     questionTitle: string,
-    questionBody: string
+    questionBody: string,
+    moderationUrl: string,
+    rejectionReasons: string[]
   };
-	let { askerName, politicianName, questionTitle, questionBody }: Props = $props();
+	let { askerName, politicianName, questionTitle, questionBody, moderationUrl, rejectionReasons }: Props = $props();
 </script>
+<svelte:options preserveWhitespace={true} />
 Beste {askerName},
 
 Bedankt voor je vraag "{questionTitle}" aan {politicianName} op VraagHetZe met als inhoud:
@@ -14,9 +17,13 @@ Bedankt voor je vraag "{questionTitle}" aan {politicianName} op VraagHetZe met a
 {questionBody}
 ----------
 
-Na controle voldoet je vraag helaas niet aan onze moderatierichtlijnen: TODO
+Na controle voldoet je vraag helaas niet aan onze moderatierichtlijnen om de volgende redenen:
 
-Je bent van harte welkom om een nieuwe vraag te stellen. Houd daarbij rekening met ons richtlijnen, dan is de kans groter dat je vraag wél wordt doorgestuurd naar een Kamerlid.
+{#each rejectionReasons as reason}
+- {reason}
+{/each}
+
+Je bent van harte welkom om een nieuwe vraag te stellen. Houd daarbij rekening met ons richtlijnen ({moderationUrl}), dan is de kans groter dat je vraag wél wordt doorgestuurd naar een Kamerlid.
 
 Heb je vragen over deze beslissing? Neem gerust contact met ons op via contact@openstate.eu. 
 

@@ -6,7 +6,7 @@
 	import DateTime from '$lib/components/date-time.svelte';
 	import StatusPill, { moderationStatusPills } from '$lib/components/status-pill.svelte';
 	import Pagination from '$lib/components/pagination.svelte';
-	import { rejectionReasonText } from '$lib/moderation.js';
+	import { rejectionReasonTexts } from '$lib/moderation.js';
 	import { HTMLSafeString } from '$lib/general.js';
 
 	let { data } = $props();
@@ -70,7 +70,7 @@
 			['Kamerlid', row.politicianName],
 			['Aangemaakt op', row.createdAt],
 			['Moderatiestatus', moderationStatusPills[row.status].label],
-			['Moderatiereden', new HTMLSafeString(rejectionReasonText(row.rejectionReason))],
+			['Moderatiereden', new HTMLSafeString(rejectionReasonTexts(row.rejectionReason).join("<br/>"))],
 			['Moderatienotitie', row.note],
 			['Gemodereerd op', row.moderatedAt],
 			['Gemodereerd door', row.moderatorName],
