@@ -25,7 +25,7 @@
 	const sentEmail = $derived(page.form && 'email' in page.form ? String(page.form.email) : null);
 </script>
 
-<Page>
+<Page width={data.pageWidth}>
 	{#if sentEmail}
 		<h1 class="mb-4 font-serif text-4xl">Bijna klaar!</h1>
 		<p class="text-osf-canvas-600">
