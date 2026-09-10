@@ -29,7 +29,16 @@
 </style>
 
 <Page width="wide">
-	<h1 class="mb-8 font-serif text-4xl">Vragen & Antwoorden</h1>
+	<div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+		<h1 class="font-serif text-4xl">Vragen & Antwoorden</h1>
+		<Button
+			href={resolve('/vragen/stellen')}
+			variant="primary"
+			class="ml-auto max-lg:hidden"
+		>
+			Stel een vraag
+		</Button>
+	</div>
 
 	<form
 		method="GET"

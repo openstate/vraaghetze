@@ -21,6 +21,13 @@
 <Page>
 	<div class="mb-8 flex flex-wrap items-center justify-between gap-4">
 		<h1 class="font-serif text-4xl">Mijn vragen</h1>
+		<Button
+			href={resolve('/vragen/stellen')}
+			variant="primary"
+			class="ml-auto max-lg:hidden"
+		>
+			Stel een vraag
+		</Button>
 		<Button onclick={signOut} variant="secondary">Uitloggen</Button>
 	</div>
 
