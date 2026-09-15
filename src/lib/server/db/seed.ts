@@ -21,6 +21,7 @@ import {
 	type SeedQuestion
 } from './seed-corpus';
 import { allRejectionReasons } from '$lib/moderation';
+import { MAGIC_LINK_EXPIRY } from '../auth';
 
 const ADMINS = [{ name: 'Open State Developers', email: 'developers@openstate.eu' }];
 
@@ -314,8 +315,6 @@ function inboundPayload(
 
 const magicLink = (callback: string) =>
 	`${ORIGIN}/api/auth/magic-link/verify?token=${linkToken()}&callbackURL=${encodeURIComponent(callback)}`;
-
-const MAGIC_LINK_EXPIRY = 30 * 60 * 1000; // MAGIC_LINK_EXPIRY_SECONDS in auth.ts
 
 const slugsTaken = new Set<string>(['stellen']);
 

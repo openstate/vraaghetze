@@ -17,7 +17,7 @@
 <Page>
   <div class="min-w-0">
     <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
-      <h1 class="font-serif text-5xl/none">{data.user?.name}</h1>
+      <h1 class="font-serif text-5xl/none">{data.user?.name || '<naam onbekend>'}</h1>
       {#if data.user}
         <Button onclick={signOut} variant="secondary">Uitloggen</Button>
       {/if}

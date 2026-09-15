@@ -7,6 +7,7 @@
 	import {
 		ASK_STEPS,
 		clearDetails,
+		DEFAULT_ASK_DETAILS,
 		draftFromUrl,
 		readDetails,
 		stepHref,
@@ -20,7 +21,7 @@
 
 	let { data, form } = $props();
 
-	let details = $state<AskDetails>({ name: '', email: '' });
+	let details = $state<AskDetails>({ ...DEFAULT_ASK_DETAILS });
 
 	// we don't store personal details in the url, but in sessionStorage, so we prefill seperately
 	onMount(() => {

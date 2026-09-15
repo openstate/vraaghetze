@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
+import { MAGIC_LINK_EXPIRY } from './server/auth';
 
 
 export async function createUser(name: string, overrides: Partial<typeof schema.user.$inferInsert> = {}) {
@@ -108,6 +109,48 @@ export async function createAnswerAndQuestion(overrides: Partial<typeof schema.a
   return answer;
 }
 
+export async function createSession(user_id: string, token: string, overrides: Partial<typeof schema.session.$inferInsert> = {}) {
+	const [created] = await db
+		.insert(schema.session)
+		.values({
+      id: crypto.randomUUID(),
+      expiresAt: new Date(Date.now() + MAGIC_LINK_EXPIRY),
+      token,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      userId: user_id,
+      ...overrides
+    })
+		.returning();
+
+	return created;
+}
+
+export async function createVerification(token: string, email: string, overrides: Partial<typeof schema.verification.$inferInsert> = {}) {
+	const [created] = await db
+		.insert(schema.verification)
+		.values({
+      id: crypto.randomUUID(),
+      identifier: token,
+      value: `{"email":"${email}"}`,
+      expiresAt: new Date(Date.now() + MAGIC_LINK_EXPIRY),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides
+    })
+		.returning();
+
+	return created;
+}
+
+export async function getUser(userId: string) {
+  const [user] = await db
+    .select()
+    .from(schema.user)
+    .where(eq(schema.user.id, userId));
+  return user;
+}
+
 export async function getQuestion(questionId: string) {
   const [question] = await db
     .select()
@@ -131,6 +174,13 @@ export async function getAnswerAudit(answerId: string) {
     .select()
     .from(schema.moderationAction)
     .where(eq(schema.moderationAction.answerId, answerId));
+}
+
+export async function getVerificationForEmail(email: string) {
+  return db
+    .select()
+    .from(schema.verification)
+    .where(eq(schema.verification.value, `{"email":"${email}"}`));
 }
 
 export function createCookiesStub(initialCookies = {}) {

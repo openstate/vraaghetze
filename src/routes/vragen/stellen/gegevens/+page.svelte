@@ -1,26 +1,39 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import {
+		deducedFormType,
+		DEFAULT_ASK_DETAILS,
 		draftFromUrl,
+		loginFormActive,
+		newUserFormActive,
 		readDetails,
 		stepHref,
-		submitAskStep,
 		writeDetails,
 		type AskDetails,
-		type AskIssues
+		type AskFormType,
 	} from '$lib/ask';
 	import Button from '$lib/components/button.svelte';
-	import Field from '$lib/components/field.svelte';
+	import Register from '$lib/components/register.svelte';
+	import Login from '$lib/components/login.svelte';
+	import AskForCode from '$lib/components/ask-for-code.svelte';
+	import { authClient } from '$lib/auth-client.js';
+	import { submitDirectly } from '$lib/general.js';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
-	const FIELDS = ['name', 'email'] as const;
-
-	let details = $state<AskDetails>({ name: '', email: '' });
-	let issues = $state<AskIssues>({});
-	let formElement = $state<HTMLFormElement>();
+	let details = $state<AskDetails>({ ...DEFAULT_ASK_DETAILS });
+	$effect(() => {
+		if (form?.initializeNewUser) {
+			details.name = '';
+			details.email = '';
+		}
+	});
+	let issues = $derived(form?.issues || {});
+	let formType = $derived(details.formType ?? 'newUser') as AskFormType;
+	let askForCode = $derived(form?.askForCode || formType == 'codeFromEmail');
+	let newUserActive = $derived(newUserFormActive(details, data.user));
+	let loginActive = $derived(newUserActive ? false : loginFormActive(details));
 
 	const draft = $derived({ ...draftFromUrl(page.url), aan: data.politician?.slug ?? '' });
 
@@ -31,69 +44,93 @@
 
 	const persist = () => writeDetails(details);
 
-	function next(event: SubmitEvent) {
-		persist();
+	const handleSubmit = async (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement}) => {
+		const currentTarget = event.currentTarget as HTMLFormElement;
+		const submitter = event.submitter;
 
-		const useFields = data.user ? FIELDS.filter(v => v != 'email') : FIELDS
-		const step = submitAskStep(formElement, details, useFields);
-		issues = step.issues;
-		// If no errors, and the logged in user has no name yet, store it (perform the default form action by returning)
-		if (step.valid && data.user && !data.user.name) return
+		formType = deducedFormType(details, askForCode, data.user);
+		if (formType != 'codeFromEmail') {
+			details = { ...details, formType: formType};
+			persist();
+		}
 
-		event.preventDefault()
-		if (!step.valid) return;
+		if (formType == 'userLogin') {
+			event.preventDefault();
+			if (form) form.error = '';
 
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto(stepHref('controle', draft));
+			const { error } = await authClient.signIn.magicLink({
+				email: details.emailExisting,
+				metadata: { sendCode: true }
+			});
+
+			if (error) {
+				issues = {...issues, emailExisting: [error.message ?? '']}
+			} else {
+				submitDirectly(currentTarget, submitter, { formType: formType ?? '' });
+			}
+		}
 	}
 </script>
-
 <h1 class="mb-6 font-serif text-4xl">Vul je gegevens in</h1>
 
 <form
-	bind:this={formElement}
 	method="POST"
-	onsubmit={next}
-	oninput={persist}
-	onchange={persist}
 	novalidate
 	class="grid gap-6"
+	onsubmit={handleSubmit}
 >
-	<p class="mb-2 text-osf-canvas-600">
-		Je vraag wordt openbaar onder jouw naam. Je emailadres blijft privé.
-	</p>
-
-	<Field name="name" label="Je volledige naam" issues={issues.name}>
-		{#snippet children(control)}
-			<input
-				{...control}
-				bind:value={details.name}
-				required
-				autocomplete="name"
-				placeholder="Sanne de Vries"
-			/>
-		{/snippet}
-	</Field>
+	<input type="hidden" name="formType" value={formType} />
 
 	{#if data.user}
-		<p class="text-osf-canvas-600">Je e-mailadres: {data.user.email}</p>
+	<div class="grid gap-6">
+		<Register
+			user={data.user}
+			bind:details={details}
+			issues={issues}
+			 />
+	</div>
+	{#if form?.error}
+		<p class="mb-4 text-sm text-osf-shocking-pink">{form.error}</p>
+	{/if}
 	{:else}
-	<Field name="email" label="Je e-mailadres" issues={issues.email}>
-		{#snippet children(control)}
-			<input
-				{...control}
-				type="email"
-				bind:value={details.email}
-				required
-				autocomplete="email"
-				placeholder="sanne@voorbeeld.nl"
+	<div class="grid grid-cols-2 gap-x-12">
+		<div class={loginActive || askForCode ? 'opacity-30' : ''}>
+			<h1 class="mb-4 font-serif text-2xl">Aanmelden</h1>
+			<Register
+				user={data.user}
+				bind:details={details}
+				issues={issues}
+				disabled={loginActive}
+				setIsActive={(value => newUserActive = value)}
 			/>
-		{/snippet}
-	</Field>
+			{#if form?.error && formType && ['newUser', 'missingName'].includes(formType)}
+				<p class="mb-4 mt-4 text-sm text-osf-shocking-pink">{form.error}</p>
+			{/if}
+		</div>
+		<div class={newUserActive ? 'opacity-30' : ''}>
+			<h1 class="mb-4 font-serif text-2xl">Inloggen</h1>
+			{#if askForCode}
+				<AskForCode
+					bind:details={details}
+					issues={issues}
+				/>
+			{:else}
+				<Login
+					bind:details={details}
+					issues={issues}
+					disabled={newUserActive}
+					setIsActive={(value) => loginActive = value}
+				/>
+			{/if}
+			{#if form?.error && formType && ['userLogin', 'codeFromEmail'].includes(formType)}
+				<p class="mb-4 mt-4 text-sm text-osf-shocking-pink">{form.error}</p>
+			{/if}
+		</div>
+	</div>
 	{/if}
 
 	<div class="mt-2 flex flex-wrap items-center justify-end gap-3">
 		<Button variant="secondary" class="mr-auto" href={stepHref('vraag', draft)}>Vorige</Button>
 		<Button type="submit" variant="primary" icon="mdi--arrow-right">Volgende</Button>
-	</div>
+</div>
 </form>

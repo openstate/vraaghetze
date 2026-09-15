@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import * as questions from '$lib/server/questions';
 import { sendSignInLink } from '$lib/server/auth';
 import { validateForm } from '$lib/server/utils/forms';
-import { askSchema, draftFromUrl, type AskIssues } from '$lib/ask';
+import { askSchema, draftFromUrl, type AskIssues, type AskQuestionFields } from '$lib/ask';
 import { hasPermission } from '$lib/permissions';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -33,7 +33,9 @@ export const actions = {
 			return fail(403, { error: 'Met dit account kun je geen vragen stellen.' });
 
 		const currentUserId = locals.user?.id ?? null;
-		const created = await questions.create({ ...result.data, currentUserId });
+		const data = result.data as AskQuestionFields;
+		const { formType, ...questionFields} = data;
+		const created = await questions.create({ ...questionFields, currentUserId });
 
 		if ('error' in created) {
 			if (created.error === 'unknown-politician') {
@@ -45,15 +47,15 @@ export const actions = {
 			}
 
 			// email may not ask questions, respond as if mail was sent to avoid making moderators public
-			return { email: result.data.email };
+			return { email: questionFields.email };
 		}
 
 		if (!currentUserId) {
 			const callback = new URL(`/vragen/${created.slug}`, url.origin);
 			callback.searchParams.set('doel', 'bevestigen');
-			await sendSignInLink(result.data.email, callback.toString());
+			await sendSignInLink(questionFields.email, callback.toString());
 
-			return { email: result.data.email };
+			return { email: questionFields.email };
 		}
 
 		redirect(303, `/vragen/${created.slug}`);

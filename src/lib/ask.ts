@@ -1,36 +1,91 @@
 import { z } from 'zod';
 import { resolve } from '$app/paths';
 import { toSearchParams } from './url';
+import type { UserType } from './server/auth';
 
 export const QUESTION_TITLE_MIN_LENGTH = 10;
 export const QUESTION_TITLE_MAX_LENGTH = 200;
 export const QUESTION_BODY_MAX_LENGTH = 1000;
 
-export const askSchema = z.object({
-	name: z.string().trim().min(1, 'Vul je volledige naam in.'),
-	email: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.')),
-	title: z
-		.string()
-		.trim()
-		.min(
-			QUESTION_TITLE_MIN_LENGTH,
-			`Schrijf een vraag van minstens ${QUESTION_TITLE_MIN_LENGTH} tekens.`
-		)
-		.max(
-			QUESTION_TITLE_MAX_LENGTH,
-			`Houd je vraag korter dan ${QUESTION_TITLE_MAX_LENGTH} tekens.`
-		),
-	body: z
-		.string()
-		.trim()
-		.max(QUESTION_BODY_MAX_LENGTH, `Houd je context korter dan ${QUESTION_BODY_MAX_LENGTH} tekens.`)
-		.default(''),
-	politicianId: z.string().min(1, 'Kies een Kamerlid.')
-});
+export const askSchema = z.discriminatedUnion(
+	"formType",
+	[
+		z.object({
+			formType: z.literal('').optional(),
+			name: z.string().trim().min(1, 'Vul je volledige naam in.'),
+			email: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.')),
+			title: z
+				.string()
+				.trim()
+				.min(
+					QUESTION_TITLE_MIN_LENGTH,
+					`Schrijf een vraag van minstens ${QUESTION_TITLE_MIN_LENGTH} tekens.`
+				)
+				.max(
+					QUESTION_TITLE_MAX_LENGTH,
+					`Houd je vraag korter dan ${QUESTION_TITLE_MAX_LENGTH} tekens.`
+				),
+			body: z
+				.string()
+				.trim()
+				.max(QUESTION_BODY_MAX_LENGTH, `Houd je context korter dan ${QUESTION_BODY_MAX_LENGTH} tekens.`)
+				.default(''),
+			politicianId: z.string().min(1, 'Kies een Kamerlid.')
+		}),
+		z.object({
+			formType: z.literal('newUser'),
+			name: z.string().trim().min(1, 'Vul je volledige naam in.'),
+			email: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.'))
+		}),
+		z.object({
+			formType: z.literal('missingName'),
+			name: z.string().trim().min(1, 'Vul je volledige naam in.')
+		}),
+		z.object({
+			formType: z.literal('userLogin'),
+			emailExisting: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.'))
+		}),
+		z.object({
+			formType: z.literal('codeFromEmail'),
+			code: z.string().trim().min(1, 'Vul de code uit de e-mail in.')
+		})
+	]
+);
 
-export type AskField = keyof z.output<typeof askSchema>;
+export type AskQuestionFields = z.infer<typeof askSchema.options[0]>;
+
+export type AskFormType = z.infer<typeof askSchema>['formType'];
+type KeysOfUnion<T> = T extends T ? keyof T: never;
+export type AskField = KeysOfUnion<z.infer<typeof askSchema>>
 export type AskValues = Record<AskField, string>;
 export type AskIssues = Partial<Record<AskField, string[]>>;
+
+export const deducedFormType = (details: AskDetails, askForCode: boolean, user?: UserType): AskFormType => {
+	if (askForCode) {
+		return 'codeFromEmail';
+	} else if (user) {
+		return 'missingName';
+	} else if (details.emailExisting) {
+		return 'userLogin';
+	} else {
+		return 'newUser';
+	}
+}
+
+export const newUserFormActive = (details: AskDetails, user?: UserType): boolean => {
+	const nameEmpty = !details.name.trim();
+	const emailEmpty = user ? true : !details.email.trim();
+	const isActive = !nameEmpty || !emailEmpty;
+
+	return isActive;
+}
+
+export const loginFormActive = (details: AskDetails): boolean => {
+	const emailEmpty = !details.emailExisting.trim();
+  const isActive = !emailEmpty;
+
+	return isActive;
+}
 
 export type AskStep = {
 	id: string;
@@ -56,7 +111,7 @@ export const ASK_STEPS = [
 		id: 'gegevens',
 		title: 'Gegevens invullen',
 		path: resolve('/vragen/stellen/gegevens'),
-		fields: ['name', 'email']
+		fields: ['formType', 'name', 'email', 'emailExisting', 'code']
 	},
 	{
 		id: 'controle',
@@ -133,11 +188,12 @@ export function stepToAnswer(draft: AskDraft) {
 export const stepIsAhead = (stepId: string, draft: AskDraft) =>
 	stepIndex(stepId) > stepIndex(stepToAnswer(draft));
 
-export type AskDetails = { name: string; email: string };
+export type AskDetails = { formType?: string; name: string; email: string; emailExisting:string; code: string };
+export const DEFAULT_ASK_DETAILS: AskDetails = { formType: '', name: '', email: '', emailExisting: '', code: '' };
 
 const STORAGE_KEY = 'vraaghetze:gegevens';
 
-const NOBODY: AskDetails = { name: '', email: '' };
+const NOBODY: AskDetails = { ...DEFAULT_ASK_DETAILS };
 
 export function readDetails(): AskDetails {
 	try {

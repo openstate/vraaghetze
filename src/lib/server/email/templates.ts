@@ -5,6 +5,7 @@ import { enqueueMail, sendMail } from './outbox';
 import MagicLinkConfirm from './templates/magic-link-confirm.svelte';
 import MagicLinkFollow from './templates/magic-link-follow.svelte';
 import MagicLinkLogin from './templates/magic-link-login.svelte';
+import MagicLinkCode from './templates/magic-link-code.svelte';
 import QuestionConfirmation from './templates/question-confirmation.svelte';
 import QuestionPolitician from './templates/question-politician.svelte';
 import QuestionApproved from './templates/question-approved.svelte';
@@ -35,6 +36,10 @@ const magicLinkCopy = {
 	login: (url: string) => ({
 		subject: 'Je inloglink voor VraagHetZe',
 		body: stripComments(render(MagicLinkLogin, { props: {url: url}}).body)
+	}),
+	sendCode: (code: string) => ({
+		subject: 'Je inlogcode voor VraagHetZe',
+		body: stripComments(render(MagicLinkCode, { props: {code: code}}).body)
 	})
 };
 
@@ -42,13 +47,13 @@ export type MagicLinkPurpose = keyof typeof magicLinkCopy;
 
 type MagicLink = {
 	recipient: string;
-	url: string;
+	urlOrToken: string;
 	purpose: MagicLinkPurpose;
 	expiresAt: Date;
 };
 
-export function sendMagicLinkMail({ recipient, url, purpose, expiresAt }: MagicLink) {
-	const { subject, body } = magicLinkCopy[purpose](url);
+export function sendMagicLinkMail({ recipient, urlOrToken, purpose, expiresAt }: MagicLink) {
+	const { subject, body } = magicLinkCopy[purpose](urlOrToken);
 
 	return sendMail({ kind: 'magic-link', recipient, subject, body, expiresAt });
 }
