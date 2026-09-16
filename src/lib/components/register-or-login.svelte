@@ -6,21 +6,26 @@
 	import Login from '$lib/components/login.svelte';
 	import AskForCode from '$lib/components/ask-for-code.svelte';
 	import type { ActionData as GegevensActionData } from "../../routes/vragen/stellen/gegevens/$types";
+  import type { ActionData as InloggenActionData} from "../../routes/inloggen/$types";
+
+	export type IdentifyMode = 'asking_question' | 'login';
 
   type Props = {
+		identifyMode: IdentifyMode,
     formType: AskFormType,
     user?: UserType,
-    form?: GegevensActionData,
+    form?: GegevensActionData | InloggenActionData,
     details: AskDetails,
     issues: Partial<Record<AskField, string[]>>,
     loginActive: boolean,
     askForCode: boolean,
     newUserActive: boolean,
-    previousUrl: string
+    previousUrl?: string
     handleSubmit: (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement}) => {}
   }
 
   let {
+		identifyMode,
     formType,
     user,
     form,
@@ -45,9 +50,10 @@
 	{#if user}
 	<div class="grid gap-6">
 		<Register
-			user={user}
+			{identifyMode}
+			{user}
 			bind:details={details}
-			issues={issues}
+			{issues}
 			 />
 	</div>
 	{#if form?.error}
@@ -58,9 +64,10 @@
 		<div class={loginActive || askForCode ? 'opacity-30' : ''}>
 			<h1 class="mb-4 font-serif text-2xl">Aanmelden</h1>
 			<Register
-				user={user}
+				{identifyMode}
+				{user}
 				bind:details={details}
-				issues={issues}
+				{issues}
 				disabled={loginActive}
 				setIsActive={(value => newUserActive = value)}
 			/>
@@ -77,8 +84,9 @@
 				/>
 			{:else}
 				<Login
+					{identifyMode}
 					bind:details={details}
-					issues={issues}
+					{issues}
 					disabled={newUserActive}
 					setIsActive={(value) => loginActive = value}
 				/>
@@ -91,7 +99,9 @@
 	{/if}
 
 	<div class="mt-2 flex flex-wrap items-center justify-end gap-3">
-		<Button variant="secondary" class="mr-auto" href={previousUrl}>Vorige</Button>
+    {#if previousUrl}
+		  <Button variant="secondary" class="mr-auto" href={previousUrl}>Vorige</Button>
+    {/if}
 		<Button type="submit" variant="primary" icon="mdi--arrow-right">Volgende</Button>
 </div>
 </form>

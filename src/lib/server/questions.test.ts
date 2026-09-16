@@ -149,7 +149,7 @@ describe('create', () => {
 		expect(question.status).toBe('pending');
 	});
 
-	test('links the question to an existing user with the same email', async () => {
+	test('does not allow to link the question to an existing user when not logged in', async () => {
 		const { politician } = await createPolitician();
 		const existing = await createUser('Bestaande Gebruiker');
 
@@ -160,15 +160,9 @@ describe('create', () => {
 			currentUserId: null
 		});
 
-		expect(result).toEqual({ slug: 'wat-vindt-u-van-de-toeslagen' });
+		expect(result).toEqual({ "error": "user should have been logged in" });
 		const question = await getQuestionBySlug('wat-vindt-u-van-de-toeslagen');
-		expect(question.userId).toBe(existing.id);
-		const usersForEmail = await db
-			.select()
-			.from(schema.user)
-			.where(eq(schema.user.email, existing.email));
-		expect(usersForEmail).toHaveLength(1);
-		expect(usersForEmail[0].name).toBe('Bestaande Gebruiker');
+		expect(question).toBeUndefined();
 	});
 
 	test('refuses an email belonging to a politician', async () => {

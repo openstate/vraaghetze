@@ -7,15 +7,17 @@
 	} from '$lib/ask';
 	import Field from '$lib/components/field.svelte';
 	import type { UserType } from '$lib/server/auth';
+	import type { IdentifyMode } from './register-or-login.svelte';
 
   type Props = {
+    identifyMode: IdentifyMode
     user?: UserType,
     details: AskDetails,
     issues: AskIssues,
     disabled?: boolean,
     setIsActive?: (value: boolean) => void
   }
-  let { user, details = $bindable(), issues, disabled, setIsActive }: Props = $props();
+  let { identifyMode, user, details = $bindable(), issues, disabled, setIsActive }: Props = $props();
 
   function inputHandler() {
     if (!setIsActive) return;
@@ -33,7 +35,9 @@
   {#if !user}
     Voor nieuwe gebruikers.
   {/if}
-  Je vraag wordt openbaar onder jouw naam. Je emailadres blijft privé.
+  {#if identifyMode == 'asking_question'}
+    Je vraag wordt openbaar onder jouw naam. Je emailadres blijft privé.
+  {/if}
 </p>
 <div class="grid gap-6">
   <Field name="name" label="Je volledige naam" issues={issues.name}>

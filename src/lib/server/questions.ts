@@ -373,8 +373,8 @@ export async function create({
 				// user exists for email but is not allowed to ask questions, so error
 				return { error: 'forbidden-asker' as const };
 			} else if (existing) {
-				// user exists for email and is allowed to ask questions, so link unverified question to that user
-				userId = existing.id;
+				// existing users should have been forced to login on the gegevens page
+				return { error: 'user should have been logged in' }
 			} else {
 				// user doesn't exist for email, so create a new user
 				userId = crypto.randomUUID();

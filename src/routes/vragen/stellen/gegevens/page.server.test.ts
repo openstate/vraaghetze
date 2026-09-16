@@ -42,7 +42,7 @@ const questionFields = {
 } as const;
 
 const newName = 'A new name';
-const newEmail = 'new@openstate.eu';
+const newEmail = `${crypto.randomUUID()}@test.example`;
 
 describe('no user logged in', () => {
 	test('accepts a name and new email address', async () => {

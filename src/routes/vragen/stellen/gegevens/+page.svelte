@@ -71,6 +71,7 @@
 <h1 class="mb-6 font-serif text-4xl">Vul je gegevens in</h1>
 
 <RegisterOrLogin
+	identifyMode='asking_question'
 	{formType}
 	user={data.user}
 	{form}

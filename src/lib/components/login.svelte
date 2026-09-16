@@ -6,14 +6,16 @@
 		type AskIssues
 	} from '$lib/ask';
 	import Field from '$lib/components/field.svelte';
+	import type { IdentifyMode } from './register-or-login.svelte';
 
 	type Props = {
+    identifyMode: IdentifyMode
     details: AskDetails,
     issues: AskIssues,
     disabled: boolean,
     setIsActive: (value: boolean) => void
   }
-  let { details = $bindable(), issues, disabled, setIsActive }: Props = $props();
+  let { identifyMode, details = $bindable(), issues, disabled, setIsActive }: Props = $props();
 
 	function inputHandler() {
     if (!setIsActive) return;
@@ -28,7 +30,10 @@
 </script>
 
 <p class="mb-4 text-osf-canvas-600">
-Voor bestaande gebruikers
+	Voor bestaande gebruikers.
+  {#if identifyMode == 'asking_question'}
+	Je ontvangt een code in een e-mail om hier in te vullen.
+	{/if}
 </p>
 <Field name="emailExisting" label="Je e-mailadres" issues={issues.emailExisting}>
 	{#snippet children(control)}
