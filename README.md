@@ -121,6 +121,8 @@ A `question` points at the user who wrote it and at the politician it is assigne
 
 Make a migration file with `pnpm db:generate` after each schema change and commit it. Edit manually if needed to make it backwards-compatible.
 
+In `development` running `pnpm db:migrate` results in an error - use `pnpm db:push` instead.
+
 ### Search
 
 There is no external search service. The `question` and `answer` tables have a generated `searchVector` column that holds the text of the row as searchable words. The search on `/vragen` joins the vectors of a question and its newest answer as one document. The related questions below a question match against the same joined vector. The vectors use the Dutch text search configuration of PostgreSQL. That configuration keeps Dutch compound words together, thus `src/lib/server/search` also matches parts of a word, such that "klimaat" or "beleid" finds "klimaatbeleid". The search on `/politici` uses no vectors, it matches the name of the politician directly.

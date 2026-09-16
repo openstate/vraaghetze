@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "t_and_c_accepted" timestamp;
