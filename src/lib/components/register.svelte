@@ -8,7 +8,8 @@
 	import Field from '$lib/components/field.svelte';
 	import type { UserType } from '$lib/server/auth';
 	import type { IdentifyMode } from './register-or-login.svelte';
-
+	import { resolve } from '$app/paths';
+  
   type Props = {
     identifyMode: IdentifyMode
     user?: UserType,
@@ -57,19 +58,42 @@
   {#if user}
     <p class="text-osf-canvas-600">Je e-mailadres: {user.email}</p>
   {:else}
-  <Field name="email" label="Je e-mailadres" issues={issues.email}>
-    {#snippet children(control)}
-      <input
-        {...control}
-        type="email"
-        bind:value={details.email}
-        required
-        autocomplete="email"
-        placeholder="sanne@voorbeeld.nl"
-  			disabled={disabled}
-        oninput={inputHandler}
-      />
-    {/snippet}
-  </Field>
+    <Field name="email" label="Je e-mailadres" issues={issues.email}>
+      {#snippet children(control)}
+        <input
+          {...control}
+          type="email"
+          bind:value={details.email}
+          required
+          autocomplete="email"
+          placeholder="sanne@voorbeeld.nl"
+          disabled={disabled}
+          oninput={inputHandler}
+        />
+      {/snippet}
+    </Field>
+
+    <p class="text-osf-canvas-600 text-sm">
+      Bekijk onze
+      <a href={resolve('/privacy')} target="_blank" class="hover:underline text-osf-violet-500">Privacyverklaring</a>
+      voor informatie over de
+      verwerking van je persoonsgegevens.
+    </p>
+
+    <Field name="acceptTandC" issues={issues.acceptTandC}>
+      {#snippet children(control)}
+        <label class="text-osf-canvas-600 text-sm">
+          <input
+            type="checkbox"
+            name="acceptTandC"
+            value="1"
+            bind:checked={details.acceptTandC}
+            disabled={disabled}
+          />
+        Ik ga akkoord met de
+        <a href={resolve('/voorwaarden')} target="_blank" class="hover:underline text-osf-violet-500">Algemene voorwaarden</a>.
+      </label>
+      {/snippet}
+    </Field>
   {/if}
 </div>

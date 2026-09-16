@@ -14,6 +14,9 @@ export const askSchema = z.discriminatedUnion(
 			formType: z.literal('').optional(),
 			name: z.string().trim().min(1, 'Vul je volledige naam in.'),
 			email: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.')),
+			acceptTandC: z.coerce.boolean().default(false).refine((val) => val, {
+				message: 'De Algemene Voorwaarden zijn niet geaccepteerd.'
+			}),
 			title: z
 				.string()
 				.trim()
@@ -35,7 +38,10 @@ export const askSchema = z.discriminatedUnion(
 		z.object({
 			formType: z.literal('newUser'),
 			name: z.string().trim().min(1, 'Vul je volledige naam in.'),
-			email: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.'))
+			email: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.')),
+			acceptTandC: z.coerce.boolean().default(false).refine((val) => val, {
+				message: 'De Algemene Voorwaarden zijn niet geaccepteerd.'
+			})
 		}),
 		z.object({
 			formType: z.literal('missingName'),
@@ -188,8 +194,22 @@ export function stepToAnswer(draft: AskDraft) {
 export const stepIsAhead = (stepId: string, draft: AskDraft) =>
 	stepIndex(stepId) > stepIndex(stepToAnswer(draft));
 
-export type AskDetails = { formType?: string; name: string; email: string; emailExisting:string; code: string };
-export const DEFAULT_ASK_DETAILS: AskDetails = { formType: '', name: '', email: '', emailExisting: '', code: '' };
+export type AskDetails = {
+	formType?: string;
+	name: string;
+	email: string;
+	emailExisting:string;
+	code: string;
+	acceptTandC?: boolean
+};
+export const DEFAULT_ASK_DETAILS: AskDetails = {
+	formType: '',
+	name: '',
+	email: '',
+	emailExisting: '',
+	code: '',
+	acceptTandC: false
+};
 
 const STORAGE_KEY = 'vraaghetze:gegevens';
 

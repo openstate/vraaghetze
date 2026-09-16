@@ -198,6 +198,9 @@
 	<input type="hidden" name="politicianId" value={data.politician?.id ?? ''} />
 	<input type="hidden" name="title" value={draft.vraag} />
 	<input type="hidden" name="body" value={draft.context} />
+	{#if !data.user}
+		<input type="hidden" name="acceptTandC" value={details.acceptTandC} />
+	{/if}
 
 	<div class="mt-2 flex flex-wrap items-center justify-end gap-3">
 		<Button variant="secondary" class="mr-auto" href={stepHref(previousStep, draft)}>Vorige</Button>

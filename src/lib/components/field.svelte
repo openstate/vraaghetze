@@ -11,7 +11,7 @@
 
 	type Props = {
 		name: string;
-		label: string;
+		label?: string;
 		optional?: boolean;
 		issues?: string[];
 		counter?: { length: number; max: number };
@@ -37,18 +37,20 @@
 </script>
 
 <div class="grid gap-2">
-	<div class="flex flex-wrap items-baseline justify-between gap-x-4">
-		<label for={control.id} class="font-medium">
-			{label}
-			{#if optional}<span class="font-normal text-osf-canvas-600">(optioneel)</span>{/if}
-		</label>
+	{#if label}
+		<div class="flex flex-wrap items-baseline justify-between gap-x-4">
+			<label for={control.id} class="font-medium">
+				{label}
+				{#if optional}<span class="font-normal text-osf-canvas-600">(optioneel)</span>{/if}
+			</label>
 
-		{#if counter && counter.length > 0}
-			<span class="text-sm text-osf-canvas-500">
-				{counter.length} van {counter.max} tekens
-			</span>
-		{/if}
-	</div>
+			{#if counter && counter.length > 0}
+				<span class="text-sm text-osf-canvas-500">
+					{counter.length} van {counter.max} tekens
+				</span>
+			{/if}
+		</div>
+	{/if}
 
 	{@render children(control)}
 

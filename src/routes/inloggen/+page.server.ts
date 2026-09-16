@@ -9,7 +9,7 @@ import { db, schema } from '$lib/server/db';
 export type defaultActionType = askDefaultActionType & { sent?: boolean };
 
 export const actions = {
-  default: async ({ request, locals, url }): Promise<defaultActionType|ActionFailure<defaultActionType>> => {
+  default: async ({ request, url }): Promise<defaultActionType|ActionFailure<defaultActionType>> => {
     const result = await validateForm(request, askSchema);
     if (!result.valid) return fail(400, { error: '', issues: result.issues });
 
@@ -25,7 +25,7 @@ export const actions = {
       }
 
       const userId = crypto.randomUUID();
-      await db.insert(schema.user).values({ id: userId, name: data.name, email: data.email });
+      await db.insert(schema.user).values({ id: userId, name: data.name, email: data.email, tAndCAccepted: new Date() });
 
       const callback = new URL("/mijn-vragen", url.origin);
       await sendSignInLink(data.email, callback.toString());

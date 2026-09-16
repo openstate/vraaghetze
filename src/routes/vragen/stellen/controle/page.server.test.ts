@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { db, schema } from '$lib/server/db';
 import { QUESTION_TITLE_MAX_LENGTH } from '$lib/ask';
 import * as page from './+page.server';
-import { createPolitician, createUser, getQuestionBySlug, makeActionEvent } from '$lib/test-utils';
+import { createPolitician, createUser, getQuestionBySlug, getUserByEmail, makeActionEvent } from '$lib/test-utils';
+import { userExists } from '$lib/server/auth';
 
 const sendSignInLink = vi.hoisted(() => vi.fn());
 vi.mock(import('$lib/server/auth'), async (importOriginal) => {
@@ -50,12 +51,15 @@ function makeLoadEvent(politician: Chosen, search = '') {
 
 function myMakeActionEvent(
 	user: typeof schema.user.$inferSelect | null,
-	fields: Record<string, string> = {}
+	fields: Record<string, string> = {},
+	tAndCAccepted: boolean = true
 ) {
+	const useFields = tAndCAccepted ? {...fields, acceptTandC: '1'} : {...fields}
+
 	return makeActionEvent<typeof page.actions.default>(
 		`http://localhost/vragen/stellen/controle`,
 		user,
-		fields,
+		useFields
 	);
 }
 
@@ -147,6 +151,24 @@ describe('default action', () => {
 			email,
 			'http://localhost/vragen/wat-vindt-u-van-de-toeslagen?doel=bevestigen'
 		);
+		const user = await getUserByEmail(email)
+    expect(user.tAndCAccepted).toBeTruthy();
+	});
+
+	test('requires acceptance of the terms and conditions', async () => {
+		const { politician } = await createPolitician();
+		const email = `nieuw-${crypto.randomUUID()}@test.example`;
+		const event = myMakeActionEvent(null, { ...questionFields, email, politicianId: politician.id }, false);
+
+		const result = await page.actions.default(event);
+
+		expect(result).toMatchObject({
+			status: 400,
+			data: { issues: { acceptTandC: ['De Algemene Voorwaarden zijn niet geaccepteerd.'] } }
+		});
+		expect(await db.select().from(schema.question)).toHaveLength(0);
+		expect(sendSignInLink).not.toHaveBeenCalled();
+		expect(await userExists(email)).toBeFalsy();
 	});
 
 	test('redirects to gegevens page if email exists for anonymous user', async () => {

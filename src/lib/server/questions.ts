@@ -378,7 +378,7 @@ export async function create({
 			} else {
 				// user doesn't exist for email, so create a new user
 				userId = crypto.randomUUID();
-				await tx.insert(schema.user).values({ id: userId, name, email });
+				await tx.insert(schema.user).values({ id: userId, name, email, tAndCAccepted: new Date() });
 			}
 		}
 

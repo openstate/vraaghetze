@@ -27,12 +27,15 @@ vi.mock('$app/server', () => ({
 
 function myMakeActionEvent(
 	user: typeof schema.user.$inferSelect | null,
-	fields: Record<string, string> = {}
+	fields: Record<string, string> = {},
+	tAndCAccepted: boolean = true
 ) {
+	const useFields = tAndCAccepted ? {...fields, acceptTandC: '1'} : {...fields}
+
 	return makeActionEvent<typeof page.actions.default>(
 		`http://localhost/vragen/stellen/gegevens`,
 		user,
-		fields
+		useFields
 	);
 }
 
@@ -96,6 +99,21 @@ describe('no user logged in', () => {
 			'Er bestaat al een account met dit e-mailadres, gebruik het formulier hiernaast om in te loggen'
 		);
 		expect(result.data.initializeNewUser).toBe(true);
+	});
+
+	test('requires acceptance of the terms and conditions', async () => {
+		const event = myMakeActionEvent(null, {
+			email: newEmail,
+			name: newName,
+			formType: 'newUser'
+		}, false);
+
+		const result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
+
+		expect(result.status).toBe(400);
+		expect(result.data.issues).toMatchObject({
+			acceptTandC: ['De Algemene Voorwaarden zijn niet geaccepteerd.']
+		});
 	});
 
 	// userLogin is handled in client

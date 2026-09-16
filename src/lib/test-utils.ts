@@ -151,6 +151,14 @@ export async function getUser(userId: string) {
   return user;
 }
 
+export async function getUserByEmail(email: string) {
+  const [user] = await db
+    .select()
+    .from(schema.user)
+    .where(eq(schema.user.email, email));
+  return user;
+}
+
 export async function getQuestion(questionId: string) {
   const [question] = await db
     .select()
