@@ -1,8 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
 import * as questions from '$lib/server/questions';
-import { sendSignInLink } from '$lib/server/auth';
+import { sendSignInLink, userExists } from '$lib/server/auth';
 import { validateForm } from '$lib/server/utils/forms';
-import { askSchema, draftFromUrl, type AskIssues, type AskQuestionFields } from '$lib/ask';
+import { askSchema, draftFromUrl, stepHref, type AskIssues, type AskQuestionFields } from '$lib/ask';
 import { hasPermission } from '$lib/permissions';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -35,6 +35,13 @@ export const actions = {
 		const currentUserId = locals.user?.id ?? null;
 		const data = result.data as AskQuestionFields;
 		const { formType, ...questionFields} = data;
+
+		// existing users should have been forced to login on the gegevens page
+		if (!currentUserId && await userExists(data.email)) {
+	    const draft = draftFromUrl(url)
+	    redirect(303, stepHref('gegevens', draft))
+		}
+
 		const created = await questions.create({ ...questionFields, currentUserId });
 
 		if ('error' in created) {

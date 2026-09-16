@@ -5,7 +5,13 @@ import * as page from './+page.server';
 import { createPolitician, createUser, getQuestionBySlug, makeActionEvent } from '$lib/test-utils';
 
 const sendSignInLink = vi.hoisted(() => vi.fn());
-vi.mock('$lib/server/auth', () => ({ sendSignInLink }));
+vi.mock(import('$lib/server/auth'), async (importOriginal) => {
+	const actual = await importOriginal();
+	return {
+		...actual,
+		sendSignInLink
+	}
+});
 
 async function insertQuestion(
 	askerId: string,
@@ -143,10 +149,27 @@ describe('default action', () => {
 		);
 	});
 
-	test('masks a forbidden asker email exactly like a sent confirmation', async () => {
+	test('redirects to gegevens page if email exists for anonymous user', async () => {
+		const { politician } = await createPolitician();
+		const previousAsker = await createUser('Vera Vraagsteller');
+		const event = myMakeActionEvent(null, {
+			...questionFields,
+			email: previousAsker.email,
+			politicianId: politician.id
+		});
+
+		await expect(page.actions.default(event)).rejects.toMatchObject({
+			status: 303,
+			location: '/vragen/stellen/gegevens'
+		});
+
+		expect(await db.select().from(schema.question)).toHaveLength(0);
+	});
+
+	test('rejects a forbidden asker', async () => {
 		const { politician } = await createPolitician();
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const event = myMakeActionEvent(null, {
+		const event = myMakeActionEvent(moderator, {
 			...questionFields,
 			email: moderator.email,
 			politicianId: politician.id
@@ -154,9 +177,11 @@ describe('default action', () => {
 
 		const result = await page.actions.default(event);
 
-		// indistinguishable from the genuine anonymous response, so moderator
-		// e-mailaddresses cannot be enumerated through the ask form
-		expect(result).toEqual({ email: moderator.email });
+		expect(result).toMatchObject({
+			status: 403,
+			data: { error: "Met dit account kun je geen vragen stellen." }
+		});
+
 		expect(await db.select().from(schema.question)).toHaveLength(0);
 		expect(sendSignInLink).not.toHaveBeenCalled();
 	});
