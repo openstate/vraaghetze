@@ -7,9 +7,9 @@
 
 	const draft = $derived(draftFromUrl(page.url));
 
-	// a signed-in asker has no personal details left to fill in
+	// a signed-in asker with a completed profile has no personal details left to fill in
 	const steps = $derived(
-		data.user ? ASK_STEPS.filter((step) => step.id !== 'gegevens') : ASK_STEPS
+		data.user && data.user.name ? ASK_STEPS.filter((step) => step.id !== 'gegevens') : ASK_STEPS
 	);
 
 	// the step is the folder it lives in, /vragen/stellen/<id>
