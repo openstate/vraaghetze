@@ -14,9 +14,6 @@ export const askSchema = z.discriminatedUnion(
 			formType: z.literal('').optional(),
 			name: z.string().trim().min(1, 'Vul je volledige naam in.'),
 			email: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.')),
-			acceptTandC: z.coerce.boolean().default(false).refine((val) => val, {
-				message: 'De Algemene Voorwaarden zijn niet geaccepteerd.'
-			}),
 			capToken: z.string().trim().optional(),
 			title: z
 				.string()
