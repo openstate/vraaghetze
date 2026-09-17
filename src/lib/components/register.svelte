@@ -6,19 +6,30 @@
 		type AskIssues
 	} from '$lib/ask';
 	import Field from '$lib/components/field.svelte';
+	import CapWidget from '$lib/components/cap-widget.svelte';
 	import type { UserType } from '$lib/server/auth';
 	import type { IdentifyMode } from './register-or-login.svelte';
 	import { resolve } from '$app/paths';
   
   type Props = {
-    identifyMode: IdentifyMode
-    user?: UserType,
-    details: AskDetails,
-    issues: AskIssues,
-    disabled?: boolean,
-    setIsActive?: (value: boolean) => void
+    identifyMode: IdentifyMode;
+    user?: UserType;
+    details: AskDetails;
+    issues: AskIssues;
+    disabled?: boolean;
+    capjsSiteKey?: string;
+    setIsActive?: (value: boolean) => void;
   }
-  let { identifyMode, user, details = $bindable(), issues, disabled, setIsActive }: Props = $props();
+  let {
+    identifyMode,
+    user,
+    details = $bindable(),
+    issues,
+    disabled,
+    capjsSiteKey,
+    setIsActive
+  }: Props = $props();
+
 
   function inputHandler() {
     if (!setIsActive) return;
@@ -26,6 +37,8 @@
     const isActive = newUserFormActive(details, user);
     setIsActive(isActive);
   }
+
+  let capToken = $state('');
 
 	onMount(() => {
 		inputHandler();
@@ -95,5 +108,14 @@
       </label>
       {/snippet}
     </Field>
+
+    {#if capjsSiteKey && details.acceptTandC}
+      <Field name="capToken">
+        {#snippet children(control)}
+          <CapWidget bind:token={capToken} capjsSiteKey={capjsSiteKey} />
+          <input type="hidden" name="capToken" value={capToken} />
+        {/snippet}
+      </Field>
+    {/if}
   {/if}
 </div>

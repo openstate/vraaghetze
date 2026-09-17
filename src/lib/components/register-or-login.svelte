@@ -11,17 +11,18 @@
 	export type IdentifyMode = 'asking_question' | 'login';
 
   type Props = {
-		identifyMode: IdentifyMode,
-    formType: AskFormType,
-    user?: UserType,
-    form?: GegevensActionData | InloggenActionData,
-    details: AskDetails,
-    issues: Partial<Record<AskField, string[]>>,
-    loginActive: boolean,
-    askForCode: boolean,
-    newUserActive: boolean,
-    previousUrl?: string
-    handleSubmit: (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement}) => {}
+		identifyMode: IdentifyMode;
+    formType: AskFormType;
+    user?: UserType;
+    form?: GegevensActionData | InloggenActionData;
+    details: AskDetails;
+    issues: Partial<Record<AskField, string[]>>;
+    loginActive: boolean;
+    askForCode: boolean;
+    newUserActive: boolean;
+    previousUrl?: string;
+		capjsSiteKey?: string;
+    handleSubmit: (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement}) => {};
   }
 
   let {
@@ -35,6 +36,7 @@
     askForCode,
     newUserActive,
     previousUrl,
+		capjsSiteKey,
     handleSubmit
   }: Props = $props();
 </script>
@@ -69,7 +71,8 @@
 				bind:details={details}
 				{issues}
 				disabled={loginActive}
-				setIsActive={(value => newUserActive = value)}
+				{capjsSiteKey}
+				setIsActive={(value) => newUserActive = value}
 			/>
 			{#if form?.error && formType && ['newUser', 'missingName'].includes(formType)}
 				<p class="mb-4 mt-4 text-sm text-osf-shocking-pink">{form.error}</p>

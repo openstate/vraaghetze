@@ -14,6 +14,11 @@ vi.mock(import('$lib/server/auth'), async (importOriginal) => {
 	}
 });
 
+// For the tests in this file the validation of the captcha is mocked.
+// For tests that actually validate the captcha, see page.server.captcha.test.ts.
+const validateCaptcha = vi.hoisted(() => (() => Promise.resolve(true)));
+vi.mock('$lib/server/utils/captcha', () => ({ validateCaptcha }));
+
 async function insertQuestion(
 	askerId: string,
 	assigneeId: string,

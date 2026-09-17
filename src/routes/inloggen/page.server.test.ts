@@ -4,6 +4,7 @@ import * as page from './+page.server';
 import { createUser, getUserByEmail, makeActionEvent } from '$lib/test-utils';
 import type { ActionFailure } from '@sveltejs/kit';
 import { userExists } from '$lib/server/auth';
+import * as captcha from '$lib/server/utils/captcha';
 
 const mockEvent = {
 	request: new Request('http://localhost/inloggen'),
@@ -19,13 +20,26 @@ vi.mock('$app/server', () => ({
 	getRequestEvent: vi.fn(() => mockEvent)
 }));
 
+// For the tests in this file the validation of the captcha is mocked.
+// For tests that actually validate the captcha, see page.server.captcha.test.ts.
+const validateCaptcha = vi.hoisted(() => (() => Promise.resolve(true)));
+vi.mock('$lib/server/utils/captcha', () => ({ validateCaptcha }));
 
+type actionEventOptions = {
+	tAndCAccepted?: boolean
+}
 function myMakeActionEvent(
 	user: typeof schema.user.$inferSelect | null,
 	fields: Record<string, string> = {},
-  tAndCAccepted: boolean = true
+	options: actionEventOptions = {}
 ) {
-  const useFields = tAndCAccepted ? {...fields, acceptTandC: '1'} : {...fields}
+	if (typeof options.tAndCAccepted === 'undefined') options.tAndCAccepted = true;
+
+	const useFields = {
+		...fields,
+		...(options.tAndCAccepted ? {acceptTandC: '1'} : {}),
+		capToken: 'a_cap_token'
+	}
 
 	return makeActionEvent<typeof page.actions.default>(
 		`http://localhost/inloggen`,
@@ -90,7 +104,7 @@ describe('registering', () => {
 			email: newEmail,
 			name: newName,
 			formType: 'newUser'
-		}, false);
+		}, { tAndCAccepted: false });
 
     const result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
 

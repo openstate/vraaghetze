@@ -1,9 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 
-export const load: PageLoad = async ({ parent }) => {
-	const { user } = await parent();
-	if (user) redirect(307, '/profiel');
+export const load: PageLoad = async ({ data }) => {
+	if (data.user) redirect(307, '/profiel');
 
-	return { meta: { title: 'Inloggen' } };
+	return { ...data, meta: { title: 'Inloggen' } };
 };

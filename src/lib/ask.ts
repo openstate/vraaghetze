@@ -17,6 +17,7 @@ export const askSchema = z.discriminatedUnion(
 			acceptTandC: z.coerce.boolean().default(false).refine((val) => val, {
 				message: 'De Algemene Voorwaarden zijn niet geaccepteerd.'
 			}),
+			capToken: z.string().trim().optional(),
 			title: z
 				.string()
 				.trim()
@@ -41,7 +42,8 @@ export const askSchema = z.discriminatedUnion(
 			email: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.')),
 			acceptTandC: z.coerce.boolean().default(false).refine((val) => val, {
 				message: 'De Algemene Voorwaarden zijn niet geaccepteerd.'
-			})
+			}),
+			capToken: z.string().trim().optional()
 		}),
 		z.object({
 			formType: z.literal('missingName'),
@@ -200,7 +202,8 @@ export type AskDetails = {
 	email: string;
 	emailExisting:string;
 	code: string;
-	acceptTandC?: boolean
+	acceptTandC?: boolean;
+	capToken: string;
 };
 export const DEFAULT_ASK_DETAILS: AskDetails = {
 	formType: '',
@@ -208,7 +211,8 @@ export const DEFAULT_ASK_DETAILS: AskDetails = {
 	email: '',
 	emailExisting: '',
 	code: '',
-	acceptTandC: false
+	acceptTandC: false,
+	capToken: ''
 };
 
 const STORAGE_KEY = 'vraaghetze:gegevens';

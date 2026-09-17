@@ -5,17 +5,20 @@ import { validateForm } from '$lib/server/utils/forms';
 import { askSchema, draftFromUrl, stepHref, type AskIssues, type AskQuestionFields } from '$lib/ask';
 import { hasPermission } from '$lib/permissions';
 import type { Actions, PageServerLoad } from './$types';
+import { validateCaptcha } from '$lib/server/utils/captcha';
 
 const SIMILAR_QUESTIONS = 3;
 
 export const load: PageServerLoad = async ({ parent, url }) => {
 	const { politician } = await parent();
+	const baseValues = { capjsSiteKey: process.env.CAPJS_SITE_KEY || '' }
 
 	const draft = draftFromUrl(url);
 
-	if (!politician || !draft.vraag) return { similar: [] };
+	if (!politician || !draft.vraag) return { ...baseValues, similar: [] };
 
 	return {
+		...baseValues,
 		similar: await questions.similarForFraction(
 			`${draft.vraag} ${draft.context}`.trim(),
 			politician.id,
@@ -40,6 +43,13 @@ export const actions = {
 		if (!currentUserId && await userExists(data.email)) {
 	    const draft = draftFromUrl(url)
 	    redirect(303, stepHref('gegevens', draft))
+		}
+
+		if (!currentUserId) {
+			const captchaValid = await validateCaptcha(data.capToken);
+			if (!captchaValid) {
+				return fail(403, { error: 'Captcha validatie is mislukt.' });
+			}
 		}
 
 		const created = await questions.create({ ...questionFields, currentUserId });

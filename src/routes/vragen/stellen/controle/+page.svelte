@@ -18,6 +18,7 @@
 	import Button from '$lib/components/button.svelte';
 	import { formatDateLong } from '$lib/date-time';
 	import type { SubmitFunction } from './$types';
+	import CapWidget from '$lib/components/cap-widget.svelte';
 
 	let { data, form } = $props();
 
@@ -49,6 +50,8 @@
 	const refusedStep = $derived(
 		ASK_STEPS.find((step) => step.fields.some((field) => issues[field]))
 	);
+
+	let capToken = $state('');
 
 	const submitAsk: SubmitFunction = () => {
 		return async ({ result, update }) => {
@@ -200,6 +203,13 @@
 	<input type="hidden" name="body" value={draft.context} />
 	{#if !data.user}
 		<input type="hidden" name="acceptTandC" value={details.acceptTandC} />
+	{/if}
+
+	{#if !data.user}
+		<div class="grid justify-end">
+			<CapWidget bind:token={capToken} capjsSiteKey={data.capjsSiteKey} />
+			<input type="hidden" name="capToken" value={capToken} />
+		</div>
 	{/if}
 
 	<div class="mt-2 flex flex-wrap items-center justify-end gap-3">

@@ -73,6 +73,7 @@
 			{loginActive}
 			{askForCode}
 			{newUserActive}
+			capjsSiteKey={data.capjsSiteKey}
 			{handleSubmit}
 		/>
 	{/if}
