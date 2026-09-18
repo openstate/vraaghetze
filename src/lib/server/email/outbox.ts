@@ -99,12 +99,18 @@ async function deliverBatch(filterMailIds: string[] = []) {
 
 	for (const mail of mails) {
 		try {
-			await postEmail({
+			const options: EmailOptions = {
 				to: mail.recipient,
 				subject: mail.subject,
 				text: mail.body,
 				replyTo: mail.replyTo ?? undefined
-			});
+			}
+			// Politicians send answers to the email so the From should not contain `noreply`
+			if (mail.kind == 'question-notification' && options.replyTo) {
+				options.from = options.replyTo;
+			}
+
+			await postEmail(options);
 			await db
 				.update(schema.outbox)
 				.set({ status: 'sent', sentAt: new Date() })
@@ -144,13 +150,16 @@ type EmailOptions = {
 	subject: string;
 	text: string;
 	replyTo?: string;
+	from?: string;
 };
 
-async function postEmail({ to, subject, text, replyTo }: EmailOptions) {
+async function postEmail({ to, subject, text, replyTo, from }: EmailOptions) {
 	if (dev) {
 		console.log(`Email to ${to} (reply-to ${replyTo ?? env.EMAIL_INBOX}): ${subject}\n${text}`);
 		return;
 	}
+
+	const useFrom = { name: 'VraagHetZe', email: from ?? `noreply@${env.EMAIL_DOMAIN}` } :
 
 	const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
 		method: 'POST',
@@ -160,7 +169,7 @@ async function postEmail({ to, subject, text, replyTo }: EmailOptions) {
 		},
 		body: JSON.stringify({
 			personalizations: [{ to: [{ email: to }] }],
-			from: { name: 'VraagHetZe', email: `noreply@${env.EMAIL_DOMAIN}` },
+			from: useFrom,
 			reply_to: { email: replyTo ?? env.EMAIL_INBOX },
 			subject,
 			content: [{ type: 'text/plain', value: text }]

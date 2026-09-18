@@ -244,7 +244,7 @@ type QuestionModeration = {
 	moderatorId: string;
 	action: 'approved' | 'rejected';
 	note?: string;
-	rejectionReason: string
+	rejectionReason?: string
 };
 
 export function moderateQuestion({ questionId, moderatorId, action, note, rejectionReason }: QuestionModeration) {
