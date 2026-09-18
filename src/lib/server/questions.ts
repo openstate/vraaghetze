@@ -350,11 +350,11 @@ export async function create({
 	currentUserId
 }: CreateQuestion) {
 	const created = await db.transaction(async (tx) => {
-		// questions can only be addressed to currently active politicians
+		// questions can only be addressed to currently active politicians that accept questions
 		const [politician] = await tx
 			.select({ userId: schema.politician.userId, fractionId: schema.politician.fractionId })
 			.from(schema.politician)
-			.where(and(eq(schema.politician.id, politicianId), eq(schema.politician.isActive, true)))
+			.where(and(eq(schema.politician.id, politicianId), eq(schema.politician.isActive, true), eq(schema.politician.acceptsQuestions, true)))
 			.limit(1);
 
 		if (!politician) return { error: 'unknown-politician' as const };

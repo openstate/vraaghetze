@@ -40,6 +40,11 @@ export function authorizeModerator(user: App.Locals['user']) {
 	if (!hasPermission(user, { question: ['moderate'] })) error(403, 'Geen toegang');
 }
 
+// require user to have the "admin" permission, otherwise returns 403 page
+export function authorizeAdmin(user: App.Locals['user']) {
+	if (!hasPermission(user, { user: ['create'] })) error(403, 'Geen toegang');
+}
+
 // only verified questions enter the queue; unverified ones get their own list with a
 // manual-verify action in a later phase
 export function listQuestionQueue() {

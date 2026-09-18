@@ -8,7 +8,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { Cron } from 'croner';
 import { syncPoliticians } from '$lib/server/sync';
 import { deliverOutbox } from '$lib/server/email/outbox';
-import { authorizeModerator } from '$lib/server/moderation';
+import { authorizeAdmin, authorizeModerator } from '$lib/server/moderation';
 
 export const init: ServerInit = () => {
 	if (building) return;
@@ -80,8 +80,11 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 
 const isModerationRoute = (routeId: string | null) => /^\/modereren(\/|$)/.test(routeId ?? '');
 
+const isAdminRoute = (routeId: string | null) => /^\/politici\/\[slug\]\/bewerken(\/|$)/.test(routeId ?? '');
+
 export const handleAuthorization: Handle = async ({ event, resolve }) => {
 	if (isModerationRoute(event.route.id)) authorizeModerator(event.locals.user);
+	if (isAdminRoute(event.route.id)) authorizeAdmin(event.locals.user);
 	return resolve(event);
 };
 

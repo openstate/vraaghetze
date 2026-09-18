@@ -6,6 +6,7 @@
 	import Avatar from '$lib/components/avatar.svelte';
 	import Field from '$lib/components/field.svelte';
 	import Pagination from '$lib/components/pagination.svelte';
+	import PoliticianStamp from '$lib/components/politician-stamp.svelte';
 	import { parsePagination } from '$lib/pagination';
 
 	const POLITICIANS_PER_PAGE = 12;
@@ -74,6 +75,10 @@
 
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		replaceState(url, {});
+	}
+
+	function preventAdding(event: Event, acceptsQuestions: boolean) {
+		if (!acceptsQuestions) event.preventDefault();
 	}
 </script>
 
@@ -156,7 +161,10 @@
 	<ul class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 		{#each shownPoliticians as politician (politician.id)}
 			{@const chosen = politician.slug === draft.aan}
-			<li>
+			<li class="relative">
+				{#if !politician.acceptsQuestions}
+					<PoliticianStamp name={politician.name} email={politician.email} oneline={true} />
+				{/if}
 				<a
 					href={stepHref('vraag', { ...draft, aan: politician.slug })}
 					aria-current={chosen ? 'true' : undefined}
@@ -166,6 +174,7 @@
 							? 'bg-osf-violet-50 ring-2 ring-osf-violet-500'
 							: 'bg-osf-canvas-100 hover:bg-osf-canvas-200'
 					]}
+					onclick={(e) => preventAdding(e, politician.acceptsQuestions)}
 				>
 					<Avatar
 						class="text-xl"

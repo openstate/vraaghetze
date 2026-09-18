@@ -1,22 +1,29 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import Avatar from '$lib/components/avatar.svelte';
+	import PoliticianStamp from '$lib/components/politician-stamp.svelte';
 
 	type Politician = {
 		slug: string;
 		name: string;
+		email: string;
+		acceptsQuestions: boolean;
 		fraction: string | null;
 		fractionName: string;
 		fractionRole: 'member' | 'chair';
 	};
 
-	let { politician }: { politician: Politician } = $props();
+	let { mayAsk, mayModerate, politician }: { mayAsk: boolean, mayModerate: boolean, politician: Politician } = $props();
 
 	const profileHref = $derived(resolve('/politici/[slug]', { slug: politician.slug }));
 </script>
 
+
 <article class="overflow-hidden rounded bg-osf-canvas-100">
-	<div class="flex items-center gap-3 p-5">
+	<div class="flex items-center gap-3 p-5 relative">
+		{#if !politician.acceptsQuestions}
+			<PoliticianStamp name={politician.name} email={politician.email} />
+		{/if}
 		<a href={profileHref} class="shrink-0" aria-hidden="true" tabindex="-1">
 			<Avatar
 				class="text-xl"
@@ -44,11 +51,23 @@
 			Bekijk profiel
 		</a>
 
-		<a
-			href="{resolve('/vragen/stellen')}?aan={politician.slug}"
-			class="flex w-fit items-center gap-1 text-sm font-medium text-osf-violet-500 hover:underline"
-		>
-			Stel een vraag <span class="iconify size-4 mdi--arrow-right"></span>
-		</a>
+		{#if mayAsk}
+			<a
+				href="{resolve('/vragen/stellen')}?aan={politician.slug}"
+				class="flex w-fit items-center gap-1 text-sm font-medium text-osf-violet-500 hover:underline"
+			>
+				Stel een vraag <span class="iconify size-4 mdi--arrow-right"></span>
+			</a>
+		{/if}
+
+		{#if mayModerate}
+			<a
+				href="{resolve(`/politici/${politician.slug}/bewerken`)}"
+				title="Bewerken"
+				class="flex text-osf-violet-500"
+			>
+				<span class="iconify size-5 mdi--pencil"></span>
+			</a>
+		{/if}
 	</div>
 </article>

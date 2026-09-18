@@ -226,6 +226,24 @@ describe('default action', () => {
 		expect(await db.select().from(schema.question)).toHaveLength(0);
 	});
 
+	test('rejects a politician that does not accept questions', async () => {
+		const { politician } = await createPolitician('Jan Jansen', { acceptsQuestions: false });
+		const asker = await createUser('Vera Vraagsteller');
+		const event = myMakeActionEvent(asker, {
+			...questionFields,
+			email: asker.email,
+			politicianId: politician.id
+		});
+
+		const result = await page.actions.default(event);
+
+		expect(result).toMatchObject({
+			status: 400,
+			data: { issues: { politicianId: expect.anything() } }
+		});
+		expect(await db.select().from(schema.question)).toHaveLength(0);
+	});
+
 	test('refuses a question longer than the shared limit', async () => {
 		const { politician } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');

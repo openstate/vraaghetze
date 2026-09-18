@@ -103,9 +103,9 @@
             bind:checked={details.acceptTandC}
             disabled={disabled}
           />
-        Ik ga akkoord met de
-        <a href={resolve('/voorwaarden')} target="_blank" class="hover:underline text-osf-violet-500">Algemene voorwaarden</a>.
-      </label>
+          Ik ga akkoord met de
+          <a href={resolve('/voorwaarden')} target="_blank" class="hover:underline text-osf-violet-500">Algemene voorwaarden</a>.
+        </label>
       {/snippet}
     </Field>
 

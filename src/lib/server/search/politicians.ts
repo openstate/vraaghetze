@@ -56,8 +56,10 @@ export function searchPoliticians(query: PoliticianSearchQuery, { page, perPage 
 				.select({
 					id: schema.politician.id,
 					slug: schema.politician.slug,
+					acceptsQuestions: schema.politician.acceptsQuestions,
 					fractionRole: schema.politician.fractionRole,
 					name: schema.user.name,
+					email: schema.user.email,
 					fraction: schema.fraction.abbreviation,
 					fractionName: schema.fraction.name
 				})

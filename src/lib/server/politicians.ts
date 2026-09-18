@@ -24,8 +24,10 @@ function listActive() {
 		.select({
 			id: schema.politician.id,
 			slug: schema.politician.slug,
+			acceptsQuestions: schema.politician.acceptsQuestions,
 			fractionRole: schema.politician.fractionRole,
 			name: schema.user.name,
+			email: schema.user.email,
 			fraction: schema.fraction.abbreviation,
 			fractionName: schema.fraction.name
 		})
@@ -63,7 +65,9 @@ export async function bySlug(slug: string) {
 			slug: schema.politician.slug,
 			userId: schema.politician.userId,
 			isActive: schema.politician.isActive,
+			acceptsQuestions: schema.politician.acceptsQuestions,
 			name: schema.user.name,
+			email: schema.user.email,
 			fractionRole: schema.politician.fractionRole,
 			fraction: schema.fraction.abbreviation,
 			fractionName: schema.fraction.name,
@@ -76,6 +80,13 @@ export async function bySlug(slug: string) {
 		.limit(1);
 
 	return politician;
+}
+
+export async function updateAcceptsQuestions(politicianId: string, value: boolean) {
+		await db
+			.update(schema.politician)
+			.set({ acceptsQuestions: value })
+			.where(eq(schema.politician.id, politicianId));
 }
 
 export function commissionsForPolitician(politicianId: string) {

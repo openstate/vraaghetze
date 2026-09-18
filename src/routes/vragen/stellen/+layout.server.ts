@@ -10,6 +10,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	return {
 		politician: politician?.isActive ? politician : null,
 		mayAsk: hasPermission(locals.user, { question: ['ask'] }),
+		mayModerate: hasPermission(locals.user, { question: ['moderate'] }),
 		pageWidth: pageWidth
 	};
 };

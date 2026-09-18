@@ -6,6 +6,7 @@
 	import LinkCard from '$lib/components/link-card.svelte';
 	import Page from '$lib/components/page.svelte';
 	import QuestionCard from '$lib/components/question-card.svelte';
+	import { notAcceptingQuestionsText } from '$lib/politicians.js';
 
 	let { data } = $props();
 
@@ -99,7 +100,11 @@
 	</header>
 
 	<h2 class="mt-12 mb-8 font-serif text-3xl">Vragen &amp; Antwoorden</h2>
-
+	{#if !data.politician.acceptsQuestions}
+		<p class="mt-2 mb-4 text-lg text-osf-canvas-600">
+		{notAcceptingQuestionsText(data.politician.name, data.politician.email)}
+		</p>
+	{/if}
 	<div class="grid items-start gap-x-10 gap-y-10 lg:grid-cols-[1fr_17rem]">
 		<!-- h-full stretches this to the cards beside it, so the ghost card fills whatever is left -->
 		<div class="flex flex-col gap-4 lg:col-start-1 lg:row-start-1 lg:h-full">

@@ -82,7 +82,7 @@
 				<ul class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 					{#each data.politicians as politician (politician.id)}
 						<li>
-							<PoliticianCard {politician} />
+							<PoliticianCard mayAsk={data.mayAsk} mayModerate={data.mayModerate} {politician} />
 						</li>
 					{/each}
 				</ul>
