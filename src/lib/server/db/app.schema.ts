@@ -195,7 +195,8 @@ export const politician = pgTable('politician', {
 	updatedAt: timestamp()
 		.defaultNow()
 		.$onUpdate(() => new Date())
-		.notNull()
+		.notNull(),
+	acceptsQuestions: boolean().default(true).notNull()
 });
 
 export const fraction = pgTable('fraction', {

@@ -1,0 +1,1 @@
+ALTER TABLE "politician" ADD COLUMN "accepts_questions" boolean DEFAULT true NOT NULL;
