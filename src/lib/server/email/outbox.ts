@@ -159,7 +159,7 @@ async function postEmail({ to, subject, text, replyTo, from }: EmailOptions) {
 		return;
 	}
 
-	const useFrom = { name: 'VraagHetZe', email: from ?? `noreply@${env.EMAIL_DOMAIN}` } :
+	const useFrom = { name: 'VraagHetZe', email: from ?? `noreply@${env.EMAIL_DOMAIN}` };
 
 	const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
 		method: 'POST',
