@@ -25,12 +25,20 @@ vi.mock('$app/server', () => ({
 	getRequestEvent: vi.fn(() => mockEvent)
 }));
 
+type actionEventOptions = {
+	acceptTandC?: string;
+	ageChecked?: string;
+}
+
 function myMakeActionEvent(
 	user: typeof schema.user.$inferSelect | null,
 	fields: Record<string, string> = {},
-	tAndCAccepted: boolean = true
+	options: actionEventOptions = {}
 ) {
-	const useFields = tAndCAccepted ? {...fields, acceptTandC: '1'} : {...fields}
+	if (typeof options.acceptTandC === 'undefined') options.acceptTandC = '1';
+	if (typeof options.ageChecked === 'undefined') options.ageChecked = '1';
+
+	const useFields = {...fields, ...options};
 
 	return makeActionEvent<typeof page.actions.default>(
 		`http://localhost/vragen/stellen/gegevens`,
@@ -106,13 +114,28 @@ describe('no user logged in', () => {
 			email: newEmail,
 			name: newName,
 			formType: 'newUser'
-		}, false);
+		}, { acceptTandC: ''});
 
 		const result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
 
 		expect(result.status).toBe(400);
 		expect(result.data.issues).toMatchObject({
 			acceptTandC: ['De Algemene Voorwaarden zijn niet geaccepteerd.']
+		});
+	});
+
+	test('requires age confirmation', async () => {
+		const event = myMakeActionEvent(null, {
+			email: newEmail,
+			name: newName,
+			formType: 'newUser'
+		}, { ageChecked: ''});
+
+		const result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
+
+		expect(result.status).toBe(400);
+		expect(result.data.issues).toMatchObject({
+			ageChecked: ['Om VraagHetZe te kunnen gebruiken moet je minimaal 16 jaar zijn of toestemming van je ouders hebben.']
 		});
 	});
 

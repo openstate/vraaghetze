@@ -22,7 +22,8 @@ vi.mock('$app/server', () => ({
 // For tests that mock validation of the captcha, see page.server.test.ts.
 
 type actionEventOptions = {
-	tAndCAccepted?: boolean
+	acceptTandC?: string;
+	ageChecked?: string;
 }
 
 function myMakeActionEvent(
@@ -30,11 +31,12 @@ function myMakeActionEvent(
 	fields: Record<string, string> = {},
 	options: actionEventOptions = {}
 ) {
-	if (typeof options.tAndCAccepted === 'undefined') options.tAndCAccepted = true;
+	if (typeof options.acceptTandC === 'undefined') options.acceptTandC = '1';
+	if (typeof options.ageChecked === 'undefined') options.ageChecked = '1';
 
 	const useFields = {
 		...fields,
-		...(options.tAndCAccepted ? {acceptTandC: '1'} : {}),
+		...options,
 		capToken: 'a_cap_token'
 	}
 

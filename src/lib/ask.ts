@@ -40,6 +40,9 @@ export const askSchema = z.discriminatedUnion(
 			acceptTandC: z.coerce.boolean().default(false).refine((val) => val, {
 				message: 'De Algemene Voorwaarden zijn niet geaccepteerd.'
 			}),
+			ageChecked: z.coerce.boolean().default(false).refine((val) => val, {
+				message: 'Om VraagHetZe te kunnen gebruiken moet je minimaal 16 jaar zijn of toestemming van je ouders hebben.'
+			}),
 			capToken: z.string().trim().optional()
 		}),
 		z.object({
@@ -199,7 +202,6 @@ export type AskDetails = {
 	email: string;
 	emailExisting:string;
 	code: string;
-	acceptTandC?: boolean;
 	capToken: string;
 };
 export const DEFAULT_ASK_DETAILS: AskDetails = {
@@ -208,7 +210,6 @@ export const DEFAULT_ASK_DETAILS: AskDetails = {
 	email: '',
 	emailExisting: '',
 	code: '',
-	acceptTandC: false,
 	capToken: ''
 };
 

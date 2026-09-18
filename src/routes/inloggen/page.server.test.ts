@@ -26,18 +26,21 @@ const validateCaptcha = vi.hoisted(() => (() => Promise.resolve(true)));
 vi.mock('$lib/server/utils/captcha', () => ({ validateCaptcha }));
 
 type actionEventOptions = {
-	tAndCAccepted?: boolean
+	acceptTandC?: string;
+	ageChecked?: string;
 }
+
 function myMakeActionEvent(
 	user: typeof schema.user.$inferSelect | null,
 	fields: Record<string, string> = {},
 	options: actionEventOptions = {}
 ) {
-	if (typeof options.tAndCAccepted === 'undefined') options.tAndCAccepted = true;
+	if (typeof options.acceptTandC === 'undefined') options.acceptTandC = '1';
+	if (typeof options.ageChecked === 'undefined') options.ageChecked = '1';
 
 	const useFields = {
 		...fields,
-		...(options.tAndCAccepted ? {acceptTandC: '1'} : {}),
+		...options,
 		capToken: 'a_cap_token'
 	}
 
@@ -104,7 +107,7 @@ describe('registering', () => {
 			email: newEmail,
 			name: newName,
 			formType: 'newUser'
-		}, { tAndCAccepted: false });
+		}, { acceptTandC: '' });
 
     const result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
 
@@ -113,4 +116,19 @@ describe('registering', () => {
       acceptTandC: ['De Algemene Voorwaarden zijn niet geaccepteerd.']
     });
   });
+
+	test('requires age confirmation', async () => {
+		const event = myMakeActionEvent(null, {
+			email: newEmail,
+			name: newName,
+			formType: 'newUser'
+		}, { ageChecked: ''});
+
+		const result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
+
+		expect(result.status).toBe(400);
+		expect(result.data.issues).toMatchObject({
+			ageChecked: ['Om VraagHetZe te kunnen gebruiken moet je minimaal 16 jaar zijn of toestemming van je ouders hebben.']
+		});
+	});
 });
