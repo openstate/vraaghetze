@@ -60,7 +60,7 @@
 		</p>
 	{:else if sent || form?.sent}
 		<p class="text-osf-canvas-600">
-			We hebben een inloglink naar je e-mailadres gestuurd. Klik erop om in te loggen.
+			Als je bij ons een account hebt is er een inloglink naar je e-mailadres gestuurd. Klik erop om in te loggen.
 		</p>
 	{:else}
 		<RegisterOrLogin

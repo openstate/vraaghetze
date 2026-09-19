@@ -38,6 +38,11 @@ export const auth = betterAuth({
 					purpose = 'sendCode';
 				}
 
+				if (purpose == 'login') {
+					const exists = await userExists(email);
+					if (!exists) return;
+				}
+
 				await sendMagicLinkMail({
 					recipient: email,
 					urlOrToken,
