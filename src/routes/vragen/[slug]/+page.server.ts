@@ -2,7 +2,6 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import * as follows from '$lib/server/follows';
 import * as questions from '$lib/server/questions';
-import { sendSignInLink } from '$lib/server/auth';
 import type { Actions, PageServerLoad } from './$types';
 
 const RELATED_QUESTIONS = 3;
@@ -40,8 +39,6 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 
 const choiceSchema = z.object({ keuze: z.enum(['ja', 'nee']) });
 
-const followSchema = z.object({ email: z.email() });
-
 export const actions = {
 	bevestigen: async ({ params, locals, request }) => {
 		if (!locals.user) error(401, 'Log in om je vraag te bevestigen.');
@@ -60,36 +57,24 @@ export const actions = {
 
 		return { confirmed: true };
 	},
-	volgen: async ({ params, locals, request, url }) => {
-		// signed-in visitors follow right away, the rest verify their e-mail address first
-		if (locals.user) {
-			const followed = await follows.follow(params.slug, locals.user.id);
+	volgen: async ({ params, locals }) => {
+		if (!locals.user) error(401, 'Log in om deze vraag te volgen.');
 
-			if ('error' in followed) {
-				if (followed.error === 'unknown-question') error(404, 'Vraag niet gevonden');
+		const followed = await follows.follow(params.slug, locals.user.id);
 
-				return fail(400, {
-					error:
-						followed.error === 'own-question'
-							? 'Je krijgt automatisch bericht zodra je eigen vraag beantwoord is.'
-							: 'Deze vraag is al beantwoord.'
-				});
-			}
+		if ('error' in followed) {
+			if (followed.error === 'unknown-question') error(404, 'Vraag niet gevonden');
 
-			return { followed: true };
+			return fail(400, {
+				error:
+					followed.error === 'own-question'
+						? 'Je krijgt automatisch bericht zodra je eigen vraag beantwoord is.'
+						: 'Deze vraag is al beantwoord.'
+			});
 		}
 
-		const parsed = followSchema.safeParse(Object.fromEntries(await request.formData()));
-		if (!parsed.success) return fail(400, { error: 'Vul een geldig e-mailadres in.' });
-
-		const callback = new URL(`/vragen/${params.slug}`, url.origin);
-		callback.searchParams.set('doel', 'volgen');
-		await sendSignInLink(parsed.data.email, callback.toString());
-
-		// the same answer for every address, so the dialog can't be used to find accounts
-		return { email: parsed.data.email };
+		return { followed: true };
 	},
-
 	ontvolgen: async ({ params, locals }) => {
 		if (!locals.user) error(401, 'Log in om deze vraag niet meer te volgen.');
 

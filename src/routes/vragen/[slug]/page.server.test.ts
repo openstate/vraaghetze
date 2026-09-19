@@ -222,49 +222,14 @@ describe('volgen action', () => {
 		expect(await getFollow(question.id, asker.id)).toHaveLength(0);
 	});
 
-	test('mails a sign-in link without following yet when nobody is signed in', async () => {
+	test('requires a signed-in user', async () => {
 		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 
 		const event = myMakeActionEvent(question.slug, null, { email: 'fatima@test.example' });
-		const result = await page.actions.volgen(event);
 
-		expect(result).toEqual({ email: 'fatima@test.example' });
-		expect(sendSignInLink).toHaveBeenCalledWith(
-			'fatima@test.example',
-			`http://localhost/vragen/${question.slug}?doel=volgen`
-		);
-
-		const follows = await db.select().from(schema.questionFollow);
-		expect(follows).toHaveLength(0);
-	});
-
-	test('answers an address with an account the same as one without', async () => {
-		const { politicianUser } = await createPolitician();
-		const asker = await createUser('Vera Vraagsteller');
-		const question = await insertQuestion(asker.id, politicianUser.id);
-
-		const known = await page.actions.volgen(
-			myMakeActionEvent(question.slug, null, { email: asker.email })
-		);
-		const unknown = await page.actions.volgen(
-			myMakeActionEvent(question.slug, null, { email: 'niemand@test.example' })
-		);
-
-		expect(known).toEqual({ email: asker.email });
-		expect(unknown).toEqual({ email: 'niemand@test.example' });
-	});
-
-	test('fails on an invalid e-mail address', async () => {
-		const { politicianUser } = await createPolitician();
-		const asker = await createUser('Vera Vraagsteller');
-		const question = await insertQuestion(asker.id, politicianUser.id);
-
-		const event = myMakeActionEvent(question.slug, null, { email: 'geen adres' });
-		const result = await page.actions.volgen(event);
-
-		expect(result).toMatchObject({ status: 400 });
+		await expect(page.actions.ontvolgen(event)).rejects.toMatchObject({ status: 401 });
 		expect(sendSignInLink).not.toHaveBeenCalled();
 	});
 });

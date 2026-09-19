@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { Dialog } from 'bits-ui';
 	import { enhance } from '$app/forms';
-	import { page } from '$app/state';
 	import Button from '$lib/components/button.svelte';
-	import Field from '$lib/components/field.svelte';
+	import { resolve } from '$app/paths';
 
 	type Props = { followers: number; isFollowing: boolean; isSignedIn: boolean; canFollow: boolean };
 
@@ -12,9 +11,6 @@
 	const followerLabel = $derived(followers === 1 ? '1 volger' : `${followers} volgers`);
 
 	const followAction = $derived(isFollowing ? 'Ontvolg deze vraag' : 'Volg deze vraag ');
-
-	const sentTo = $derived(page.form?.email as string | undefined);
-	const error = $derived(page.form?.error as string | undefined);
 </script>
 
 {#if !canFollow}
@@ -54,27 +50,14 @@
 					</Dialog.Close>
 				</div>
 
-				{#if sentTo}
-					<Dialog.Description class="text-osf-canvas-600">
-						We hebben een link naar <span class="font-medium">{sentTo}</span> gestuurd. Klik erop en druk
-						daarna nog een keer op de bel.
-					</Dialog.Description>
-				{:else}
-					<Dialog.Description class="text-osf-canvas-600">
-						Vul je e-mailadres in. Je krijgt eerst een link om je adres te bevestigen. Daarna
-						ontvang je een mail zodra deze vraag beantwoord is.
-					</Dialog.Description>
-
-					<form method="POST" action="?/volgen" use:enhance class="grid gap-4">
-						<Field name="email" label="Je e-mailadres" issues={error ? [error] : undefined}>
-							{#snippet children(control)}
-								<input {...control} type="email" required placeholder="sanne@voorbeeld.nl" />
-							{/snippet}
-						</Field>
-
-						<Button type="submit" variant="primary">Stuur bevestigingslink</Button>
-					</form>
-				{/if}
+				<Dialog.Description class="text-osf-canvas-600">
+					Als je een vraag volgt ontvang je een mail zodra de vraag beantwoord is.
+					Het volgen van vragen is alleen mogelijk met een account. Klik de knop hieronder om
+					een account aan te maken of om in te loggen.
+				</Dialog.Description>
+				<Button href={resolve('/inloggen')} variant="primary" icon="mdi--arrow-right">
+					Inloggen
+				</Button>
 			</Dialog.Content>
 		</Dialog.Portal>
 	</Dialog.Root>
