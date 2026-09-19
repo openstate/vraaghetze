@@ -13,6 +13,7 @@ export type defaultActionType = {
   askForCode?: boolean,
   issues?: Partial<Record<AskField, string[]>>
 }
+
 export const actions = {
 	default: async ({ request, locals, url }): Promise<defaultActionType|ActionFailure<defaultActionType>> => {
     if (!hasPermission(locals.user, { question: ['ask'] }))

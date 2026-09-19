@@ -13,7 +13,7 @@
 </script>
 
 <p class="mb-4 text-osf-canvas-600">
-Plak of type hieronder de code die je via de e-mail ontving.
+Als je bij ons een account hebt is er een code naar je e-mailadres gestuurd.
 </p>
 <Field name="code" label="Code uit e-mail" issues={issues.code}>
 	{#snippet children(control)}

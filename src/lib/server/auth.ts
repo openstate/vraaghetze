@@ -38,7 +38,7 @@ export const auth = betterAuth({
 					purpose = 'sendCode';
 				}
 
-				if (purpose == 'login') {
+				if (['login', 'sendCode'].includes(purpose)) {
 					const exists = await userExists(email);
 					if (!exists) return;
 				}
