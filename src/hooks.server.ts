@@ -82,7 +82,16 @@ const isModerationRoute = (routeId: string | null) => /^\/modereren(\/|$)/.test(
 
 const isAdminRoute = (routeId: string | null) => /^\/politici\/\[slug\]\/bewerken(\/|$)/.test(routeId ?? '');
 
+// event.route should not be used for authorization in case of Remote Functions (see
+// https://svelte.dev/docs/kit/@sveltejs-kit#RequestEvent). If we ever start to use Remote
+// Functions authorization will need a refactoring.
+export function notForRemoteFunctions(isRemoteRequest: boolean) {
+	if (isRemoteRequest) error(403, 'Geen toegang');
+}
+
 export const handleAuthorization: Handle = async ({ event, resolve }) => {
+	notForRemoteFunctions(event.isRemoteRequest);
+
 	if (isModerationRoute(event.route.id)) authorizeModerator(event.locals.user);
 	if (isAdminRoute(event.route.id)) authorizeAdmin(event.locals.user);
 	return resolve(event);
