@@ -49,7 +49,13 @@
 					{@render menuLinks()}
 				</div>
 
-				<div class="flex justify-end">
+				<div class="flex justify-end items-center">
+					{#if hasPermission(page.data.user, { user: ['create'] })}
+						<a href={resolve('/gebruikers')} title="Beheer" class="mr-2">
+							<span class="iconify size-8 mdi--cog"></span>
+						</a>
+					{/if}
+
 					<Button
 						href={resolve('/mijn-vragen')}
 						variant="primary"

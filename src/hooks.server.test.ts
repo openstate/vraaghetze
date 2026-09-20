@@ -34,11 +34,20 @@ const moderationRoutes = [
 ];
 
 const adminRoutes = [
-	'/politici/[slug]/bewerken'
+	'/politici/[slug]/bewerken',
+	'/gebruikers'
+]
+
+const visitorRoutes = [
+	"/",
+	"/vragen/[slug]",
+	"/moderatie",
+	"/profiel",
+	null
 ]
 
 describe('handleAuthorization for visitors', () => {
-	test.each(['/', '/vragen/[slug]', '/moderatie', '/modereren-publiek', null])(
+	test.each(visitorRoutes)(
 		'leaves %s outside the moderation section alone',
 		async (routeId) => {
 			const { blockedWith, passedThrough } = await guard(routeId);

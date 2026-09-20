@@ -7,9 +7,13 @@
 <script lang="ts" generics="TData extends RowData">
 	import { createTable, FlexRender, type ColumnDef, type RowData } from '@tanstack/svelte-table';
 
-	type Props = { columns: ColumnDef<typeof features, TData>[]; rows: TData[] };
+	type Props = {
+		columns: ColumnDef<typeof features, TData>[];
+		rows: TData[];
+		fullWidth?: boolean;
+	};
 
-	let { columns, rows }: Props = $props();
+	let { columns, rows, fullWidth = true }: Props = $props();
 
 	const table = createTable({
 		features,
@@ -21,10 +25,12 @@
 			return rows;
 		}
 	});
+
+	const tableClass = $derived(fullWidth ? "w-full min-w-6xl" : "")
 </script>
 
 <div class="overflow-x-auto">
-	<table class="w-full min-w-6xl table-fixed text-left text-sm">
+	<table class="{tableClass} table-fixed text-left text-sm">
 		<thead>
 			{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
 				<tr class="border-b border-osf-canvas-200">

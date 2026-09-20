@@ -80,7 +80,16 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 
 const isModerationRoute = (routeId: string | null) => /^\/modereren(\/|$)/.test(routeId ?? '');
 
-const isAdminRoute = (routeId: string | null) => /^\/politici\/\[slug\]\/bewerken(\/|$)/.test(routeId ?? '');
+const isAdminRoute = (routeId: string | null) => {
+	if (!routeId) return false;
+
+	if ([
+		"/politici/[slug]/bewerken",
+		"/gebruikers"
+	].includes(routeId)) return true;
+
+	return false;
+}
 
 // event.route should not be used for authorization in case of Remote Functions (see
 // https://svelte.dev/docs/kit/@sveltejs-kit#RequestEvent). If we ever start to use Remote
