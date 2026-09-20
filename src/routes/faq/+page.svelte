@@ -45,5 +45,7 @@
 
 	<h2>Ik ben het niet eens met een moderatiekeuze, hoe kan ik bezwaar maken?</h2>
 
-	<p>TODO</p>
+	<p>Stuur een e-mail met je bezwaar naar
+		<a href="mailto:vraaghetze@openstate.eu" class="hover:underline">vraaghetze@openstate.eu</a>.
+	</p>
 </ContentPage>
