@@ -58,6 +58,24 @@ function activeCommissionSeats() {
 		.orderBy(asc(schema.commission.shortName));
 }
 
+export function activeCommissions() {
+	return db
+		.selectDistinct({
+			shortName: schema.commission.shortName
+		})
+		.from(schema.commission)
+		.innerJoin(
+			schema.commissionMembership,
+			eq(schema.commissionMembership.commissionId, schema.commission.id)
+		)
+		.innerJoin(
+			schema.politician,
+			eq(schema.commissionMembership.politicianId, schema.politician.id)
+		)
+		.where(and(eq(schema.politician.isActive, true), eq(schema.commission.kind, COMMISSION_KIND)))
+		.orderBy(asc(schema.commission.shortName));
+}
+
 export async function bySlug(slug: string) {
 	const [politician] = await db
 		.select({

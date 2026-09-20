@@ -39,12 +39,12 @@
 		Kamerleden in de commissie Wonen zitten. Zij houden zich actief met dat onderwerp bezig en kunnen het beste jouw vraag beantwoord.
 	</p>
 
-	<h2>Overzicht Vaste Kamercommissie</h2>
-
-	<p>
-		TODO
-	</p>
-
+	<h2>Overzicht Vaste Kamercommissies</h2>
+	<ul>
+		{#each data.commissions as commission}
+			<li>{commission.shortName}</li>
+		{/each}
+	</ul>
 
 	<h2>Heb je hulp nodig?</h2>
 
