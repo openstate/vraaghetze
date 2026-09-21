@@ -8,7 +8,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	const pageWidth = url.pathname.startsWith('/vragen/stellen/vraag') ? 'wide' : 'content';
 
 	return {
-		politician: politician?.isActive ? politician : null,
+		politician: (politician?.isActive && politician?.acceptsQuestions) ? politician : null,
 		mayAsk: hasPermission(locals.user, { question: ['ask'] }),
 		mayModerate: hasPermission(locals.user, { question: ['moderate'] }),
 		pageWidth: pageWidth

@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import Avatar from '$lib/components/avatar.svelte';
 	import PoliticianStamp from '$lib/components/politician-stamp.svelte';
+	import { preventAdding } from '$lib/politicians';
 
 	type Politician = {
 		slug: string;
@@ -55,6 +56,7 @@
 			<a
 				href="{resolve('/vragen/stellen')}?aan={politician.slug}"
 				class="flex w-fit items-center gap-1 text-sm font-medium text-osf-violet-500 hover:underline"
+				onclick={(e) => preventAdding(e, !politician.acceptsQuestions)}
 			>
 				Stel een vraag <span class="iconify size-4 mdi--arrow-right"></span>
 			</a>

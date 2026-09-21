@@ -8,6 +8,7 @@
 	import Pagination from '$lib/components/pagination.svelte';
 	import PoliticianStamp from '$lib/components/politician-stamp.svelte';
 	import { parsePagination } from '$lib/pagination';
+	import { preventAdding } from '$lib/politicians.js';
 
 	const POLITICIANS_PER_PAGE = 12;
 
@@ -75,10 +76,6 @@
 
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		replaceState(url, {});
-	}
-
-	function preventAdding(event: Event, acceptsQuestions: boolean) {
-		if (!acceptsQuestions) event.preventDefault();
 	}
 </script>
 
@@ -174,7 +171,7 @@
 							? 'bg-osf-violet-50 ring-2 ring-osf-violet-500'
 							: 'bg-osf-canvas-100 hover:bg-osf-canvas-200'
 					]}
-					onclick={(e) => preventAdding(e, politician.acceptsQuestions)}
+					onclick={(e) => preventAdding(e, !politician.acceptsQuestions)}
 				>
 					<Avatar
 						class="text-xl"

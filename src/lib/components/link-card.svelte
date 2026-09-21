@@ -1,9 +1,16 @@
 <script lang="ts">
+	import { preventAdding } from '$lib/politicians';
 	import type { Snippet } from 'svelte';
 
-	type Props = { href: string; variant?: 'dark' | 'bright'; children: Snippet };
+	type Props = {
+		href: string;
+		variant?: 'dark' | 'bright';
+		children: Snippet;
+		disabled?: boolean;
+		hoverText?: string;
+	};
 
-	let { href, variant = 'dark', children }: Props = $props();
+	let { href, variant = 'dark', children, disabled, hoverText }: Props = $props();
 
 	const cardClass = $derived([
 		'group flex lg:min-h-52 flex-col justify-between rounded p-6 text-osf-violet-50',
@@ -15,7 +22,12 @@
 </script>
 
 <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-<a {href} class={cardClass}>
+<a
+	{href}
+	class={cardClass}
+	onclick={(e) => preventAdding(e, disabled)}
+	title={hoverText ?? ''}
+>
 	<span class="font-serif text-2xl/snug">{@render children()}</span>
 
 	<span aria-hidden="true" class={arrowClass}>

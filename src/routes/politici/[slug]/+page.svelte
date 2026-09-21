@@ -6,7 +6,7 @@
 	import LinkCard from '$lib/components/link-card.svelte';
 	import Page from '$lib/components/page.svelte';
 	import QuestionCard from '$lib/components/question-card.svelte';
-	import { notAcceptingQuestionsText } from '$lib/politicians.js';
+	import { notAcceptingQuestionsText, preventAdding } from '$lib/politicians.js';
 
 	let { data } = $props();
 
@@ -125,6 +125,8 @@
 					<a
 						href="{resolve('/vragen/stellen')}?aan={data.politician.slug}"
 						class="font-serif text-xl/snug text-osf-canvas-500 hover:underline"
+						onclick={(e) => preventAdding(e, !data.politician.acceptsQuestions)}
+						title={data.politician.acceptsQuestions ? '' : notAcceptingQuestionsText(data.politician.name, data.politician.email)}
 					>
 						Stel jij de {data.questions.length === 0 ? 'eerste' : 'volgende'} vraag aan {data
 							.politician.name}?
@@ -141,7 +143,11 @@
 
 		<aside class="@container grid lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
 			<div class="grid gap-4 @lg:grid-cols-2">
-				<LinkCard href="{resolve('/vragen/stellen')}?aan={data.politician.slug}">
+				<LinkCard
+					href="{resolve('/vragen/stellen')}?aan={data.politician.slug}"
+					disabled={!data.politician.acceptsQuestions}
+					hoverText={data.politician.acceptsQuestions ? '' : notAcceptingQuestionsText(data.politician.name, data.politician.email)}
+				>
 					Stel een vraag aan {data.politician.name}
 				</LinkCard>
 
