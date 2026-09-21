@@ -86,7 +86,7 @@
 			<Collapsible.Content class="grid gap-5 border-b border-osf-canvas-200 px-6 py-6 lg:hidden">
 				{@render menuLinks()}
 
-				<Button href={resolve('/profiel')} variant="primary" icon="mdi--arrow-right">
+				<Button href={resolve('/mijn-vragen')} variant="primary" icon="mdi--arrow-right">
 					Mijn vragen
 				</Button>
 			</Collapsible.Content>
