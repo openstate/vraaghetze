@@ -29,7 +29,7 @@
 				</a>
 
 				<p class="mt-5 text-sm">
-					Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras eget venenatis augue nulla.
+					Jouw vraag aan de politiek. Publiek gesteld, publiek beantwoord.
 				</p>
 			</div>
 
