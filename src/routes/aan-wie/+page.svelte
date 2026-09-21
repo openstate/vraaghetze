@@ -51,7 +51,7 @@
 	<p>
 		Weet je alsnog niet bij welk Kamerlid je moet zijn? Bijvoorbeeld omdat je niet goed weet bij welke Vaste Kamercommissie het
 		onderwerp van jouw vraag past? Wij helpen je graag verder! Stuur je vraag op naar
-		<a href="mailto:vraaghetze@openstate.eu" class="hover:underline">vraaghetze@openstate.eu</a>
+		<a href="mailto:contact@openstate.eu" class="hover:underline">contact@openstate.eu</a>
 		en we zoeken samen
 		uit welk Kamerlid het beste een antwoord op jouw vraag kan geven.
 	</p>

@@ -61,7 +61,7 @@
 					<p class="font-mono text-[13px] font-medium text-osf-shocking-pink">Contact</p>
 					<ul class="mt-4 grid gap-3 text-sm font-medium">
 						<li>
-							<a href="mailto:vraaghetze@openstate.eu" class="hover:underline">vraaghetze@openstate.eu</a>
+							<a href="mailto:contact@openstate.eu" class="hover:underline">contact@openstate.eu</a>
 						</li>
 						<li>
 							<a href="tel:+31203080567" class="hover:underline">020 3080567</a>
