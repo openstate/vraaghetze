@@ -15,7 +15,7 @@
 	afterNavigate(() => (expanded = false));
 	const teaserText = "Op dit moment kun je alleen de door jezelf gestelde vragen zien.<br>" +
 		"Eventuele antwoorden worden ook nog niet getoond.<br>" +
-		"Na de officiële lancering van VraagHetZe zullen alle gestelde vragen en antwoorden zichtbaar worden."
+		"Na de officiële lancering van VraagHetZe op 28 september zullen alle gestelde vragen en antwoorden zichtbaar worden."
 </script>
 
 {#snippet menuLinks()}
