@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import Avatar from '$lib/components/avatar.svelte';
-	import PoliticianStamp from '$lib/components/politician-stamp.svelte';
-	import { preventAdding } from '$lib/politicians';
+	import { notAcceptingQuestionsText, preventAdding } from '$lib/politicians';
 
 	type Politician = {
 		slug: string;
@@ -20,11 +19,11 @@
 </script>
 
 
-<article class="overflow-hidden rounded bg-osf-canvas-100">
+<article
+	class="overflow-hidden rounded bg-osf-canvas-100 {!politician.acceptsQuestions ? "opacity-30" : ""}"
+	title={!politician.acceptsQuestions ? notAcceptingQuestionsText(politician.name, politician.email) : ""}
+>
 	<div class="flex items-center gap-3 p-5 relative">
-		{#if !politician.acceptsQuestions}
-			<PoliticianStamp name={politician.name} email={politician.email} />
-		{/if}
 		<a href={profileHref} class="shrink-0" aria-hidden="true" tabindex="-1">
 			<Avatar
 				class="text-xl"

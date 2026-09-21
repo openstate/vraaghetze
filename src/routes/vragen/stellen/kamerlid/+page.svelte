@@ -6,9 +6,8 @@
 	import Avatar from '$lib/components/avatar.svelte';
 	import Field from '$lib/components/field.svelte';
 	import Pagination from '$lib/components/pagination.svelte';
-	import PoliticianStamp from '$lib/components/politician-stamp.svelte';
 	import { parsePagination } from '$lib/pagination';
-	import { preventAdding } from '$lib/politicians.js';
+	import { notAcceptingQuestionsText, preventAdding } from '$lib/politicians.js';
 
 	const POLITICIANS_PER_PAGE = 12;
 
@@ -158,10 +157,10 @@
 	<ul class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 		{#each shownPoliticians as politician (politician.id)}
 			{@const chosen = politician.slug === draft.aan}
-			<li class="relative">
-				{#if !politician.acceptsQuestions}
-					<PoliticianStamp name={politician.name} email={politician.email} oneline={true} />
-				{/if}
+			<li
+				class="relative {!politician.acceptsQuestions ? "opacity-30" : ""}"
+				title={!politician.acceptsQuestions ? notAcceptingQuestionsText(politician.name, politician.email) : ""}
+			>
 				<a
 					href={stepHref('vraag', { ...draft, aan: politician.slug })}
 					aria-current={chosen ? 'true' : undefined}
