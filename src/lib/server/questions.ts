@@ -119,6 +119,40 @@ export async function listAnswered(limit: number) {
 	}));
 }
 
+export type QuestionStat = 'questionsAsked' | 'questionsAnswered' | 'politicians' | 'averageAnswerTime';
+
+export const questionStats = async (): Promise<Record<QuestionStat, number>> =>  {
+	const questionsAsked = await db.$count(schema.question, eq(schema.question.status, 'approved'));
+	const questionsAnswered = await db
+		.select({ count: count() })
+		.from(schema.question)
+		.innerJoin(schema.answer, latestAnswer(null))
+		.where(and(eq(schema.question.status, 'approved'), eq(schema.answer.status, 'approved')));
+	const politicians = await db.$count(schema.politician, and(eq(schema.politician.isActive, true), eq(schema.politician.acceptsQuestions, true)));
+	// averageAnswerTime is average time between sending the email to the politician and receiving the reply, in seconds
+	const averageAnswerTime = await db
+		.select({
+			value: sql<number>`avg(extract(epoch from ${schema.inbox.receivedAt} - ${schema.moderationAction.createdAt}))`
+		})
+		.from(schema.question)
+		.innerJoin(schema.moderationAction, eq(schema.question.id, schema.moderationAction.questionId))
+		.innerJoin(schema.answer, eq(schema.question.id, schema.answer.questionId))
+		.innerJoin(schema.inbox, eq(schema.answer.id, schema.inbox.answerId))
+		.where(and(
+			eq(schema.question.status, 'approved'),
+			eq(schema.moderationAction.action, 'approved'),
+			eq(schema.answer.status, 'approved')
+		));
+
+	return {
+		questionsAsked,
+		questionsAnswered: questionsAnswered[0].count,
+		politicians,
+		averageAnswerTime: averageAnswerTime[0].value
+	}
+}
+
+
 // the similarity searching already excludes stopwords, but we should also exclude the following from matching
 const QUESTION_WORDS = new Set([
 	'hoe',

@@ -8,6 +8,7 @@
 	import Button from '$lib/components/button.svelte';
 	import HeroPlanes from '$lib/components/hero-planes.svelte';
 	import QuestionCard from '$lib/components/question-card.svelte';
+	import { readableSeconds } from "$lib/date-time.js";
 
 	let { data } = $props();
 
@@ -21,13 +22,24 @@
 
 	const QUESTION_MAX_LENGTH = 200;
 
-	// TODO: implement the actual stats. discuss with team whether these are the right stats to show.
-	const stats = [
-		{ icon: 'mdi--help-circle', value: '0', label: 'Vragen gesteld' },
-		{ icon: 'mdi--account-group', value: '0', label: 'Vragen beantwoord' },
-		{ icon: 'mdi--bullhorn', value: '0', label: 'Kamerleden' },
-		{ icon: 'mdi--message-text', value: '0', label: 'Gemiddelde wachttijd' }
-	];
+	// TODO: use actual numbers instead of 0's
+	// const stats = $derived.by(() => {
+	// 	const [waitValue, waitTitle] = readableSeconds(data.statValues.averageAnswerTime);
+	// 	return [
+	// 		{ icon: 'mdi--help-circle', value: data.statValues.questionsAsked, title: '', label: 'Vragen gesteld' },
+	// 		{ icon: 'mdi--account-group', value: data.statValues.questionsAnswered, title: '', label: 'Vragen beantwoord' },
+	// 		{ icon: 'mdi--bullhorn', value: data.statValues.politicians, title: '', label: 'Kamerleden' },
+	// 		{ icon: 'mdi--message-text', value: waitValue, title: waitTitle, label: 'Gemiddelde wachttijd' }
+	// 	];
+	// });
+	const stats = $derived.by(() => {
+		return [
+			{ icon: 'mdi--help-circle', value: '0', title: '', label: 'Vragen gesteld' },
+			{ icon: 'mdi--account-group', value: '0', title: '', label: 'Vragen beantwoord' },
+			{ icon: 'mdi--bullhorn', value: '0', title: '', label: 'Kamerleden' },
+			{ icon: 'mdi--message-text', value: '0', title: '', label: 'Gemiddelde wachttijd' }
+		];
+	});
 
 	const steps = [
 		{
@@ -163,13 +175,15 @@
 
 	<div class="relative mx-auto max-w-7xl px-6 py-24 md:py-32">
 		<h2 class="text-center font-serif text-3xl md:text-4xl">VraagHetZe in cijfers</h2>
+		<!-- TODO: remove -->
+		<p class="text-center mt-2">Aantallen hieronder staan nu op 0 en worden na de opstartfase gedeeld.</p>
 
 		<div class="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-4">
 			{#each stats as stat (stat.label)}
 				<div>
 					<span aria-hidden="true" class={['iconify size-9 text-osf-shocking-pink', stat.icon]}
 					></span>
-					<p class="mt-5 font-serif text-4xl md:text-6xl">{stat.value}</p>
+					<p class="mt-5 font-serif text-4xl md:text-6xl" title={stat.title}>{stat.value}</p>
 					<p class="mt-3">{stat.label}</p>
 				</div>
 			{/each}

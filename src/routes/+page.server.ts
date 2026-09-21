@@ -4,5 +4,8 @@ import type { PageServerLoad } from './$types';
 const ANSWERED_QUESTIONS = 4;
 
 export const load: PageServerLoad = async () => {
-	return { questions: await questions.listAnswered(ANSWERED_QUESTIONS) };
+	const answered = await questions.listAnswered(ANSWERED_QUESTIONS);
+	const statValues = await questions.questionStats();
+
+	return { questions: answered, statValues };
 };
