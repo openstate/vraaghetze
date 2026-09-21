@@ -7,6 +7,9 @@ declare global {
 		interface Locals {
 			user?: UserType;
 			session?: SessionType;
+			isDevelopment?: boolean;
+			isProduction?: boolean;
+			isStaging?: boolean;
 		}
 
 		interface PageData {

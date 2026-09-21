@@ -2,6 +2,8 @@ import { applyAction, deserialize } from "$app/forms";
 import { invalidateAll } from "$app/navigation";
 import type { ActionResult } from "@sveltejs/kit";
 
+export type ENV_TYPE = 'development' | 'production' | 'staging';
+
 export class HTMLSafeString {
   public value: string;
 

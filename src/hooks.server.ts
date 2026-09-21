@@ -9,6 +9,7 @@ import { Cron } from 'croner';
 import { syncPoliticians } from '$lib/server/sync';
 import { deliverOutbox } from '$lib/server/email/outbox';
 import { authorizeAdmin, authorizeModerator } from '$lib/server/moderation';
+import type { ENV_TYPE } from '$lib/general';
 
 export const init: ServerInit = () => {
 	if (building) return;
@@ -33,6 +34,24 @@ const FORM_CONTENT_TYPES = [
 
 // The inbound parse webhook is authenticated by its own token instead.
 const isInboundWebhook = (url: URL) => url.pathname.startsWith('/api/sendgrid/');
+
+const handleSetEnv: Handle = async ({ event, resolve }) => {
+	const env = process.env.ENV as ENV_TYPE;
+
+	switch (env) {
+		case 'development':
+			event.locals.isDevelopment = true;
+			break;
+		case 'production':
+			event.locals.isProduction = true;
+			break;
+		case 'staging':
+			event.locals.isStaging = true;
+			break;
+	}
+
+	return resolve(event);
+};
 
 const handleCsrf: Handle = async ({ event, resolve }) => {
 	if (isInboundWebhook(event.url)) return resolve(event);
@@ -106,4 +125,4 @@ export const handleAuthorization: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle = sequence(handleCsrf, handleBasicAuth, handleBetterAuth, handleAuthorization);
+export const handle = sequence(handleSetEnv, handleCsrf, handleBasicAuth, handleBetterAuth, handleAuthorization);
