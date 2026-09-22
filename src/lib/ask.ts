@@ -212,7 +212,7 @@ export type AskDetails = {
 	capToken: string;
 };
 export const DEFAULT_ASK_DETAILS: AskDetails = {
-	formType: '',
+	formType: 'newUser',
 	name: '',
 	email: '',
 	emailConfirmation: '',

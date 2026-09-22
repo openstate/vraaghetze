@@ -21,7 +21,7 @@
           value={true}
           bind:checked={data.politician.acceptsQuestions}
         />
-        Dit kamerlid beantwoordt vragen via VraagHetZe.
+        Dit Kamerlid beantwoordt vragen via VraagHetZe.
       </label>
     </div>
 

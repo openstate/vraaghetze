@@ -20,12 +20,13 @@
 
 	let { data, form } = $props();
 
-	let details = $state<AskDetails>({ ...DEFAULT_ASK_DETAILS });
 	$effect(() => {
 		if (form?.initializeNewUser) {
 			clearDetails();
 		}
 	});
+
+	let details = $state<AskDetails>({ ...DEFAULT_ASK_DETAILS });
 	let issues = $derived(form?.issues || {});
 	let formType = $derived(details.formType ?? 'newUser') as AskFormType;
 	let askForCode = $derived(form?.askForCode || formType == 'codeFromEmail');

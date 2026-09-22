@@ -88,7 +88,7 @@
           actionValue="approved"
         >
           {#snippet children()}
-            <p>Na goedkeuren zal de vraag naar het kamerlid gestuurd worden. Weet je zeker
+            <p>Na goedkeuren zal de vraag naar het Kamerlid gestuurd worden. Weet je zeker
               dat je deze vraag wilt goedkeuren?
             </p>
           {/snippet}

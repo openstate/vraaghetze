@@ -75,7 +75,7 @@
 				<p>Dit antwoord is genegeerd om de gemelde reden maar kan indien gewenst toch verwerkt
 					worden.</p>
 				<ul class="space-y-1 text-body list-disc list-inside text-sm mb-3">
-					<li>Indien <strong>status=Andere Afzender</strong> dan wordt het antwoord verwerkt alsof het oorspronkelijke kamerlid
+					<li>Indien <strong>status=Andere Afzender</strong> dan wordt het antwoord verwerkt alsof het oorspronkelijke Kamerlid
 						waaraan de vraag gesteld was hem beantwoord heeft.</li>
 				</ul>
 				<form
