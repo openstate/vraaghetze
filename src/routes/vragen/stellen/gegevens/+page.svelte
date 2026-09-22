@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import {
+	clearDetails,
 		deducedFormType,
 		DEFAULT_ASK_DETAILS,
 		draftFromUrl,
@@ -22,8 +23,7 @@
 	let details = $state<AskDetails>({ ...DEFAULT_ASK_DETAILS });
 	$effect(() => {
 		if (form?.initializeNewUser) {
-			details.name = '';
-			details.email = '';
+			clearDetails();
 		}
 	});
 	let issues = $derived(form?.issues || {});
@@ -75,7 +75,7 @@
 	{formType}
 	user={data.user}
 	{form}
-	{details}
+	bind:details={details}
 	{issues}
 	{loginActive}
 	{askForCode}

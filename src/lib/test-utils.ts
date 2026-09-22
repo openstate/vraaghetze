@@ -1,6 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import { MAGIC_LINK_EXPIRY } from './server/auth';
+import * as InloggenPage from '$routes/inloggen/+page.server';
+import * as VraagGegevensPage from '$routes/vragen/stellen/gegevens/+page.server';
 
 
 export async function createUser(name: string, overrides: Partial<typeof schema.user.$inferInsert> = {}) {
@@ -231,4 +233,39 @@ export function makeActionEvent<T extends (...args: any) => any>(
 export async function statusOf(handlerResult: unknown) {
   const outcome = await Promise.resolve(handlerResult).catch((thrown) => thrown);
   return (outcome as { status?: number } | null)?.status ?? 200;
+}
+
+export type registerActionEventOptions = {
+	acceptTandC?: string;
+	ageChecked?: string;
+	setConfirmationEmail?: boolean;
+}
+
+export function registerMakeActionEvent(
+  user: typeof schema.user.$inferSelect | null,
+  fields: Record<string, string> = {},
+  allOptions: registerActionEventOptions = {},
+  addCapToken: boolean,
+  page: typeof InloggenPage | typeof VraagGegevensPage,
+  url: string
+) {
+  let { setConfirmationEmail, ...options } = allOptions;
+  if (typeof setConfirmationEmail === 'undefined') setConfirmationEmail = true;
+  if (typeof options.acceptTandC === 'undefined') options.acceptTandC = '1';
+  if (typeof options.ageChecked === 'undefined') options.ageChecked = '1';
+
+  fields['emailConfirmation'] = setConfirmationEmail ? fields['email'] : `${crypto.randomUUID()}@test.example`;
+
+  const capField: { capToken: string } | {} = addCapToken ? { capToken: 'a_cap_token' } : {}
+  const useFields = {
+    ...fields,
+    ...options,
+    ...capField
+  }
+
+  return makeActionEvent<typeof page.actions.default>(
+    url,
+    user,
+    useFields
+  );
 }

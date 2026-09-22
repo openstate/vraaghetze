@@ -37,6 +37,7 @@ export const askSchema = z.discriminatedUnion(
 			formType: z.literal('newUser'),
 			name: z.string().trim().min(1, 'Vul je volledige naam in.'),
 			email: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.')),
+			emailConfirmation: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.')),
 			acceptTandC: z.coerce.boolean().default(false).refine((val) => val, {
 				message: 'De Algemene Voorwaarden zijn niet geaccepteerd.'
 			}),
@@ -44,6 +45,9 @@ export const askSchema = z.discriminatedUnion(
 				message: 'Om VraagHetZe te kunnen gebruiken moet je minimaal 16 jaar zijn of toestemming van je ouders hebben.'
 			}),
 			capToken: z.string().trim().optional()
+		}).refine(data => data.email == data.emailConfirmation, {
+			message: "Bevestiging e-mailadres komt niet overeen.",
+			path: ['emailConfirmation', 'email']
 		}),
 		z.object({
 			formType: z.literal('missingName'),
@@ -200,6 +204,9 @@ export type AskDetails = {
 	formType?: string;
 	name: string;
 	email: string;
+	emailConfirmation: string;
+	acceptTandC: boolean;
+	ageChecked: boolean;
 	emailExisting:string;
 	code: string;
 	capToken: string;
@@ -208,6 +215,9 @@ export const DEFAULT_ASK_DETAILS: AskDetails = {
 	formType: '',
 	name: '',
 	email: '',
+	emailConfirmation: '',
+	acceptTandC: false,
+	ageChecked: false,
 	emailExisting: '',
 	code: '',
 	capToken: ''

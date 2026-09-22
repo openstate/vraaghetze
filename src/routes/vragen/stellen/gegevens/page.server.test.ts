@@ -7,9 +7,10 @@ import {
 	createUser,
 	createVerification,
 	getUser,
-	makeActionEvent
+	registerMakeActionEvent
 } from '$lib/test-utils';
-import type { ActionFailure } from '@sveltejs/kit';
+import type { ActionFailure, RequestEvent } from '@sveltejs/kit';
+import type { RouteParams } from './$types';
 
 const mockEvent = {
 	request: new Request('http://localhost/vragen/stellen/gegevens'),
@@ -28,23 +29,22 @@ vi.mock('$app/server', () => ({
 type actionEventOptions = {
 	acceptTandC?: string;
 	ageChecked?: string;
+	setConfirmationEmail?: boolean;
 }
 
 function myMakeActionEvent(
 	user: typeof schema.user.$inferSelect | null,
 	fields: Record<string, string> = {},
-	options: actionEventOptions = {}
+	allOptions: actionEventOptions = {}
 ) {
-	if (typeof options.acceptTandC === 'undefined') options.acceptTandC = '1';
-	if (typeof options.ageChecked === 'undefined') options.ageChecked = '1';
-
-	const useFields = {...fields, ...options};
-
-	return makeActionEvent<typeof page.actions.default>(
-		`http://localhost/vragen/stellen/gegevens`,
+	return registerMakeActionEvent(
 		user,
-		useFields
-	);
+		fields,
+		allOptions,
+		true,
+		page,
+		"http://localhost/vragen/stellen/gegevens"
+	) as RequestEvent<RouteParams, "/vragen/stellen/gegevens">;
 }
 
 const questionFields = {
@@ -107,6 +107,24 @@ describe('no user logged in', () => {
 			'Er bestaat al een account met dit e-mailadres, gebruik het formulier hiernaast om in te loggen'
 		);
 		expect(result.data.initializeNewUser).toBe(true);
+	});
+
+	test('requires confirmation of email address', async () => {
+		const { politician } = await createPolitician();
+		const event = myMakeActionEvent(null, {
+			...questionFields,
+			email: newEmail,
+			name: newName,
+			politicianId: politician.id,
+			formType: 'newUser'
+		}, { setConfirmationEmail: false });
+
+		const result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
+
+		expect(result.status).toBe(400);
+		expect(result.data.issues).toMatchObject({
+			emailConfirmation: ['Bevestiging e-mailadres komt niet overeen.']
+		});
 	});
 
 	test('requires acceptance of the terms and conditions', async () => {

@@ -54,6 +54,7 @@ describe('registering', () => {
   test('requires checking the captcha', async () => {
 		const event = myMakeActionEvent(null, {
 			email: newEmail,
+			emailConfirmation: newEmail,
 			name: newName,
 			formType: 'newUser'
 		});

@@ -1,10 +1,10 @@
 import { describe, expect, test, vi } from 'vitest';
 import { schema } from '$lib/server/db';
 import * as page from './+page.server';
-import { createUser, getUserByEmail, makeActionEvent } from '$lib/test-utils';
-import type { ActionFailure } from '@sveltejs/kit';
+import { createUser, getUserByEmail, registerMakeActionEvent, type registerActionEventOptions } from '$lib/test-utils';
+import type { ActionFailure, RequestEvent } from '@sveltejs/kit';
 import { userExists } from '$lib/server/auth';
-import * as captcha from '$lib/server/utils/captcha';
+import type { RouteParams } from './$types';
 
 const mockEvent = {
 	request: new Request('http://localhost/inloggen'),
@@ -25,30 +25,19 @@ vi.mock('$app/server', () => ({
 const validateCaptcha = vi.hoisted(() => (() => Promise.resolve(true)));
 vi.mock('$lib/server/utils/captcha', () => ({ validateCaptcha }));
 
-type actionEventOptions = {
-	acceptTandC?: string;
-	ageChecked?: string;
-}
-
 function myMakeActionEvent(
 	user: typeof schema.user.$inferSelect | null,
 	fields: Record<string, string> = {},
-	options: actionEventOptions = {}
+	allOptions: registerActionEventOptions = {}
 ) {
-	if (typeof options.acceptTandC === 'undefined') options.acceptTandC = '1';
-	if (typeof options.ageChecked === 'undefined') options.ageChecked = '1';
-
-	const useFields = {
-		...fields,
-		...options,
-		capToken: 'a_cap_token'
-	}
-
-	return makeActionEvent<typeof page.actions.default>(
-		`http://localhost/inloggen`,
+	return registerMakeActionEvent(
 		user,
-		useFields
-	);
+		fields,
+		allOptions,
+		false,
+		page,
+		"http://localhost/inloggen"
+	) as RequestEvent<RouteParams, "/inloggen">;
 }
 
 const newName = 'A new name';
@@ -100,6 +89,21 @@ describe('registering', () => {
 			'Er bestaat al een account met dit e-mailadres, gebruik het formulier hiernaast om in te loggen'
 		);
 		expect(result.data.initializeNewUser).toBe(true);
+	});
+
+	test('requires confirmation of email address', async () => {
+		const event = myMakeActionEvent(null, {
+			email: newEmail,
+			name: newName,
+			formType: 'newUser'
+		}, { setConfirmationEmail: false });
+
+		const result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
+
+		expect(result.status).toBe(400);
+		expect(result.data.issues).toMatchObject({
+			emailConfirmation: ['Bevestiging e-mailadres komt niet overeen.']
+		});
 	});
 
   test('requires acceptance of the terms and conditions', async () => {

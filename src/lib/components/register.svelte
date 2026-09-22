@@ -39,8 +39,6 @@
   }
 
   let capToken = $state('');
-  let acceptTandC = $state(false);
-  let ageChecked = $state(false);
 
 	onMount(() => {
 		inputHandler();
@@ -87,6 +85,20 @@
         />
       {/snippet}
     </Field>
+    <Field name="emailConfirmation" label="Bevestiging e-mailadres" issues={issues.emailConfirmation}>
+      {#snippet children(control)}
+        <input
+          {...control}
+          type="email"
+          bind:value={details.emailConfirmation}
+          required
+          autocomplete="email"
+          placeholder="sanne@voorbeeld.nl"
+          disabled={disabled}
+          oninput={inputHandler}
+        />
+      {/snippet}
+    </Field>
 
     <p class="text-osf-canvas-600 text-sm">
       Bekijk onze
@@ -102,7 +114,7 @@
             type="checkbox"
             name="acceptTandC"
             value="1"
-            bind:checked={acceptTandC}
+            bind:checked={details.acceptTandC}
             disabled={disabled}
           />
           Ik ga akkoord met de
@@ -118,7 +130,7 @@
             type="checkbox"
             name="ageChecked"
             value="1"
-            bind:checked={ageChecked}
+            bind:checked={details.ageChecked}
             disabled={disabled}
           />
           Ik ben 16 jaar of ouder, of ik ben jonger en hierbij geven mijn ouders/verzorgers toestemming.
@@ -126,7 +138,7 @@
       {/snippet}
     </Field>
 
-    {#if capjsSiteKey && acceptTandC && ageChecked}
+    {#if capjsSiteKey && details.acceptTandC && details.ageChecked}
       <Field name="capToken">
         {#snippet children(control)}
           <CapWidget bind:token={capToken} capjsSiteKey={capjsSiteKey} />

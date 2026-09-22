@@ -3,7 +3,7 @@
 	import { authClient } from '$lib/auth-client';
 	import Page from '$lib/components/page.svelte';
 	import RegisterOrLogin from '$lib/components/register-or-login.svelte'
-	import { deducedFormType, DEFAULT_ASK_DETAILS, loginFormActive, newUserFormActive, readDetails, writeDetails, type AskDetails, type AskFormType } from '$lib/ask.js';
+	import { clearDetails, deducedFormType, DEFAULT_ASK_DETAILS, loginFormActive, newUserFormActive, readDetails, writeDetails, type AskDetails, type AskFormType } from '$lib/ask.js';
 	import { onMount } from 'svelte';
 
 	let { data, form } = $props();
@@ -14,6 +14,8 @@
 			details.name = '';
 			details.email = '';
 			form.initializeNewUser = false;
+		} else if (sent || form?.sent || data.user) {
+			clearDetails();
 		}
 	});
 	let issues = $derived(form?.issues || {});
