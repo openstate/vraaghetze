@@ -20,8 +20,8 @@
 	let issues = $derived(form?.issues || {});
 	let askForCode = false;
 	let sent = $state(false);
-	let formType = $derived(form?.formType);
-	let activeMode = $derived(activeModeForFormType(formType));
+	let formTypeFromForm = $derived(form?.formType);
+	let activeMode = $derived(activeModeForFormType(formTypeFromForm));
 	const setActiveMode = (mode: ActiveMode) => { activeMode = mode }
 
 	const handleSubmit = async (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement}) => {
@@ -29,7 +29,9 @@
 		const submitter = event.submitter;
 
 		const formData = new FormData(currentTarget, submitter);
+		console.info(formData);
 		const formType = formData.get('formType') as AskFormType;
+		console.info("NOW HERE: " + formType);
 		persist();
 
 		if (formType == 'userLogin') {

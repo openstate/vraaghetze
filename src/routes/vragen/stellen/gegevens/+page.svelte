@@ -28,8 +28,8 @@
 	let details = $state<AskDetails>({ ...DEFAULT_ASK_DETAILS });
 	let issues = $derived(form?.issues || {});
 	let askForCode = $derived(form?.askForCode ?? false);
-	let formType = $derived(form?.formType);
-	let activeMode = $derived(activeModeForFormType(formType));
+	let formTypeFromForm = $derived(form?.formType);
+	let activeMode = $derived(activeModeForFormType(formTypeFromForm));
 	const setActiveMode = (mode: ActiveMode) => { activeMode = mode }
 
 	const draft = $derived({ ...draftFromUrl(page.url), aan: data.politician?.slug ?? '' });

@@ -7,7 +7,7 @@
 	} from '$lib/ask';
 	import Field from '$lib/components/field.svelte';
 	import type { IdentifyMode } from './register-or-login.svelte';
-	import Button from './button.svelte';
+	import RegisterLoginFooter from './register-login-footer.svelte';
 
 	type Props = {
     identifyMode: IdentifyMode;
@@ -63,19 +63,5 @@
 		{/snippet}
 	</Field>
 
-	{#if formError}
-		<p class="mb-4 mt-4 text-sm text-osf-shocking-pink">{formError}</p>
-	{/if}
-
-	<div class="mt-2 flex flex-wrap items-center justify-end gap-3">
-    {#if previousUrl}
-		  <Button variant="secondary" href={previousUrl} class="mr-auto">
-				Vorige
-			</Button>
-    {/if}
-		<Button
-			type="submit" variant="primary" icon="mdi--arrow-right">
-			Volgende
-		</Button>
-	</div>
+	<RegisterLoginFooter {formError} {previousUrl} />
 </form>
