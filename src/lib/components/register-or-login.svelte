@@ -1,27 +1,22 @@
 <script lang="ts">
-	import { type ActiveMode, type AskDetails, type AskField } from "$lib/ask";
+	import { type ActiveMode } from "$lib/ask";
 	import type { UserType } from "$lib/server/auth";
 	import Register from '$lib/components/register.svelte';
 	import Login from '$lib/components/login.svelte';
-	import AskForCode from '$lib/components/ask-for-code.svelte';
+	import AskForCode, { type BasicRegisterLoginProps } from '$lib/components/ask-for-code.svelte';
 	import type { ActionData as GegevensActionData } from "../../routes/vragen/stellen/gegevens/$types";
   import type { ActionData as InloggenActionData} from "../../routes/inloggen/$types";
-	import { onMount } from "svelte";
 
 	export type IdentifyMode = 'asking_question' | 'login';
 
-  type Props = {
+  type Props = Omit<BasicRegisterLoginProps, 'formError'> & {
 		identifyMode: IdentifyMode;
     user?: UserType;
     form?: GegevensActionData | InloggenActionData;
-    details: AskDetails;
-    issues: Partial<Record<AskField, string[]>>;
     askForCode: boolean;
 		activeMode: ActiveMode;
-    previousUrl?: string;
 		capjsSiteKey?: string;
 		setActiveMode: (mode: ActiveMode) => void;
-    handleSubmit: (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement}) => {};
   }
 
   let {
@@ -37,9 +32,6 @@
 		setActiveMode,
     handleSubmit
   }: Props = $props();
-
-	onMount(() => {
-	})
 </script>
 
 {#if user}

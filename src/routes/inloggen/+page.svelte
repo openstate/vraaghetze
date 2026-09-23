@@ -29,9 +29,7 @@
 		const submitter = event.submitter;
 
 		const formData = new FormData(currentTarget, submitter);
-		console.info(formData);
 		const formType = formData.get('formType') as AskFormType;
-		console.info("NOW HERE: " + formType);
 		persist();
 
 		if (formType == 'userLogin') {
