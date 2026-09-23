@@ -121,10 +121,6 @@
 {/if}
 
 <form method="POST" use:enhance={submitAsk} novalidate class="grid gap-6">
-	{#if errorMessage}
-		<p role="alert" class="text-sm text-osf-shocking-pink">{errorMessage}</p>
-	{/if}
-
 	<p class="mb-2 text-osf-canvas-600">
 		Controleer of je vraag, het Kamerlid en je gegevens kloppen, en verstuur dan je vraag.
 	</p>
@@ -210,6 +206,10 @@
 			<CapWidget bind:token={capToken} capjsSiteKey={data.capjsSiteKey} />
 			<input type="hidden" name="capToken" value={capToken} />
 		</div>
+	{/if}
+
+	{#if errorMessage}
+		<p role="alert" class="text-sm text-osf-shocking-pink">{errorMessage}</p>
 	{/if}
 
 	<div class="mt-2 flex flex-wrap items-center justify-end gap-3">
