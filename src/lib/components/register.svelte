@@ -2,8 +2,6 @@
 	import {
   	clearDetails,
 		type ActiveMode,
-		type AskDetails,
-		type AskIssues,
 		type RegisterFormType
 	} from '$lib/ask';
 	import Field from '$lib/components/field.svelte';
@@ -12,18 +10,14 @@
 	import type { IdentifyMode } from './register-or-login.svelte';
 	import { resolve } from '$app/paths';
 	import RegisterLoginFooter from './register-login-footer.svelte';
+	import type { BasicRegisterLoginProps } from './ask-for-code.svelte';
   
-  type Props = {
+	type Props = BasicRegisterLoginProps & {
     identifyMode: IdentifyMode;
     user?: UserType;
-    details: AskDetails;
-    issues: AskIssues;
-		previousUrl?: string;
-		formError: string | undefined;
     capjsSiteKey?: string;
     formType: RegisterFormType;
 		setActiveMode?: (mode: ActiveMode) => void;
-  	handleSubmit: (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement}) => {};
   }
   let {
     identifyMode,

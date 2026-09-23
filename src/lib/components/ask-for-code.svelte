@@ -6,14 +6,14 @@
 	import Field from '$lib/components/field.svelte';
 	import RegisterLoginFooter from './register-login-footer.svelte';
 
-	type Props = {
+	export type BasicRegisterLoginProps = {
     details: AskDetails;
     issues: AskIssues;
 		previousUrl?: string;
 		formError: string | undefined;
   	handleSubmit: (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement}) => {};
 }
-  let { details = $bindable(), issues, previousUrl, formError, handleSubmit }: Props = $props();
+  let { details = $bindable(), issues, previousUrl, formError, handleSubmit }: BasicRegisterLoginProps = $props();
 </script>
 
 <form

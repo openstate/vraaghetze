@@ -2,21 +2,15 @@
 	import {
 		clearDetails,
 		type ActiveMode,
-		type AskDetails,
-		type AskIssues
 	} from '$lib/ask';
 	import Field from '$lib/components/field.svelte';
 	import type { IdentifyMode } from './register-or-login.svelte';
 	import RegisterLoginFooter from './register-login-footer.svelte';
+	import type { BasicRegisterLoginProps } from './ask-for-code.svelte';
 
-	type Props = {
+	type Props = BasicRegisterLoginProps & {
     identifyMode: IdentifyMode;
-    details: AskDetails;
-    issues: AskIssues;
-		previousUrl?: string;
-		formError: string | undefined;
 		setActiveMode: (mode: ActiveMode) => void;
-		handleSubmit: (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement}) => {};
   }
   let {
 		identifyMode,
