@@ -104,7 +104,7 @@ describe('no user logged in', () => {
 
 		expect(result.status).toBe(400);
 		expect(result.data.error).toBe(
-			'Er bestaat al een account met dit e-mailadres, gebruik het formulier hiernaast om in te loggen'
+			'Er bestaat al een account met dit e-mailadres.'
 		);
 		expect(result.data.initializeNewUser).toBe(true);
 	});

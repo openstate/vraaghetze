@@ -3,7 +3,7 @@
 	import { authClient } from '$lib/auth-client';
 	import Page from '$lib/components/page.svelte';
 	import RegisterOrLogin from '$lib/components/register-or-login.svelte'
-	import { clearDetails, deducedFormType, DEFAULT_ASK_DETAILS, loginFormActive, newUserFormActive, readDetails, writeDetails, type AskDetails, type AskFormType } from '$lib/ask.js';
+	import { activeModeForFormType, clearDetails, DEFAULT_ASK_DETAILS, readDetails, writeDetails, type ActiveMode, type AskDetails, type AskFormType } from '$lib/ask.js';
 	import { onMount } from 'svelte';
 
 	let { data, form } = $props();
@@ -18,15 +18,18 @@
 
 	let details = $state<AskDetails>({ ...DEFAULT_ASK_DETAILS });
 	let issues = $derived(form?.issues || {});
-	let formType = $derived(details.formType ?? 'newUser') as AskFormType;
 	let askForCode = false;
-	let newUserActive = $derived(newUserFormActive(details, data.user));
-	let loginActive = $derived(newUserActive ? false : loginFormActive(details));
 	let sent = $state(false);
+	let formType = $derived(form?.formType);
+	let activeMode = $derived(activeModeForFormType(formType));
+	const setActiveMode = (mode: ActiveMode) => { activeMode = mode }
 
 	const handleSubmit = async (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement}) => {
-		formType = deducedFormType(details, askForCode, data.user);
-		details = { ...details, formType: formType};
+		const currentTarget = event.currentTarget as HTMLFormElement;
+		const submitter = event.submitter;
+
+		const formData = new FormData(currentTarget, submitter);
+		const formType = formData.get('formType') as AskFormType;
 		persist();
 
 		if (formType == 'userLogin') {
@@ -39,7 +42,7 @@
 			});
 
 			if (error) {
-				issues = {...issues, emailExisting: [error.message ?? '']}
+				issues = {...issues, emailExisting: ["E-mailadres is niet geldig"]}
 			} else {
 				sent = true;
 			}
@@ -59,22 +62,25 @@
 		<p class="mb-6 text-osf-canvas-600">
 			Je bent ingelogd als <strong>{data.user.email}</strong>.
 		</p>
-	{:else if sent || form?.sent}
+	{:else if sent}
 		<p class="text-osf-canvas-600">
 			Als je bij ons een account hebt is er een inloglink naar je e-mailadres gestuurd. Klik erop om in te loggen.
 		</p>
+	{:else if form?.sent}
+		<p class="text-osf-canvas-600">
+			Registratie geslaagd! Er is een inloglink naar je e-mailadres gestuurd. Klik erop om in te loggen.
+		</p>
 	{:else}
 		<RegisterOrLogin
-			identifyMode='login'
-			{formType}
+			identifyMode="login"
 			user={data.user}
 			{form}
 			bind:details={details}
 			{issues}
-			{loginActive}
 			{askForCode}
-			{newUserActive}
+			{activeMode}
 			capjsSiteKey={data.capjsSiteKey}
+			{setActiveMode}
 			{handleSubmit}
 		/>
 	{/if}

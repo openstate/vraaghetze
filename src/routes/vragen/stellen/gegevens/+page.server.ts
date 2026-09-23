@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { fail, redirect, type ActionFailure } from '@sveltejs/kit';
 import { hasPermission } from '$lib/permissions';
 import { db, schema } from '$lib/server/db/index.js';
-import { askSchema, draftFromUrl, stepHref, type AskField } from '$lib/ask.js';
+import { askSchema, draftFromUrl, stepHref, type AskField, type AskFormType } from '$lib/ask.js';
 import { validateForm } from '$lib/server/utils/forms';
 import { auth, userExists, type UserType } from '$lib/server/auth';
 import type { Actions } from './$types';
@@ -11,7 +11,8 @@ export type defaultActionType = {
   error?: string,
   initializeNewUser?: boolean,
   askForCode?: boolean,
-  issues?: Partial<Record<AskField, string[]>>
+  issues?: Partial<Record<AskField, string[]>>,
+  formType?: AskFormType
 }
 
 export const actions = {
@@ -22,29 +23,30 @@ export const actions = {
     const draft = draftFromUrl(url)
 
     const result = await validateForm(request, askSchema);
+    const returnValues = { formType: result.data.formType as AskFormType }
     const rawData = result.data;
-    if (!result.valid) return fail(400, { error: '', issues: result.issues, askForCode: rawData.formType == 'codeFromEmail' });
+    if (!result.valid) return fail(400, { ...returnValues, error: '', issues: result.issues, askForCode: rawData.formType == 'codeFromEmail' });
 
     const data = result.data;
 
     if (data.formType == 'newUser') {
       const exists = await userExists(data.email);
       if (exists) {
-        return fail(400, {
-          error: 'Er bestaat al een account met dit e-mailadres, gebruik het formulier hiernaast om in te loggen',
+        return fail(400, { ...returnValues,
+          error: 'Er bestaat al een account met dit e-mailadres.',
           initializeNewUser: true
         });
       }
     } else if (data.formType == 'missingName') {
       if (locals.user && !locals.user.name) await handleMissingName(locals.user, data.name);
     } else if (data.formType == 'userLogin') {
-      return { askForCode: true }
+      return { ...returnValues, askForCode: true }
     } else if (data.formType == 'codeFromEmail') {
       const session = await handleCodeFromEmail(data.code, request.headers);
       if (session) {
         locals.session = session;
       } else {
-        return fail(400, { issues: { code: ['Code niet bekend'] }, askForCode: true });
+        return fail(400, { ...returnValues, issues: { code: ['Code niet bekend'] }, askForCode: true });
       }
     }
 

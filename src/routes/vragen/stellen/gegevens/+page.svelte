@@ -2,15 +2,14 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import {
+	activeModeForFormType,
 	clearDetails,
-		deducedFormType,
 		DEFAULT_ASK_DETAILS,
 		draftFromUrl,
-		loginFormActive,
-		newUserFormActive,
 		readDetails,
 		stepHref,
 		writeDetails,
+		type ActiveMode,
 		type AskDetails,
 		type AskFormType,
 	} from '$lib/ask';
@@ -28,10 +27,10 @@
 
 	let details = $state<AskDetails>({ ...DEFAULT_ASK_DETAILS });
 	let issues = $derived(form?.issues || {});
-	let formType = $derived(details.formType ?? 'newUser') as AskFormType;
-	let askForCode = $derived(form?.askForCode || formType == 'codeFromEmail');
-	let newUserActive = $derived(newUserFormActive(details, data.user));
-	let loginActive = $derived(newUserActive ? false : loginFormActive(details));
+	let askForCode = $derived(form?.askForCode ?? false);
+	let formType = $derived(form?.formType);
+	let activeMode = $derived(activeModeForFormType(formType));
+	const setActiveMode = (mode: ActiveMode) => { activeMode = mode }
 
 	const draft = $derived({ ...draftFromUrl(page.url), aan: data.politician?.slug ?? '' });
 
@@ -46,9 +45,9 @@
 		const currentTarget = event.currentTarget as HTMLFormElement;
 		const submitter = event.submitter;
 
-		formType = deducedFormType(details, askForCode, data.user);
+		const formData = new FormData(currentTarget, submitter);
+		const formType = formData.get('formType') as AskFormType;
 		if (formType != 'codeFromEmail') {
-			details = { ...details, formType: formType};
 			persist();
 		}
 
@@ -62,7 +61,7 @@
 			});
 
 			if (error) {
-				issues = {...issues, emailExisting: [error.message ?? '']}
+				issues = {...issues, emailExisting: ["E-mailadres is niet geldig"]}
 			} else {
 				submitDirectly(currentTarget, submitter, { formType: formType ?? '' });
 			}
@@ -73,14 +72,13 @@
 
 <RegisterOrLogin
 	identifyMode='asking_question'
-	{formType}
 	user={data.user}
 	{form}
 	bind:details={details}
 	{issues}
-	{loginActive}
 	{askForCode}
-	{newUserActive}
+	{activeMode}
 	previousUrl={stepHref('vraag', draft)}
+	{setActiveMode}
 	{handleSubmit}
 />

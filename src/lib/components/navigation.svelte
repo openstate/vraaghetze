@@ -89,6 +89,15 @@
 				<Button href={resolve('/mijn-vragen')} variant="primary" icon="mdi--arrow-right">
 					Mijn vragen
 				</Button>
+				{#if page.data.user}
+					<Button
+						href={resolve('/profiel')}
+						variant="primary"
+						spanPadding="px-2"
+					>
+						<span class="iconify size-6 mdi--user-outline"></span>
+					</Button>
+				{/if}
 			</Collapsible.Content>
 		</header>
 	{/snippet}

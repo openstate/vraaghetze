@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { resolve } from '$app/paths';
 import { toSearchParams } from './url';
-import type { UserType } from './server/auth';
 
 export const QUESTION_TITLE_MIN_LENGTH = 10;
 export const QUESTION_TITLE_MAX_LENGTH = 200;
@@ -67,36 +66,19 @@ export const askSchema = z.discriminatedUnion(
 export type AskQuestionFields = z.infer<typeof askSchema.options[0]>;
 
 export type AskFormType = z.infer<typeof askSchema>['formType'];
+export type RegisterFormType = Extract<AskFormType, "newUser" | "missingName">;
 type KeysOfUnion<T> = T extends T ? keyof T: never;
 export type AskField = KeysOfUnion<z.infer<typeof askSchema>>
 export type AskValues = Record<AskField, string>;
 export type AskIssues = Partial<Record<AskField, string[]>>;
+export type ActiveMode = 'registering' | 'login';
 
-export const deducedFormType = (details: AskDetails, askForCode: boolean, user?: UserType): AskFormType => {
-	if (askForCode) {
-		return 'codeFromEmail';
-	} else if (user) {
-		return 'missingName';
-	} else if (details.emailExisting) {
-		return 'userLogin';
-	} else {
-		return 'newUser';
+export const activeModeForFormType = (formType: AskFormType): ActiveMode => {
+	if (formType && ["newUser", "missingName"].includes(formType)) {
+		return "registering";
 	}
-}
 
-export const newUserFormActive = (details: AskDetails, user?: UserType): boolean => {
-	const nameEmpty = !details.name.trim();
-	const emailEmpty = user ? true : !details.email.trim();
-	const isActive = !nameEmpty || !emailEmpty;
-
-	return isActive;
-}
-
-export const loginFormActive = (details: AskDetails): boolean => {
-	const emailEmpty = !details.emailExisting.trim();
-  const isActive = !emailEmpty;
-
-	return isActive;
+	return "login";
 }
 
 export type AskStep = {
@@ -201,7 +183,6 @@ export const stepIsAhead = (stepId: string, draft: AskDraft) =>
 	stepIndex(stepId) > stepIndex(stepToAnswer(draft));
 
 export type AskDetails = {
-	formType?: string;
 	name: string;
 	email: string;
 	emailConfirmation: string;
@@ -212,7 +193,6 @@ export type AskDetails = {
 	capToken: string;
 };
 export const DEFAULT_ASK_DETAILS: AskDetails = {
-	formType: 'newUser',
 	name: '',
 	email: '',
 	emailConfirmation: '',
