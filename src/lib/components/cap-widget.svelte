@@ -32,4 +32,9 @@
   id="cap"
   data-cap-api-endpoint="https://capjs.openstate.eu/{capjsSiteKey}"
   data-cap-i18n-initial-state="Ik ben geen robot"
+  data-cap-i18n-verify-aria-label="Klik om te verifiëren dat je geen robot bent"
+  data-cap-i18n-verifying-label="Verifiëren..."
+  data-cap-i18n-verifying-aria-label="Verifiëren, s.v.p. even wachten"
+  data-cap-i18n-solved-label="Voltooid"
+  data-cap-i18n-verified-aria-label="Voltooid"
 ></cap-widget>
