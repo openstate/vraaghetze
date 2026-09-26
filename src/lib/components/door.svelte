@@ -9,6 +9,7 @@
 <style>
   .doorContainer {
     position: relative;
+    margin-top: 30px;
   }
 
   .doorframe {
@@ -20,8 +21,12 @@
     transform-style: preserve-3d;
     width: var(--doorWidth);
     height: var(--doorHeight);
-    -webkit-transition: width var(--doorAppearsTime) linear,height var(--doorAppearsTime) linear;
-    transition: width var(--doorAppearsTime) linear,height var(--doorAppearsTime) linear;
+    margin-top: var(--marginTop);
+    transition:
+      width var(--doorTransitionTime) var(--doorEasing),
+      height var(--doorTransitionTime) var(--doorEasing),
+      margin-top var(--doorTransitionTime) var(--doorEasing),
+      border var(--doorTransitionTime) var(--doorEasing);
     margin-left: auto;
     margin-right: auto;
   }
@@ -77,7 +82,6 @@
       opacity: 0;
     }
   }
-
 </style>
 
 <div class="doorContainer">

@@ -52,7 +52,7 @@
 
 <BrandBar />
 
-<Navigation class={page.url.pathname === '/' ? 'bg-osf-canvas-50!' : ''} />
+<Navigation class={page.url.pathname === '/' ? 'bg-osf-canvas-50!' : (page.url.pathname === '/launch' ? 'hideForLaunch' : '')} />
 
 {#if $flash}
 	<FlashMessage type={$flash.type} message={$flash.message} />
@@ -62,4 +62,4 @@
 	{@render children()}
 </main>
 
-<Footer />
+<Footer class={page.url.pathname === '/launch' ? 'hideForLaunch' : ''} />

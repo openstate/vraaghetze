@@ -1,10 +1,13 @@
 <script lang="ts">
 
+  export type LaunchButtonClass = 'shake' | 'growShrink' | '';
+
   type Props = {
     buttonClicked: (event: Event) => void;
+    class: LaunchButtonClass;
   }
 
-  const { buttonClicked }: Props = $props();
+  const { buttonClicked, class: className }: Props = $props();
 </script>
 <style>
   .button{
@@ -18,12 +21,7 @@
     height: var(--launchButtonSize);
     position: absolute;
     width: var(--launchButtonSize);
-    -webkit-transition: all .1s linear;
     transition: all .1s linear;
-    -webkit-transition: width var(--buttonTransitionTime) var(--buttonEasing),
-      height var(--buttonTransitionTime) var(--buttonEasing),
-      left var(--buttonTransitionTime) var(--buttonEasing),
-      top var(--buttonTransitionTime) var(--buttonEasing);
     transition: width var(--buttonTransitionTime) var(--buttonEasing),
       height var(--buttonTransitionTime) var(--buttonEasing),
       left var(--buttonTransitionTime) var(--buttonEasing),
@@ -35,22 +33,36 @@
     color:#973884;
     font-family: var(--font-serif);
     font-size: var(--font-size);
-    left:var(--launchTextLeft);
-    top:var(--launchTextTop);
-    display: block;
-    height: 30px;
+    position: absolute;
+    top: 0;
+    margin-left: auto;
+    margin-right: auto;
+    left: 30%;
+    height: 100%;
+    display:flex;
+    flex-direction:row;
+    align-items: center;
+    justify-content: center;
     text-decoration: none;
     text-shadow: 0px -1px 1px #bdb5b4, 1px 1px 1px white;
     position: absolute;
-    width: 30px;
-    -webkit-transition: font-size var(--buttonTransitionTime) var(--buttonEasing),
-      left var(--buttonTransitionTime) var(--buttonEasing),
-      top var(--buttonTransitionTime) var(--buttonEasing);
     transition: font-size var(--buttonTransitionTime) var(--buttonEasing),
       left var(--buttonTransitionTime) var(--buttonEasing),
       top var(--buttonTransitionTime) var(--buttonEasing);
   }
 
+  .growShrink:after {
+    animation-name: grow-shrink;
+    animation-duration: 1s;
+    animation-iteration-count: 1;
+    transform-origin: center;
+  }
+
+  @keyframes grow-shrink {
+    0% { transform:  scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1);}
+  }  
 
   .button:hover{
     background-image: -webkit-linear-gradient(top, #fff, #fde2f8);
@@ -69,6 +81,18 @@
     color:#973884;
     text-shadow: 0px -1px 1px #bdb5b4, 0px 1px 1px white;
   }
+
+  .shake {
+    animation: tilt-shaking 0.15s infinite;
+  }
+
+  @keyframes tilt-shaking {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(5deg); }
+    50% { transform: rotate(0eg); }
+    75% { transform: rotate(-5deg); }
+    100% { transform: rotate(0deg); }
+  }
 </style>
 
-<a href="#" title="Launch!" class="button" onclick={buttonClicked}></a>
+<a href="#" title="Launch!" class="button {className}" onclick={buttonClicked}></a>

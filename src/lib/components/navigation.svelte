@@ -15,6 +15,12 @@
 	afterNavigate(() => (expanded = false));
 </script>
 
+<style>
+	.hideForLaunch {
+		display: none;
+	}
+</style>
+
 {#snippet menuLinks()}
 	<a href={resolve('/vragen')}>Vragen & Antwoorden</a>
 	<a href={resolve('/politici')}>Kamerleden</a>

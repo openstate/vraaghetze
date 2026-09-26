@@ -17,7 +17,6 @@
     top: var(--top);
     z-index: var(--zIndex);
     transform: var(--transform);
-    -webkit-transition: left var(--politicianTransitionTime) cubic-bezier(.91,.8,.54,1.39);
     transition: left var(--politicianTransitionTime) cubic-bezier(.91,.8,.54,1.39);
     transition-delay: var(--delay);
     display: var(--display);
@@ -25,7 +24,7 @@
 
   .hallo {
     position: absolute;
-    left: 65%;
+    left: var(--textLeft);
     top: calc(var(--top) + 20px);
     color: var(--color-osf-violet-400);
     font-family: var(--font-serif);
