@@ -217,7 +217,7 @@ describe('listForUser', () => {
 		await insertAnswer(answered.id, politicianUser.id);
 		await follows.follow(open.slug, follower.id);
 
-		const followed = await follows.listForUser(follower.id);
+		const followed = await follows.listForUser(follower.id, follower.role == 'admin');
 
 		expect(followed.map((question) => question.slug)).toEqual([open.slug, answered.slug]);
 		expect(followed[1].answer).toMatchObject({ body: 'Mijn antwoord op uw vraag.' });
@@ -232,7 +232,7 @@ describe('listForUser', () => {
 
 		await follows.follow(question.slug, follower.id);
 
-		const followed = await follows.listForUser(follower.id);
+		const followed = await follows.listForUser(follower.id, follower.role == 'admin');
 
 		expect(followed.map((question) => question.slug)).toEqual([question.slug]);
 	});

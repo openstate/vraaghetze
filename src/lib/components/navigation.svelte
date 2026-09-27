@@ -13,6 +13,9 @@
 	let expanded = $state(false);
 
 	afterNavigate(() => (expanded = false));
+	const prelaunchText = "Op dit moment kun je alleen de door jezelf gestelde vragen zien.<br>" +
+		"Eventuele antwoorden worden ook nog niet getoond.<br>" +
+		"Na de officiële lancering van VraagHetZe op 28 september zullen alle gestelde vragen en antwoorden zichtbaar worden."
 </script>
 
 {#snippet menuLinks()}
@@ -102,3 +105,13 @@
 		</header>
 	{/snippet}
 </Collapsible.Root>
+<!-- Prelaunch -->
+ <p class="mx-auto w-full px-6 text-center pt-3 pb-3"
+    style="background-color:var(--color-osf-blue-200);color:var(--color-osf-blue-800)">
+		{#if page.data.user?.role == 'admin'}
+		Dit is de pre-launch site. Bezoekers die geen admin zijn zien de volgende tekst in deze balk:<br><br>
+		{@html prelaunchText}
+		{:else}
+		{@html prelaunchText}
+		{/if}
+</p>
