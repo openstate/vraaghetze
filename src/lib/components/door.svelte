@@ -14,7 +14,7 @@
   }
 
   .doorframe {
-    background: white url(images/tweedekamer2.jpeg) no-repeat center;
+    background: white url(/images/tweedekamer2.jpeg) no-repeat center;
     background-size: cover;
     border: var(--doorBorder) solid brown;
     display: flex;
@@ -29,7 +29,7 @@
   }
 
   .door {
-    background: darkred url(images/door4.jpeg) no-repeat center;
+    background: darkred url(/images/door4.jpeg) no-repeat center;
     background-size: 100% 100%;
     flex-grow: 1;
     transform-style: preserve-3d;
