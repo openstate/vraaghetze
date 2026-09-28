@@ -138,3 +138,19 @@ export async function photoBySlug(slug: string) {
 
 	return row?.image ?? null;
 }
+
+export async function politiciansWithPhotos() {
+	const rows = await db
+		.select({
+			name: schema.user.name,
+			slug: schema.politician.slug,
+			image: schema.user.image
+		 })
+		.from(schema.politician)
+		.innerJoin(schema.user, eq(schema.politician.userId, schema.user.id))
+		.where(eq(schema.user.role, 'politician'));
+
+	const dict = Object.fromEntries(rows.map((r) => [r.slug, r]));
+
+	return dict;
+}

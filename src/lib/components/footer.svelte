@@ -3,6 +3,8 @@
 	import DonateButton from '$lib/components/donate-button.svelte';
 	import { resolve } from '$app/paths';
 
+	const props = $props();
+
 	const platformLinks = [
 		{ label: 'Vragen & Antwoorden', href: resolve('/vragen') },
 		{ label: 'Kamerleden', href: resolve('/politici') },
@@ -15,9 +17,15 @@
 	];
 </script>
 
+<style>
+	.hideForLaunch {
+		display: none;
+	}
+</style>
+
 <footer class="bg-osf-violet-900 text-osf-violet-50">
 	<div class="mx-auto max-w-7xl px-6 pt-16 pb-6">
-		<div class="flex flex-col gap-12 xl:flex-row xl:justify-between xl:gap-16">
+		<div class="flex flex-col gap-12 xl:flex-row xl:justify-between xl:gap-16 {props.class}">
 			<div class="max-w-xl">
 				<a
 					href={resolve('/')}
