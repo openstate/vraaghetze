@@ -52,7 +52,7 @@
 		if (!step.valid) return;
 
 		// a signed-in asker skips the step that asks for their details
-		const nextStep = data.user ? 'controle' : 'gegevens';
+		const nextStep = (data.user || data.changing) ? 'controle' : 'gegevens';
 
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		goto(stepHref(nextStep, draft));

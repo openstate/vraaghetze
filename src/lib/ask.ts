@@ -73,7 +73,10 @@ export type AskValues = Record<AskField, string>;
 export type AskIssues = Partial<Record<AskField, string[]>>;
 export type ActiveMode = 'registering' | 'login';
 
-export const activeModeForFormType = (formType: AskFormType): ActiveMode => {
+export const activeModeForFormType = (formType: AskFormType, changing?: boolean): ActiveMode => {
+	// changing will be true for new users that click "Pas gegevens aan" in controle step
+	if (changing) return "registering";
+
 	if (formType && ["newUser", "missingName"].includes(formType)) {
 		return "registering";
 	}
@@ -155,16 +158,17 @@ export function draftFromUrl(url: URL): AskDraft {
 }
 
 /** returns the link to a given step */
-export function stepHref(stepId: string, draft: AskDraft) {
-	const params = toSearchParams([
+export function stepHref(stepId: string, draft: AskDraft, changing?: boolean) {
+	const params: [string, FormDataEntryValue][] = [
 		['aan', draft.aan],
 		['vraag', draft.vraag],
 		['context', draft.context]
-	]);
+	];
+	if (changing) params.push(['changing', '1']);
 
 	const path = ASK_STEPS.find((step) => step.id === stepId)!.path;
 
-	const query = String(params);
+	const query = String(toSearchParams(params));
 	return query ? `${path}?${query}` : path;
 }
 

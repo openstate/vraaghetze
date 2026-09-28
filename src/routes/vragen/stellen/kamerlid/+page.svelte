@@ -157,12 +157,13 @@
 	<ul class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 		{#each shownPoliticians as politician (politician.id)}
 			{@const chosen = politician.slug === draft.aan}
+			{@const nextStep = (data.user || data.changing) ? 'controle' : 'vraag'}
 			<li
 				class="relative {!politician.acceptsQuestions ? "opacity-30" : ""}"
 				title={!politician.acceptsQuestions ? notAcceptingQuestionsText(politician.name, politician.email) : ""}
 			>
 				<a
-					href={stepHref('vraag', { ...draft, aan: politician.slug })}
+					href={stepHref(nextStep, { ...draft, aan: politician.slug })}
 					aria-current={chosen ? 'true' : undefined}
 					class={[
 						'flex h-full items-center gap-3 rounded p-5',

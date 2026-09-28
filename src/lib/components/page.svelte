@@ -1,8 +1,10 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
+	export type PageWidthType = 'content' | 'wide';
+
 	type Props = {
-		width?: 'content' | 'wide';
+		width?: PageWidthType;
 		class?: string;
 		children: Snippet;
 	};

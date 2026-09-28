@@ -66,7 +66,7 @@
 </script>
 
 {#snippet changeStep(stepId: string, label: string)}
-	{@const href = stepHref(stepId, draft)}
+	{@const href = stepHref(stepId, draft, true)}
 	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 	<a {href} class="text-sm font-medium text-osf-violet-500 hover:underline">
 		{label}
