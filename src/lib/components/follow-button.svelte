@@ -51,9 +51,9 @@
 				</div>
 
 				<Dialog.Description class="text-osf-canvas-600">
-					Als je een vraag volgt ontvang je een mail zodra de vraag beantwoord is.
-					Het volgen van vragen is alleen mogelijk met een account. Klik de knop hieronder om
-					een account aan te maken of om in te loggen.
+					Als je een vraag volgt ontvang je een mail zodra de vraag beantwoord is. Het volgen van
+					vragen is alleen mogelijk met een account. Klik de knop hieronder om een account aan te
+					maken of om in te loggen.
 				</Dialog.Description>
 				<Button href={resolve('/inloggen')} variant="primary" icon="mdi--arrow-right">
 					Inloggen

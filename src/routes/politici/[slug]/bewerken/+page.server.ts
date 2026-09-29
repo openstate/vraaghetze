@@ -5,28 +5,28 @@ import { validateForm } from '$lib/server/utils/forms';
 import z from 'zod';
 
 export const load: PageServerLoad = async ({ params, locals, url }) => {
-  const politician = await politicians.bySlug(params.slug);
-  if (!politician) error(404, 'Kamerlid niet gevonden');
+	const politician = await politicians.bySlug(params.slug);
+	if (!politician) error(404, 'Kamerlid niet gevonden');
 
-  return { politician }
+	return { politician };
 };
 
 const editPoliticianSchema = z.object({
-  acceptsQuestions: z.coerce.boolean().default(false)
+	acceptsQuestions: z.coerce.boolean().default(false)
 });
 
 export const actions = {
-  default: async ({ params, locals, request }) => {
-    const result = await validateForm(request, editPoliticianSchema);
-    if (!result.valid) return fail(400, { error: 'Fout bij form validatie' });
+	default: async ({ params, locals, request }) => {
+		const result = await validateForm(request, editPoliticianSchema);
+		if (!result.valid) return fail(400, { error: 'Fout bij form validatie' });
 
-    const data = result.data;
+		const data = result.data;
 
-    const politician = await politicians.bySlug(params.slug);
-    if (!politician) return fail(404, { error: 'Kamerlid niet gevonden' });
+		const politician = await politicians.bySlug(params.slug);
+		if (!politician) return fail(404, { error: 'Kamerlid niet gevonden' });
 
-    await politicians.updateAcceptsQuestions(politician.id, data.acceptsQuestions)
+		await politicians.updateAcceptsQuestions(politician.id, data.acceptsQuestions);
 
-    redirect(303, '/politici')
-  }
+		redirect(303, '/politici');
+	}
 } satisfies Actions;

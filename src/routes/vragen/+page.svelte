@@ -21,12 +21,6 @@
 		oudste: 'Oudste eerst'
 	} satisfies Record<SearchSort, string>;
 </script>
-<style>
-	.questions_form {display: grid;}
-	@media screen and (max-width: 480px) {
-		.questions_form {display: block;}
-	}
-</style>
 
 <Page width="wide">
 	<div class="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -46,7 +40,7 @@
 		action={resolve('/vragen')}
 		bind:this={search.form}
 		{...search.events}
-		class="items-start gap-x-10 gap-y-6 lg:grid-cols-[1fr_17rem] lg:grid-rows-[auto_1fr] questions_form"
+		class="questions_form items-start gap-x-10 gap-y-6 lg:grid-cols-[1fr_17rem] lg:grid-rows-[auto_1fr]"
 	>
 		<search class="lg:col-start-1">
 			<label class="relative block">
@@ -128,3 +122,14 @@
 		</div>
 	</form>
 </Page>
+
+<style>
+	.questions_form {
+		display: grid;
+	}
+	@media screen and (max-width: 480px) {
+		.questions_form {
+			display: block;
+		}
+	}
+</style>

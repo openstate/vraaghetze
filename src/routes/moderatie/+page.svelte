@@ -5,7 +5,7 @@
 </script>
 
 <ContentPage title={data.meta.title}>
-	<p class="text-osf-canvas-600" >
+	<p class="text-osf-canvas-600">
 		Download het Moderatiebeleid
 		<a href="/files/moderatiedocument-v1.pdf">als pdf</a>.
 	</p>

@@ -7,11 +7,10 @@
 		{ label: 'Vragen & Antwoorden', href: resolve('/vragen') },
 		{ label: 'Kamerleden', href: resolve('/politici') },
 		{ label: 'Stel een vraag', href: resolve('/vragen/stellen') },
-    { label: 'Hoe werkt het?', href: resolve('/hoe-werkt-het') },
-    { label: 'FAQ', href: resolve('/faq') },
-    { label: 'Aan wie moet ik mijn vraag stellen?', href: resolve('/aan-wie') },
-    { label: 'Tips voor het stellen van je vraag', href: resolve('/tips') }
-
+		{ label: 'Hoe werkt het?', href: resolve('/hoe-werkt-het') },
+		{ label: 'FAQ', href: resolve('/faq') },
+		{ label: 'Aan wie moet ik mijn vraag stellen?', href: resolve('/aan-wie') },
+		{ label: 'Tips voor het stellen van je vraag', href: resolve('/tips') }
 	];
 </script>
 
@@ -28,9 +27,7 @@
 					<span class="sr-only">VraagHetZe</span>
 				</a>
 
-				<p class="mt-5 text-sm">
-					Jouw vraag aan de politiek. Publiek gesteld, publiek beantwoord.
-				</p>
+				<p class="mt-5 text-sm">Jouw vraag aan de politiek. Publiek gesteld, publiek beantwoord.</p>
 			</div>
 
 			<div class="grid max-w-xl grid-cols-2 gap-x-12 gap-y-10 sm:grid-cols-3">

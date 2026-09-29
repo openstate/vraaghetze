@@ -2,7 +2,13 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
-import { createQuestion, createUser, getQuestion, makeActionEvent, statusOf } from '$lib/test-utils';
+import {
+	createQuestion,
+	createUser,
+	getQuestion,
+	makeActionEvent,
+	statusOf
+} from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -30,11 +36,7 @@ function myMakeActionEvent(
 	user: typeof schema.user.$inferSelect | null,
 	fields: Record<string, string> = {}
 ) {
-	return makeActionEvent<typeof page.actions.default>(
-		`http://localhost/modereren`,
-		user,
-		fields,
-	);
+	return makeActionEvent<typeof page.actions.default>(`http://localhost/modereren`, user, fields);
 }
 
 beforeEach(async () => {
@@ -92,7 +94,11 @@ describe('default action', () => {
 	test('requires rejection reasons when rejecting', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const { question } = await createQuestion();
-		const event = myMakeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: '' });
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			action: 'rejected',
+			rejectionReason: ''
+		});
 
 		const result = await page.actions.default(event);
 
@@ -102,7 +108,11 @@ describe('default action', () => {
 	test('stores rejection reasons when rejecting', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const { question } = await createQuestion();
-		const event = myMakeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'offensive' });
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			action: 'rejected',
+			rejectionReason: 'offensive'
+		});
 
 		const result = await page.actions.default(event);
 
@@ -113,7 +123,11 @@ describe('default action', () => {
 	test('validates rejection reasons when rejecting', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const { question } = await createQuestion();
-		const event = myMakeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'i_do_not_exist' });
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			action: 'rejected',
+			rejectionReason: 'i_do_not_exist'
+		});
 
 		const result = await page.actions.default(event);
 
@@ -123,7 +137,11 @@ describe('default action', () => {
 	test('handles multiple valid rejection reasons', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const { question } = await createQuestion();
-		const event = myMakeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'offensive,duplicate' });
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			action: 'rejected',
+			rejectionReason: 'offensive,duplicate'
+		});
 
 		const result = await page.actions.default(event);
 
@@ -134,7 +152,11 @@ describe('default action', () => {
 	test('rejects multiple rejection reasons if one is invalid (1)', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const { question } = await createQuestion();
-		const event = myMakeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'i_do_not_exist,duplicate' });
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			action: 'rejected',
+			rejectionReason: 'i_do_not_exist,duplicate'
+		});
 
 		const result = await page.actions.default(event);
 
@@ -144,7 +166,11 @@ describe('default action', () => {
 	test('rejects multiple rejection reasons if one is invalid (2)', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const { question } = await createQuestion();
-		const event = myMakeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'offensive,i_do_not_exist' });
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			action: 'rejected',
+			rejectionReason: 'offensive,i_do_not_exist'
+		});
 
 		const result = await page.actions.default(event);
 
@@ -154,7 +180,11 @@ describe('default action', () => {
 	test('ignores rejection reasons when approving', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const { question } = await createQuestion();
-		const event = myMakeActionEvent(moderator, { questionId: question.id, action: 'approved', rejectionReason: 'offensive' });
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			action: 'approved',
+			rejectionReason: 'offensive'
+		});
 
 		const result = await page.actions.default(event);
 
@@ -165,7 +195,11 @@ describe('default action', () => {
 	test('reports an already handled question', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const { question } = await createQuestion({ status: 'approved' });
-		const event = myMakeActionEvent(moderator, { questionId: question.id, action: 'rejected', rejectionReason: 'offensive' });
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			action: 'rejected',
+			rejectionReason: 'offensive'
+		});
 
 		const result = await page.actions.default(event);
 

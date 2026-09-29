@@ -52,12 +52,13 @@
 		if (!step.valid) return;
 
 		// a signed-in asker skips the step that asks for their details
-		const nextStep = (data.user || data.changing) ? 'controle' : 'gegevens';
+		const nextStep = data.user || data.changing ? 'controle' : 'gegevens';
 
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		goto(stepHref(nextStep, draft));
 	}
 </script>
+
 <h1 class="mb-6 font-serif text-4xl">Schrijf je vraag</h1>
 <p class="mb-8 text-osf-canvas-600">
 	Je schrijft een vraag aan <a
@@ -79,7 +80,6 @@
 			novalidate
 			class="grid gap-6"
 		>
-
 			<Field
 				name="title"
 				label="Je vraag"
@@ -116,39 +116,45 @@
 			</Field>
 
 			<div class="mt-2 flex flex-wrap items-center justify-end gap-3">
-				<Button variant="secondary" class="mr-auto" href={stepHref('kamerlid', draft)}>Vorige</Button>
+				<Button variant="secondary" class="mr-auto" href={stepHref('kamerlid', draft)}
+					>Vorige</Button
+				>
 				<Button type="submit" variant="primary" icon="mdi--arrow-right">Volgende</Button>
 			</div>
 		</form>
 	</div>
-	<div class="content bg-osf-canvas-50 py-2 px-3 mt-8 lg:mt-0">
-		<p class="text-lg font-medium mb-2">Tips voor een goede vraag</p>
+	<div class="content mt-8 bg-osf-canvas-50 px-3 py-2 lg:mt-0">
+		<p class="mb-2 text-lg font-medium">Tips voor een goede vraag</p>
 		<ul class="text-sm text-osf-canvas-600">
 			<li>
-				<strong>Eén vraag per keer.</strong> Meerdere vragen in één bericht proppen maakt het lastig om volledig te antwoorden.
-				Heb je meer vragen? Stel ze los van elkaar.
+				<strong>Eén vraag per keer.</strong> Meerdere vragen in één bericht proppen maakt het lastig om
+				volledig te antwoorden. Heb je meer vragen? Stel ze los van elkaar.
 			</li>
 			<li>
-				<strong>Kritisch mag, onbeschoft niet.</strong> Een scherp vraag is prima, zolang die netjes blijft. Bekijk voor onze
-				gedragsregels ons moderatiedocument.
+				<strong>Kritisch mag, onbeschoft niet.</strong> Een scherp vraag is prima, zolang die netjes blijft.
+				Bekijk voor onze gedragsregels ons moderatiedocument.
 			</li>
 			<li>
-				<strong>Kies het juiste Kamerlid.</strong> Binnen een fractie verdelen Kamerleden onderwerpen onderling. Stel je vraag
-				aan het Kamerlid die bij de relevante commissie is aangesloten.
+				<strong>Kies het juiste Kamerlid.</strong> Binnen een fractie verdelen Kamerleden onderwerpen
+				onderling. Stel je vraag aan het Kamerlid die bij de relevante commissie is aangesloten.
 			</li>
 			<li>
-				<strong>Zoek eerst of je vraag al gesteld is.</strong> Grote kans dat iemand anders hetzelfde wilde weten, die vraag
-				kan je dan volgen zodat je hem zelf niet nog eens hoeft te stellen.
+				<strong>Zoek eerst of je vraag al gesteld is.</strong> Grote kans dat iemand anders hetzelfde
+				wilde weten, die vraag kan je dan volgen zodat je hem zelf niet nog eens hoeft te stellen.
 			</li>
 		</ul>
-		<p class="text-sm text-sm text-osf-canvas-600 mt-4 mb-2">
+		<p class="mt-4 mb-2 text-sm text-osf-canvas-600">
 			Wil je meer tips?
-			<a class="hover:underline text-osf-violet-500" href={resolve('/tips')} target="_blank">Lees verder</a>.
+			<a class="text-osf-violet-500 hover:underline" href={resolve('/tips')} target="_blank"
+				>Lees verder</a
+			>.
 		</p>
-		<p class="text-sm text-sm text-osf-canvas-600">
-			Onze vragen worden gemodereerd. Zo zorgen we voor een fijne ervaring voor alle gebruikers. Je vind de richtlijnen terug in
-			ons
-			<a class="hover:underline text-osf-violet-500" href={resolve('/moderatie')} target="_blank">moderatiedocument</a>.
+		<p class="text-sm text-osf-canvas-600">
+			Onze vragen worden gemodereerd. Zo zorgen we voor een fijne ervaring voor alle gebruikers. Je
+			vind de richtlijnen terug in ons
+			<a class="text-osf-violet-500 hover:underline" href={resolve('/moderatie')} target="_blank"
+				>moderatiedocument</a
+			>.
 		</p>
 	</div>
 </div>

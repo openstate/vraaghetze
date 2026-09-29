@@ -13,7 +13,7 @@ const moderationSchema = z.object({
 export const load: PageServerLoad = async ({ params }) => {
 	const [answer] = await moderation.getAnswer(params.slug);
 	if (!answer) error(404, 'Antwoord niet gevonden');
-	return {answer: answer}
+	return { answer: answer };
 };
 
 export const actions = {
@@ -29,13 +29,14 @@ export const actions = {
 
 		if ('error' in outcome) return fail(409, { error: 'Dit antwoord is al behandeld.' });
 
-		const message = result.data.action == 'approved' ? 
-			'Je hebt het antwoord goedgekeurd' :
-			'Je hebt het antwoord afgewezen';
-	  const flashType = result.data.action == 'approved' ? 'success' : 'neutral'
+		const message =
+			result.data.action == 'approved'
+				? 'Je hebt het antwoord goedgekeurd'
+				: 'Je hebt het antwoord afgewezen';
+		const flashType = result.data.action == 'approved' ? 'success' : 'neutral';
 		const returnTo = url.searchParams.get('returnTo');
 		if (returnTo) {
-			return redirect(returnTo, {type: flashType, message}, cookies);
+			return redirect(returnTo, { type: flashType, message }, cookies);
 		}
 
 		return { moderated: result.data.answerId };

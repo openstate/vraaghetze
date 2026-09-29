@@ -1,18 +1,15 @@
 <script lang="ts">
-	import {
-		clearDetails,
-		type ActiveMode,
-	} from '$lib/ask';
+	import { clearDetails, type ActiveMode } from '$lib/ask';
 	import Field from '$lib/components/field.svelte';
 	import type { IdentifyMode } from './register-or-login.svelte';
 	import RegisterLoginFooter from './register-login-footer.svelte';
 	import type { BasicRegisterLoginProps } from './ask-for-code.svelte';
 
 	type Props = BasicRegisterLoginProps & {
-    identifyMode: IdentifyMode;
+		identifyMode: IdentifyMode;
 		setActiveMode: (mode: ActiveMode) => void;
-  }
-  let {
+	};
+	let {
 		identifyMode,
 		details = $bindable(),
 		issues,
@@ -24,25 +21,22 @@
 
 	function gotoRegister(e: Event) {
 		clearDetails();
-		setActiveMode("registering");
+		setActiveMode('registering');
 	}
 </script>
 
-<form
-	method="POST"
-	novalidate
-	class="grid gap-6"
-	onsubmit={handleSubmit}
->
+<form method="POST" novalidate class="grid gap-6" onsubmit={handleSubmit}>
 	<input type="hidden" name="formType" value="userLogin" />
 
 	<p class="mb-4 text-osf-canvas-600">
 		Voor bestaande gebruikers.
 		{#if identifyMode == 'asking_question'}
-		Je ontvangt een code in een e-mail om hier in te vullen.
+			Je ontvangt een code in een e-mail om hier in te vullen.
 		{/if}
 		Heb je nog geen account? Ga naar
-		<button type="submit" onclick={gotoRegister} class="text-osf-shocking-pink cursor-pointer">registeren</button>.
+		<button type="submit" onclick={gotoRegister} class="cursor-pointer text-osf-shocking-pink"
+			>registeren</button
+		>.
 	</p>
 	<Field name="emailExisting" label="Je e-mailadres" issues={issues.emailExisting}>
 		{#snippet children(control)}

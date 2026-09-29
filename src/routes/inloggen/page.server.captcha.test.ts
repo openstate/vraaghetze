@@ -7,7 +7,7 @@ import type { ActionFailure } from '@sveltejs/kit';
 const mockEvent = {
 	request: new Request('http://localhost/inloggen'),
 	url: new URL('http://localhost/inloggen'),
-	locals: { },
+	locals: {},
 	cookies: {
 		get: vi.fn((key) => undefined),
 		set: vi.fn()
@@ -24,7 +24,7 @@ vi.mock('$app/server', () => ({
 type actionEventOptions = {
 	acceptTandC?: string;
 	ageChecked?: string;
-}
+};
 
 function myMakeActionEvent(
 	user: typeof schema.user.$inferSelect | null,
@@ -38,20 +38,16 @@ function myMakeActionEvent(
 		...fields,
 		...options,
 		capToken: 'a_cap_token'
-	}
+	};
 
-	return makeActionEvent<typeof page.actions.default>(
-		`http://localhost/inloggen`,
-		user,
-		useFields
-	);
+	return makeActionEvent<typeof page.actions.default>(`http://localhost/inloggen`, user, useFields);
 }
 
 const newName = 'A new name';
 const newEmail = `${crypto.randomUUID()}@test.example`;
 
 describe('registering', () => {
-  test('requires checking the captcha', async () => {
+	test('requires checking the captcha', async () => {
 		const event = myMakeActionEvent(null, {
 			email: newEmail,
 			emailConfirmation: newEmail,
@@ -59,9 +55,9 @@ describe('registering', () => {
 			formType: 'newUser'
 		});
 
-    const result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
+		const result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
 
-    expect(result.status).toBe(403);
-    expect(result.data.error).toBe('Captcha validatie is mislukt.');
-  });
+		expect(result.status).toBe(403);
+		expect(result.data.error).toBe('Captcha validatie is mislukt.');
+	});
 });

@@ -32,9 +32,9 @@
 
 {#snippet emailSnippet(row: Row)}
 	{#if row.email_verified}
-		{row.email} <span class="iconify size-5 mdi--check align-middle mb-1"></span>
+		{row.email} <span class="mb-1 iconify size-5 align-middle mdi--check"></span>
 	{:else}
-		{row.email} <span class="iconify size-5 mdi--close align-middle"></span>
+		{row.email} <span class="iconify size-5 align-middle mdi--close"></span>
 	{/if}
 {/snippet}
 

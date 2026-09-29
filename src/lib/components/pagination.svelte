@@ -48,14 +48,20 @@
 		</label>
 	{/if}
 
-	<Pagination.Root {count} {perPage} bind:page={currentPage} onPageChange={changePage} class="max-w-full">
+	<Pagination.Root
+		{count}
+		{perPage}
+		bind:page={currentPage}
+		onPageChange={changePage}
+		class="max-w-full"
+	>
 		{#snippet children({ pages, range })}
 			<div class="flex items-center gap-4 transition-opacity duration-150">
 				<p class="text-sm text-osf-canvas-500">
 					{count === 0 ? 0 : range.start}–{range.end} van {count}
 				</p>
 
-				<div class="flex items-center gap-1 min-w-0">
+				<div class="flex min-w-0 items-center gap-1">
 					<Pagination.PrevButton class={buttonClass} aria-label="Vorige pagina">
 						<span class="iconify size-4.5 mdi--chevron-left"></span>
 					</Pagination.PrevButton>

@@ -5,6 +5,9 @@ yarn.lock
 bun.lock
 bun.lockb
 
+# Templates for email
+src/lib/server/email/templates/*
+
 # Miscellaneous
 /static/
 /drizzle/

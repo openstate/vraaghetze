@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
-import { createAnswerAndQuestion, createUser, getAnswer, makeActionEvent, statusOf } from '$lib/test-utils';
+import {
+	createAnswerAndQuestion,
+	createUser,
+	getAnswer,
+	makeActionEvent,
+	statusOf
+} from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -13,18 +19,15 @@ vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
 
 type LoadData = Exclude<Awaited<ReturnType<typeof page.load>>, void>;
 
-function makeLoadEvent(
-  slug: string,
-  user: typeof schema.user.$inferSelect | null
-) {
+function makeLoadEvent(slug: string, user: typeof schema.user.$inferSelect | null) {
 	return {
 		params: { slug },
-    locals: { user: user ?? undefined }
-  } as unknown as Parameters<typeof page.load>[0];
+		locals: { user: user ?? undefined }
+	} as unknown as Parameters<typeof page.load>[0];
 }
 
 function myMakeActionEvent(
-  slug: string,
+	slug: string,
 	user: typeof schema.user.$inferSelect | null,
 	fields: Record<string, string> = {}
 ) {
@@ -32,7 +35,7 @@ function myMakeActionEvent(
 		`http://localhost/modereren/antwoorden/${slug}`,
 		user,
 		fields,
-    slug
+		slug
 	);
 }
 
@@ -54,8 +57,9 @@ describe('load', () => {
 		const answer = await createAnswerAndQuestion();
 
 		const result = (await page.load(makeLoadEvent(answer.id, moderator))) as LoadData;
-    // The answer inside the load function does not have all the properties
-    let expectedAnswer = (({ questionId, searchVector, status, updatedAt, userId, ...object }) => object)(answer);
+		// The answer inside the load function does not have all the properties
+		let expectedAnswer = (({ questionId, searchVector, status, updatedAt, userId, ...object }) =>
+			object)(answer);
 		expect(result.answer).toMatchObject(expectedAnswer);
 	});
 });
@@ -72,7 +76,10 @@ describe('default action', () => {
 	test('moderates an answer for a moderator', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const answer = await createAnswerAndQuestion();
-		const event = myMakeActionEvent(answer.id, moderator, { answerId: answer.id, action: 'approved' });
+		const event = myMakeActionEvent(answer.id, moderator, {
+			answerId: answer.id,
+			action: 'approved'
+		});
 
 		const result = await page.actions.default(event);
 
@@ -92,7 +99,10 @@ describe('default action', () => {
 	test('reports an already handled answer', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const answer = await createAnswerAndQuestion({ status: 'rejected' });
-		const event = myMakeActionEvent(answer.id, moderator, { answerId: answer.id, action: 'approved' });
+		const event = myMakeActionEvent(answer.id, moderator, {
+			answerId: answer.id,
+			action: 'approved'
+		});
 
 		const result = await page.actions.default(event);
 

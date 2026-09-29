@@ -19,23 +19,24 @@ export const load: PageServerLoad = async ({ url }) => {
 	return { ...inbox, ...pagination };
 };
 
-
 export const actions = {
-// When a mail is received from a non-expected email address, the moderator can decide to process
-// the mail anyway. This default action handles that decision:
-// - the mail is processed and an answer is created
-// - the moderator is redirected to the answer page for approving the answer and will
-//   be returned afterwards to the original page
+	// When a mail is received from a non-expected email address, the moderator can decide to process
+	// the mail anyway. This default action handles that decision:
+	// - the mail is processed and an answer is created
+	// - the moderator is redirected to the answer page for approving the answer and will
+	//   be returned afterwards to the original page
 	default: async ({ request }) => {
 		const result = await validateForm(request, editInboxSchema);
-		if (!result.valid) return
+		if (!result.valid) return;
 
 		const mail = await moderation.getInboxMail(result.data.inboxId);
-		const answerId = await processMail(mail, ['wrong_sender'])
+		const answerId = await processMail(mail, ['wrong_sender']);
 
-		if (answerId){
-			const url = resolve('/modereren/antwoorden/[slug]', {slug: answerId}) + `?returnTo=${result.data.returnTo}`;
-			redirect(303, url)
+		if (answerId) {
+			const url =
+				resolve('/modereren/antwoorden/[slug]', { slug: answerId }) +
+				`?returnTo=${result.data.returnTo}`;
+			redirect(303, url);
 		}
 	}
-}
+};

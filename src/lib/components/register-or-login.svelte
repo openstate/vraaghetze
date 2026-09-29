@@ -1,71 +1,65 @@
 <script lang="ts">
-	import { type ActiveMode } from "$lib/ask";
-	import type { UserType } from "$lib/server/auth";
+	import { type ActiveMode } from '$lib/ask';
+	import type { UserType } from '$lib/server/auth';
 	import Register from '$lib/components/register.svelte';
 	import Login from '$lib/components/login.svelte';
 	import AskForCode, { type BasicRegisterLoginProps } from '$lib/components/ask-for-code.svelte';
-	import type { ActionData as GegevensActionData } from "../../routes/vragen/stellen/gegevens/$types";
-  import type { ActionData as InloggenActionData} from "../../routes/inloggen/$types";
+	import type { ActionData as GegevensActionData } from '../../routes/vragen/stellen/gegevens/$types';
+	import type { ActionData as InloggenActionData } from '../../routes/inloggen/$types';
 
 	export type IdentifyMode = 'asking_question' | 'login';
 
-  type Props = Omit<BasicRegisterLoginProps, 'formError'> & {
+	type Props = Omit<BasicRegisterLoginProps, 'formError'> & {
 		identifyMode: IdentifyMode;
-    user?: UserType;
-    form?: GegevensActionData | InloggenActionData;
-    askForCode: boolean;
+		user?: UserType;
+		form?: GegevensActionData | InloggenActionData;
+		askForCode: boolean;
 		activeMode: ActiveMode;
 		capjsSiteKey?: string;
 		setActiveMode: (mode: ActiveMode) => void;
-  }
+	};
 
-  let {
+	let {
 		identifyMode,
-    user,
-    form,
-    details = $bindable(),
-    issues,
-    askForCode,
+		user,
+		form,
+		details = $bindable(),
+		issues,
+		askForCode,
 		activeMode,
-    previousUrl,
+		previousUrl,
 		capjsSiteKey,
 		setActiveMode,
-    handleSubmit
-  }: Props = $props();
+		handleSubmit
+	}: Props = $props();
 </script>
 
 {#if user}
-<div class="grid gap-6">
-	<Register
-		{identifyMode}
-		{user}
-		bind:details={details}
-		{issues}
-		{previousUrl}
-		formError={form?.error}
-		formType="missingName"
-		{handleSubmit}
-	/>
-</div>
-{#if form?.error}
-	<p class="mb-4 text-sm text-osf-shocking-pink">{form.error}</p>
-{/if}
+	<div class="grid gap-6">
+		<Register
+			{identifyMode}
+			{user}
+			bind:details
+			{issues}
+			{previousUrl}
+			formError={form?.error}
+			formType="missingName"
+			{handleSubmit}
+		/>
+	</div>
+	{#if form?.error}
+		<p class="mb-4 text-sm text-osf-shocking-pink">{form.error}</p>
+	{/if}
 {:else}
 	{#if activeMode == 'login'}
 		<div>
 			<h1 class="mb-4 font-serif text-2xl">Inloggen</h1>
 			{#if askForCode}
-				<AskForCode
-					bind:details={details}
-					issues={issues}
-					{previousUrl}
-					formError={form?.error}
-					{handleSubmit}
-				/>
+				<AskForCode bind:details {issues} {previousUrl} formError={form?.error} {handleSubmit} />
 			{:else}
 				<Login
 					{identifyMode}
-					bind:details={details}
+					bind:details
 					{issues}
 					{previousUrl}
 					formError={form?.error}
@@ -81,7 +75,7 @@
 			<Register
 				{identifyMode}
 				{user}
-				bind:details={details}
+				bind:details
 				{issues}
 				{previousUrl}
 				formError={form?.error}

@@ -160,7 +160,7 @@ describe('create', () => {
 			currentUserId: null
 		});
 
-		expect(result).toEqual({ "error": "user should have been logged in" });
+		expect(result).toEqual({ error: 'user should have been logged in' });
 		const question = await getQuestionBySlug('wat-vindt-u-van-de-toeslagen');
 		expect(question).toBeUndefined();
 	});
@@ -324,7 +324,9 @@ describe('similarForFraction', () => {
 	});
 
 	test('answers with nothing for a Kamerlid that cannot be asked', async () => {
-		const { politician, politicianUser } = await createPolitician('Jan Jansen', { isActive: false });
+		const { politician, politicianUser } = await createPolitician('Jan Jansen', {
+			isActive: false
+		});
 		const asker = await createUser('Vera Vraagsteller');
 		await insertQuestion(asker.id, politicianUser.id, {
 			title: 'Moeten de toeslagen worden afgeschaft?',

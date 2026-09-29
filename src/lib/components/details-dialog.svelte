@@ -19,8 +19,8 @@
 
 	let { title, details }: Props = $props();
 
-	const actionable = $derived(details.find(c => c[0] == 'Actionable')?.[1])
-	const detailId = $derived((actionable && details.find(c => c[0] == 'Id')?.[1]) || '')
+	const actionable = $derived(details.find((c) => c[0] == 'Actionable')?.[1]);
+	const detailId = $derived((actionable && details.find((c) => c[0] == 'Id')?.[1]) || '');
 
 	const cellClass = 'border-osf-canvas-200';
 	const valueClass = 'font-medium wrap-anywhere whitespace-pre-wrap';
@@ -62,7 +62,7 @@
 						class={[cellClass, valueClass, 'pb-2 sm:border-t sm:pt-2 sm:first-of-type:border-t-0']}
 					>
 						{#if value instanceof HTMLSafeString}
-							{@html (value.value)}
+							{@html value.value}
 						{:else}
 							{value instanceof Date ? formatDateTime(value) : value}
 						{/if}
@@ -70,32 +70,43 @@
 				{/each}
 			</dl>
 			{#if actionable}
-			<div class="grid p-6 pt-0 text-sm">
-				<h2 class="font-serif text-xl">Acties</h2>
-				<p>Dit antwoord is genegeerd om de gemelde reden maar kan indien gewenst toch verwerkt
-					worden.</p>
-				<ul class="space-y-1 text-body list-disc list-inside text-sm mb-3">
-					<li>Indien <strong>status=Andere Afzender</strong> dan wordt het antwoord verwerkt alsof het oorspronkelijke Kamerlid
-						waaraan de vraag gesteld was hem beantwoord heeft.</li>
-				</ul>
-				<form
-					method="POST"
-					use:enhance={() => {
-						disabled = true;
+				<div class="grid p-6 pt-0 text-sm">
+					<h2 class="font-serif text-xl">Acties</h2>
+					<p>
+						Dit antwoord is genegeerd om de gemelde reden maar kan indien gewenst toch verwerkt
+						worden.
+					</p>
+					<ul class="text-body mb-3 list-inside list-disc space-y-1 text-sm">
+						<li>
+							Indien <strong>status=Andere Afzender</strong> dan wordt het antwoord verwerkt alsof het
+							oorspronkelijke Kamerlid waaraan de vraag gesteld was hem beantwoord heeft.
+						</li>
+					</ul>
+					<form
+						method="POST"
+						use:enhance={() => {
+							disabled = true;
 
-						return async ({ update }) => {
-							await update();
-							disabled = false;
-						};
-					}}>
-					<input type="hidden" name="inboxId" value={detailId}>
-					<input type="hidden" name="returnTo" value={encodeURIComponent(window.location.href)}>
-					<Button type="submit" variant="primary" name="action" value="process_anyway"
-						disabled={disabled} class={disabled ? 'disabled:opacity-40' : ''}>
-						Toch verwerken
-					</Button>
-				</form>
-			</div>
+							return async ({ update }) => {
+								await update();
+								disabled = false;
+							};
+						}}
+					>
+						<input type="hidden" name="inboxId" value={detailId} />
+						<input type="hidden" name="returnTo" value={encodeURIComponent(window.location.href)} />
+						<Button
+							type="submit"
+							variant="primary"
+							name="action"
+							value="process_anyway"
+							{disabled}
+							class={disabled ? 'disabled:opacity-40' : ''}
+						>
+							Toch verwerken
+						</Button>
+					</form>
+				</div>
 			{/if}
 		</Dialog.Content>
 	</Dialog.Portal>

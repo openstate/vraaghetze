@@ -104,7 +104,7 @@ async function deliverBatch(filterMailIds: string[] = []) {
 				subject: mail.subject,
 				text: mail.body,
 				replyTo: mail.replyTo ?? undefined
-			}
+			};
 			// Politicians send answers to the email so the From should not contain `noreply`
 			if (mail.kind == 'question-notification' && options.replyTo) {
 				options.from = options.replyTo;

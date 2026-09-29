@@ -2,7 +2,13 @@ import { fail, redirect } from '@sveltejs/kit';
 import * as questions from '$lib/server/questions';
 import { sendSignInLink, userExists } from '$lib/server/auth';
 import { validateForm } from '$lib/server/utils/forms';
-import { askSchema, draftFromUrl, stepHref, type AskIssues, type AskQuestionFields } from '$lib/ask';
+import {
+	askSchema,
+	draftFromUrl,
+	stepHref,
+	type AskIssues,
+	type AskQuestionFields
+} from '$lib/ask';
 import { hasPermission } from '$lib/permissions';
 import type { Actions, PageServerLoad } from './$types';
 import { validateCaptcha } from '$lib/server/utils/captcha';
@@ -11,7 +17,7 @@ const SIMILAR_QUESTIONS = 3;
 
 export const load: PageServerLoad = async ({ parent, url }) => {
 	const { politician } = await parent();
-	const baseValues = { capjsSiteKey: process.env.CAPJS_SITE_KEY || '' }
+	const baseValues = { capjsSiteKey: process.env.CAPJS_SITE_KEY || '' };
 
 	const draft = draftFromUrl(url);
 
@@ -37,12 +43,12 @@ export const actions = {
 
 		const currentUserId = locals.user?.id ?? null;
 		const data = result.data as AskQuestionFields;
-		const { formType, ...questionFields} = data;
+		const { formType, ...questionFields } = data;
 
 		// existing users should have been forced to login on the gegevens page
-		if (!currentUserId && await userExists(data.email)) {
-	    const draft = draftFromUrl(url)
-	    redirect(303, stepHref('gegevens', draft))
+		if (!currentUserId && (await userExists(data.email))) {
+			const draft = draftFromUrl(url);
+			redirect(303, stepHref('gegevens', draft));
 		}
 
 		if (!currentUserId) {

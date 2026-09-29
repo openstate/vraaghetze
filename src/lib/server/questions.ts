@@ -119,16 +119,20 @@ export async function listAnswered(limit: number) {
 	}));
 }
 
-export type QuestionStat = 'questionsAsked' | 'questionsAnswered' | 'politicians' | 'averageAnswerTime';
+export type QuestionStat =
+	'questionsAsked' | 'questionsAnswered' | 'politicians' | 'averageAnswerTime';
 
-export const questionStats = async (): Promise<Record<QuestionStat, number>> =>  {
+export const questionStats = async (): Promise<Record<QuestionStat, number>> => {
 	const questionsAsked = await db.$count(schema.question, eq(schema.question.status, 'approved'));
 	const questionsAnswered = await db
 		.select({ count: count() })
 		.from(schema.question)
 		.innerJoin(schema.answer, latestAnswer(null))
 		.where(and(eq(schema.question.status, 'approved'), eq(schema.answer.status, 'approved')));
-	const politicians = await db.$count(schema.politician, and(eq(schema.politician.isActive, true), eq(schema.politician.acceptsQuestions, true)));
+	const politicians = await db.$count(
+		schema.politician,
+		and(eq(schema.politician.isActive, true), eq(schema.politician.acceptsQuestions, true))
+	);
 	// averageAnswerTime is average time between sending the email to the politician and receiving the reply, in seconds
 	const averageAnswerTime = await db
 		.select({
@@ -138,20 +142,21 @@ export const questionStats = async (): Promise<Record<QuestionStat, number>> => 
 		.innerJoin(schema.moderationAction, eq(schema.question.id, schema.moderationAction.questionId))
 		.innerJoin(schema.answer, eq(schema.question.id, schema.answer.questionId))
 		.innerJoin(schema.inbox, eq(schema.answer.id, schema.inbox.answerId))
-		.where(and(
-			eq(schema.question.status, 'approved'),
-			eq(schema.moderationAction.action, 'approved'),
-			eq(schema.answer.status, 'approved')
-		));
+		.where(
+			and(
+				eq(schema.question.status, 'approved'),
+				eq(schema.moderationAction.action, 'approved'),
+				eq(schema.answer.status, 'approved')
+			)
+		);
 
 	return {
 		questionsAsked,
 		questionsAnswered: questionsAnswered[0].count,
 		politicians,
 		averageAnswerTime: averageAnswerTime[0].value
-	}
-}
-
+	};
+};
 
 // the similarity searching already excludes stopwords, but we should also exclude the following from matching
 const QUESTION_WORDS = new Set([
@@ -388,7 +393,13 @@ export async function create({
 		const [politician] = await tx
 			.select({ userId: schema.politician.userId, fractionId: schema.politician.fractionId })
 			.from(schema.politician)
-			.where(and(eq(schema.politician.id, politicianId), eq(schema.politician.isActive, true), eq(schema.politician.acceptsQuestions, true)))
+			.where(
+				and(
+					eq(schema.politician.id, politicianId),
+					eq(schema.politician.isActive, true),
+					eq(schema.politician.acceptsQuestions, true)
+				)
+			)
 			.limit(1);
 
 		if (!politician) return { error: 'unknown-politician' as const };
@@ -408,7 +419,7 @@ export async function create({
 				return { error: 'forbidden-asker' as const };
 			} else if (existing) {
 				// existing users should have been forced to login on the gegevens page
-				return { error: 'user should have been logged in' }
+				return { error: 'user should have been logged in' };
 			} else {
 				// user doesn't exist for email, so create a new user
 				userId = crypto.randomUUID();

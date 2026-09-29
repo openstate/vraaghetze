@@ -102,7 +102,7 @@
 	<h2 class="mt-12 mb-8 font-serif text-3xl">Vragen &amp; Antwoorden</h2>
 	{#if !data.politician.acceptsQuestions}
 		<p class="mt-2 mb-4 text-lg text-osf-canvas-600">
-		{notAcceptingQuestionsText(data.politician.name, data.politician.email)}
+			{notAcceptingQuestionsText(data.politician.name, data.politician.email)}
 		</p>
 	{/if}
 	<div class="grid items-start gap-x-10 gap-y-10 lg:grid-cols-[1fr_17rem]">
@@ -126,7 +126,9 @@
 						href="{resolve('/vragen/stellen')}?aan={data.politician.slug}"
 						class="font-serif text-xl/snug text-osf-canvas-500 hover:underline"
 						onclick={(e) => preventAdding(e, !data.politician.acceptsQuestions)}
-						title={data.politician.acceptsQuestions ? '' : notAcceptingQuestionsText(data.politician.name, data.politician.email)}
+						title={data.politician.acceptsQuestions
+							? ''
+							: notAcceptingQuestionsText(data.politician.name, data.politician.email)}
 					>
 						Stel jij de {data.questions.length === 0 ? 'eerste' : 'volgende'} vraag aan {data
 							.politician.name}?
@@ -146,7 +148,9 @@
 				<LinkCard
 					href="{resolve('/vragen/stellen')}?aan={data.politician.slug}"
 					disabled={!data.politician.acceptsQuestions}
-					hoverText={data.politician.acceptsQuestions ? '' : notAcceptingQuestionsText(data.politician.name, data.politician.email)}
+					hoverText={data.politician.acceptsQuestions
+						? ''
+						: notAcceptingQuestionsText(data.politician.name, data.politician.email)}
 				>
 					Stel een vraag aan {data.politician.name}
 				</LinkCard>

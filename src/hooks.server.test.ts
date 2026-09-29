@@ -33,29 +33,17 @@ const moderationRoutes = [
 	'/modereren/outbox'
 ];
 
-const adminRoutes = [
-	'/politici/[slug]/bewerken',
-	'/gebruikers'
-]
+const adminRoutes = ['/politici/[slug]/bewerken', '/gebruikers'];
 
-const visitorRoutes = [
-	"/",
-	"/vragen/[slug]",
-	"/moderatie",
-	"/profiel",
-	null
-]
+const visitorRoutes = ['/', '/vragen/[slug]', '/moderatie', '/profiel', null];
 
 describe('handleAuthorization for visitors', () => {
-	test.each(visitorRoutes)(
-		'leaves %s outside the moderation section alone',
-		async (routeId) => {
-			const { blockedWith, passedThrough } = await guard(routeId);
+	test.each(visitorRoutes)('leaves %s outside the moderation section alone', async (routeId) => {
+		const { blockedWith, passedThrough } = await guard(routeId);
 
-			expect(blockedWith).toBeUndefined();
-			expect(passedThrough).toBe(true);
-		}
-	);
+		expect(blockedWith).toBeUndefined();
+		expect(passedThrough).toBe(true);
+	});
 });
 
 describe('handleAuthorization for moderators', () => {
@@ -92,25 +80,19 @@ describe('handleAuthorization for admins', () => {
 		expect(passedThrough).toBe(false);
 	});
 
-	test.each(adminRoutes)(
-		'refuses a user without admin permission on %s',
-		async (routeId) => {
-			const { blockedWith, passedThrough } = await guard(routeId, makeUser('user'));
+	test.each(adminRoutes)('refuses a user without admin permission on %s', async (routeId) => {
+		const { blockedWith, passedThrough } = await guard(routeId, makeUser('user'));
 
-			expect(blockedWith).toBe(403);
-			expect(passedThrough).toBe(false);
-		}
-	);
+		expect(blockedWith).toBe(403);
+		expect(passedThrough).toBe(false);
+	});
 
-	test.each(adminRoutes)(
-		'refuses a moderator without admin permission on %s',
-		async (routeId) => {
-			const { blockedWith, passedThrough } = await guard(routeId, makeUser('moderator'));
+	test.each(adminRoutes)('refuses a moderator without admin permission on %s', async (routeId) => {
+		const { blockedWith, passedThrough } = await guard(routeId, makeUser('moderator'));
 
-			expect(blockedWith).toBe(403);
-			expect(passedThrough).toBe(false);
-		}
-	);
+		expect(blockedWith).toBe(403);
+		expect(passedThrough).toBe(false);
+	});
 
 	test.each(adminRoutes)('lets an admin through to %s', async (routeId) => {
 		const { blockedWith, passedThrough } = await guard(routeId, makeUser('admin'));

@@ -13,17 +13,24 @@
 		fractionRole: 'member' | 'chair';
 	};
 
-	let { mayAsk, mayModerate, politician }: { mayAsk: boolean, mayModerate: boolean, politician: Politician } = $props();
+	let {
+		mayAsk,
+		mayModerate,
+		politician
+	}: { mayAsk: boolean; mayModerate: boolean; politician: Politician } = $props();
 
 	const profileHref = $derived(resolve('/politici/[slug]', { slug: politician.slug }));
 </script>
 
-
 <article
-	class="overflow-hidden rounded bg-osf-canvas-100 {!politician.acceptsQuestions ? "opacity-30" : ""}"
-	title={!politician.acceptsQuestions ? notAcceptingQuestionsText(politician.name, politician.email) : ""}
+	class="overflow-hidden rounded bg-osf-canvas-100 {!politician.acceptsQuestions
+		? 'opacity-30'
+		: ''}"
+	title={!politician.acceptsQuestions
+		? notAcceptingQuestionsText(politician.name, politician.email)
+		: ''}
 >
-	<div class="flex items-center gap-3 p-5 relative">
+	<div class="relative flex items-center gap-3 p-5">
 		<a href={profileHref} class="shrink-0" aria-hidden="true" tabindex="-1">
 			<Avatar
 				class="text-xl"
@@ -63,7 +70,7 @@
 
 		{#if mayModerate}
 			<a
-				href="{resolve(`/politici/${politician.slug}/bewerken`)}"
+				href={resolve(`/politici/${politician.slug}/bewerken`)}
 				title="Bewerken"
 				class="flex text-osf-violet-500"
 			>

@@ -2,8 +2,17 @@
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth-client';
 	import Page from '$lib/components/page.svelte';
-	import RegisterOrLogin from '$lib/components/register-or-login.svelte'
-	import { activeModeForFormType, clearDetails, DEFAULT_ASK_DETAILS, readDetails, writeDetails, type ActiveMode, type AskDetails, type AskFormType } from '$lib/ask.js';
+	import RegisterOrLogin from '$lib/components/register-or-login.svelte';
+	import {
+		activeModeForFormType,
+		clearDetails,
+		DEFAULT_ASK_DETAILS,
+		readDetails,
+		writeDetails,
+		type ActiveMode,
+		type AskDetails,
+		type AskFormType
+	} from '$lib/ask.js';
 	import { onMount } from 'svelte';
 
 	let { data, form } = $props();
@@ -22,9 +31,13 @@
 	let sent = $state(false);
 	let formTypeFromForm = $derived(form?.formType);
 	let activeMode = $derived(activeModeForFormType(formTypeFromForm));
-	const setActiveMode = (mode: ActiveMode) => { activeMode = mode }
+	const setActiveMode = (mode: ActiveMode) => {
+		activeMode = mode;
+	};
 
-	const handleSubmit = async (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement}) => {
+	const handleSubmit = async (
+		event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }
+	) => {
 		const currentTarget = event.currentTarget as HTMLFormElement;
 		const submitter = event.submitter;
 
@@ -42,12 +55,12 @@
 			});
 
 			if (error) {
-				issues = {...issues, emailExisting: ["E-mailadres is niet geldig"]}
+				issues = { ...issues, emailExisting: ['E-mailadres is niet geldig'] };
 			} else {
 				sent = true;
 			}
 		}
-	}
+	};
 
 	onMount(() => {
 		details = readDetails();
@@ -64,18 +77,20 @@
 		</p>
 	{:else if sent}
 		<p class="text-osf-canvas-600">
-			Als je bij ons een account hebt is er een inloglink naar je e-mailadres gestuurd. Klik erop om in te loggen.
+			Als je bij ons een account hebt is er een inloglink naar je e-mailadres gestuurd. Klik erop om
+			in te loggen.
 		</p>
 	{:else if form?.sent}
 		<p class="text-osf-canvas-600">
-			Registratie geslaagd! Er is een inloglink naar je e-mailadres gestuurd. Klik erop om in te loggen.
+			Registratie geslaagd! Er is een inloglink naar je e-mailadres gestuurd. Klik erop om in te
+			loggen.
 		</p>
 	{:else}
 		<RegisterOrLogin
 			identifyMode="login"
 			user={data.user}
 			{form}
-			bind:details={details}
+			bind:details
 			{issues}
 			{askForCode}
 			{activeMode}

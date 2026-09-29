@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
-import { createAnswerAndQuestion, createUser, getAnswer, makeActionEvent, statusOf } from '$lib/test-utils';
+import {
+	createAnswerAndQuestion,
+	createUser,
+	getAnswer,
+	makeActionEvent,
+	statusOf
+} from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -24,7 +30,7 @@ function myMakeActionEvent(
 	return makeActionEvent<typeof page.actions.default>(
 		`http://localhost/modereren/antwoorden`,
 		user,
-		fields,
+		fields
 	);
 }
 

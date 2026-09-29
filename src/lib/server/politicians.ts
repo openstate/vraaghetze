@@ -101,10 +101,10 @@ export async function bySlug(slug: string) {
 }
 
 export async function updateAcceptsQuestions(politicianId: string, value: boolean) {
-		await db
-			.update(schema.politician)
-			.set({ acceptsQuestions: value })
-			.where(eq(schema.politician.id, politicianId));
+	await db
+		.update(schema.politician)
+		.set({ acceptsQuestions: value })
+		.where(eq(schema.politician.id, politicianId));
 }
 
 export function commissionsForPolitician(politicianId: string) {

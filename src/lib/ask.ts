@@ -6,83 +6,96 @@ export const QUESTION_TITLE_MIN_LENGTH = 10;
 export const QUESTION_TITLE_MAX_LENGTH = 200;
 export const QUESTION_BODY_MAX_LENGTH = 1000;
 
-export const askSchema = z.discriminatedUnion(
-	"formType",
-	[
-		z.object({
-			formType: z.literal('').optional(),
-			name: z.string().trim().min(1, 'Vul je volledige naam in.'),
-			email: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.')),
-			capToken: z.string().trim().optional(),
-			title: z
-				.string()
-				.trim()
-				.min(
-					QUESTION_TITLE_MIN_LENGTH,
-					`Schrijf een vraag van minstens ${QUESTION_TITLE_MIN_LENGTH} tekens.`
-				)
-				.max(
-					QUESTION_TITLE_MAX_LENGTH,
-					`Houd je vraag korter dan ${QUESTION_TITLE_MAX_LENGTH} tekens.`
-				),
-			body: z
-				.string()
-				.trim()
-				.max(QUESTION_BODY_MAX_LENGTH, `Houd je context korter dan ${QUESTION_BODY_MAX_LENGTH} tekens.`)
-				.default(''),
-			politicianId: z.string().min(1, 'Kies een Kamerlid.')
-		}),
-		z.object({
+export const askSchema = z.discriminatedUnion('formType', [
+	z.object({
+		formType: z.literal('').optional(),
+		name: z.string().trim().min(1, 'Vul je volledige naam in.'),
+		email: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.')),
+		capToken: z.string().trim().optional(),
+		title: z
+			.string()
+			.trim()
+			.min(
+				QUESTION_TITLE_MIN_LENGTH,
+				`Schrijf een vraag van minstens ${QUESTION_TITLE_MIN_LENGTH} tekens.`
+			)
+			.max(
+				QUESTION_TITLE_MAX_LENGTH,
+				`Houd je vraag korter dan ${QUESTION_TITLE_MAX_LENGTH} tekens.`
+			),
+		body: z
+			.string()
+			.trim()
+			.max(
+				QUESTION_BODY_MAX_LENGTH,
+				`Houd je context korter dan ${QUESTION_BODY_MAX_LENGTH} tekens.`
+			)
+			.default(''),
+		politicianId: z.string().min(1, 'Kies een Kamerlid.')
+	}),
+	z
+		.object({
 			formType: z.literal('newUser'),
 			name: z.string().trim().min(1, 'Vul je volledige naam in.'),
 			email: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.')),
-			emailConfirmation: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.')),
-			acceptTandC: z.coerce.boolean().default(false).refine((val) => val, {
-				message: 'De Algemene Voorwaarden zijn niet geaccepteerd.'
-			}),
-			ageChecked: z.coerce.boolean().default(false).refine((val) => val, {
-				message: 'Om VraagHetZe te kunnen gebruiken moet je minimaal 16 jaar zijn of toestemming van je ouders hebben.'
-			}),
+			emailConfirmation: z
+				.string()
+				.trim()
+				.toLowerCase()
+				.pipe(z.email('Vul een geldig e-mailadres in.')),
+			acceptTandC: z.coerce
+				.boolean()
+				.default(false)
+				.refine((val) => val, {
+					message: 'De Algemene Voorwaarden zijn niet geaccepteerd.'
+				}),
+			ageChecked: z.coerce
+				.boolean()
+				.default(false)
+				.refine((val) => val, {
+					message:
+						'Om VraagHetZe te kunnen gebruiken moet je minimaal 16 jaar zijn of toestemming van je ouders hebben.'
+				}),
 			capToken: z.string().trim().optional()
-		}).refine(data => data.email == data.emailConfirmation, {
-			message: "Bevestiging e-mailadres komt niet overeen.",
+		})
+		.refine((data) => data.email == data.emailConfirmation, {
+			message: 'Bevestiging e-mailadres komt niet overeen.',
 			path: ['emailConfirmation', 'email']
 		}),
-		z.object({
-			formType: z.literal('missingName'),
-			name: z.string().trim().min(1, 'Vul je volledige naam in.')
-		}),
-		z.object({
-			formType: z.literal('userLogin'),
-			emailExisting: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.'))
-		}),
-		z.object({
-			formType: z.literal('codeFromEmail'),
-			code: z.string().trim().min(1, 'Vul de code uit de e-mail in.')
-		})
-	]
-);
+	z.object({
+		formType: z.literal('missingName'),
+		name: z.string().trim().min(1, 'Vul je volledige naam in.')
+	}),
+	z.object({
+		formType: z.literal('userLogin'),
+		emailExisting: z.string().trim().toLowerCase().pipe(z.email('Vul een geldig e-mailadres in.'))
+	}),
+	z.object({
+		formType: z.literal('codeFromEmail'),
+		code: z.string().trim().min(1, 'Vul de code uit de e-mail in.')
+	})
+]);
 
-export type AskQuestionFields = z.infer<typeof askSchema.options[0]>;
+export type AskQuestionFields = z.infer<(typeof askSchema.options)[0]>;
 
 export type AskFormType = z.infer<typeof askSchema>['formType'];
-export type RegisterFormType = Extract<AskFormType, "newUser" | "missingName">;
-type KeysOfUnion<T> = T extends T ? keyof T: never;
-export type AskField = KeysOfUnion<z.infer<typeof askSchema>>
+export type RegisterFormType = Extract<AskFormType, 'newUser' | 'missingName'>;
+type KeysOfUnion<T> = T extends T ? keyof T : never;
+export type AskField = KeysOfUnion<z.infer<typeof askSchema>>;
 export type AskValues = Record<AskField, string>;
 export type AskIssues = Partial<Record<AskField, string[]>>;
 export type ActiveMode = 'registering' | 'login';
 
 export const activeModeForFormType = (formType: AskFormType, changing?: boolean): ActiveMode => {
 	// changing will be true for new users that click "Pas gegevens aan" in controle step
-	if (changing) return "registering";
+	if (changing) return 'registering';
 
-	if (formType && ["newUser", "missingName"].includes(formType)) {
-		return "registering";
+	if (formType && ['newUser', 'missingName'].includes(formType)) {
+		return 'registering';
 	}
 
-	return "login";
-}
+	return 'login';
+};
 
 export type AskStep = {
 	id: string;
@@ -192,7 +205,7 @@ export type AskDetails = {
 	emailConfirmation: string;
 	acceptTandC: boolean;
 	ageChecked: boolean;
-	emailExisting:string;
+	emailExisting: string;
 	code: string;
 	capToken: string;
 };

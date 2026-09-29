@@ -27,10 +27,11 @@ export const actions = {
 
 		if ('error' in outcome) return fail(409, { error: 'Dit antwoord is al behandeld.' });
 
-		const message = result.data.action == 'approved' ?
-			'Je hebt het antwoord goedgekeurd' :
-			'Je hebt het antwoord afgewezen';
-	  const flashType = result.data.action == 'approved' ? 'success' : 'neutral'
+		const message =
+			result.data.action == 'approved'
+				? 'Je hebt het antwoord goedgekeurd'
+				: 'Je hebt het antwoord afgewezen';
+		const flashType = result.data.action == 'approved' ? 'success' : 'neutral';
 
 		setFlash({ type: flashType, message: message }, cookies);
 		return { moderated: result.data.answerId };

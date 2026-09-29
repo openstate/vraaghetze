@@ -204,12 +204,8 @@ export function listInbox({ page, perPage }: Pagination) {
 }
 
 export async function getInboxMail(id: string) {
-	const [mail] = await db
-		.select()
-		.from(schema.inbox)
-		.where(eq(schema.inbox.id, id))
-		.limit(1);
-	return mail
+	const [mail] = await db.select().from(schema.inbox).where(eq(schema.inbox.id, id)).limit(1);
+	return mail;
 }
 
 export function listOutbox({ page, perPage }: Pagination) {
@@ -244,10 +240,16 @@ type QuestionModeration = {
 	moderatorId: string;
 	action: 'approved' | 'rejected';
 	note?: string;
-	rejectionReason?: string
+	rejectionReason?: string;
 };
 
-export function moderateQuestion({ questionId, moderatorId, action, note, rejectionReason }: QuestionModeration) {
+export function moderateQuestion({
+	questionId,
+	moderatorId,
+	action,
+	note,
+	rejectionReason
+}: QuestionModeration) {
 	return db.transaction(async (tx) => {
 		// the guard makes double-clicks and concurrent moderators a no-op instead of a
 		// double action, and ensures only verified questions are ever approved/rejected

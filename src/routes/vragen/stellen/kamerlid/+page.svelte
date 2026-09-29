@@ -157,10 +157,12 @@
 	<ul class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 		{#each shownPoliticians as politician (politician.id)}
 			{@const chosen = politician.slug === draft.aan}
-			{@const nextStep = (data.user || data.changing) ? 'controle' : 'vraag'}
+			{@const nextStep = data.user || data.changing ? 'controle' : 'vraag'}
 			<li
-				class="relative {!politician.acceptsQuestions ? "opacity-30" : ""}"
-				title={!politician.acceptsQuestions ? notAcceptingQuestionsText(politician.name, politician.email) : ""}
+				class="relative {!politician.acceptsQuestions ? 'opacity-30' : ''}"
+				title={!politician.acceptsQuestions
+					? notAcceptingQuestionsText(politician.name, politician.email)
+					: ''}
 			>
 				<a
 					href={stepHref(nextStep, { ...draft, aan: politician.slug })}

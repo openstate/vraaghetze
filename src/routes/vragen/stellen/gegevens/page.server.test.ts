@@ -30,7 +30,7 @@ type actionEventOptions = {
 	acceptTandC?: string;
 	ageChecked?: string;
 	setConfirmationEmail?: boolean;
-}
+};
 
 function myMakeActionEvent(
 	user: typeof schema.user.$inferSelect | null,
@@ -43,8 +43,8 @@ function myMakeActionEvent(
 		allOptions,
 		true,
 		page,
-		"http://localhost/vragen/stellen/gegevens"
-	) as RequestEvent<RouteParams, "/vragen/stellen/gegevens">;
+		'http://localhost/vragen/stellen/gegevens'
+	) as RequestEvent<RouteParams, '/vragen/stellen/gegevens'>;
 }
 
 const questionFields = {
@@ -103,21 +103,23 @@ describe('no user logged in', () => {
 		let result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
 
 		expect(result.status).toBe(400);
-		expect(result.data.error).toBe(
-			'Er bestaat al een account met dit e-mailadres.'
-		);
+		expect(result.data.error).toBe('Er bestaat al een account met dit e-mailadres.');
 		expect(result.data.initializeNewUser).toBe(true);
 	});
 
 	test('requires confirmation of email address', async () => {
 		const { politician } = await createPolitician();
-		const event = myMakeActionEvent(null, {
-			...questionFields,
-			email: newEmail,
-			name: newName,
-			politicianId: politician.id,
-			formType: 'newUser'
-		}, { setConfirmationEmail: false });
+		const event = myMakeActionEvent(
+			null,
+			{
+				...questionFields,
+				email: newEmail,
+				name: newName,
+				politicianId: politician.id,
+				formType: 'newUser'
+			},
+			{ setConfirmationEmail: false }
+		);
 
 		const result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
 
@@ -128,11 +130,15 @@ describe('no user logged in', () => {
 	});
 
 	test('requires acceptance of the terms and conditions', async () => {
-		const event = myMakeActionEvent(null, {
-			email: newEmail,
-			name: newName,
-			formType: 'newUser'
-		}, { acceptTandC: ''});
+		const event = myMakeActionEvent(
+			null,
+			{
+				email: newEmail,
+				name: newName,
+				formType: 'newUser'
+			},
+			{ acceptTandC: '' }
+		);
 
 		const result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
 
@@ -143,17 +149,23 @@ describe('no user logged in', () => {
 	});
 
 	test('requires age confirmation', async () => {
-		const event = myMakeActionEvent(null, {
-			email: newEmail,
-			name: newName,
-			formType: 'newUser'
-		}, { ageChecked: ''});
+		const event = myMakeActionEvent(
+			null,
+			{
+				email: newEmail,
+				name: newName,
+				formType: 'newUser'
+			},
+			{ ageChecked: '' }
+		);
 
 		const result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
 
 		expect(result.status).toBe(400);
 		expect(result.data.issues).toMatchObject({
-			ageChecked: ['Om VraagHetZe te kunnen gebruiken moet je minimaal 16 jaar zijn of toestemming van je ouders hebben.']
+			ageChecked: [
+				'Om VraagHetZe te kunnen gebruiken moet je minimaal 16 jaar zijn of toestemming van je ouders hebben.'
+			]
 		});
 	});
 
@@ -207,14 +219,14 @@ describe('user trying to login', () => {
 			formType: 'codeFromEmail'
 		});
 
-    expect(event.locals.session).toBeUndefined();
+		expect(event.locals.session).toBeUndefined();
 
-    let result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
+		let result = (await page.actions.default(event)) as ActionFailure<page.defaultActionType>;
 
 		expect(result.status).toBe(400);
 		expect(result.data.askForCode).toBe(true);
-		expect(result.data.issues).toMatchObject({ code: ['Code niet bekend']});
-    expect(event.locals.session).toBeUndefined();
+		expect(result.data.issues).toMatchObject({ code: ['Code niet bekend'] });
+		expect(event.locals.session).toBeUndefined();
 	});
 
 	test('returns verified for correct code', async () => {
@@ -232,13 +244,13 @@ describe('user trying to login', () => {
 		await createSession(asker.id, token);
 		await createVerification(token, asker.email);
 
-    expect(event.locals.session).toBeUndefined();
+		expect(event.locals.session).toBeUndefined();
 
 		await expect(page.actions.default(event)).rejects.toMatchObject({
 			status: 303,
 			location: '/vragen/stellen/controle'
 		});
 
-    expect(event.locals.session).not.toBeUndefined();
+		expect(event.locals.session).not.toBeUndefined();
 	});
 });

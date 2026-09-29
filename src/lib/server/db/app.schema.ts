@@ -157,11 +157,11 @@ export const outbox = pgTable(
 );
 
 export type InboxIgnoreReasons =
-	'ignored'
+	| 'ignored'
 	| 'ignored_dkim_failure'
 	| 'ignored_question_not_approved'
 	| 'ignored_question_already_answered'
-	| 'ignored_different_sender'
+	| 'ignored_different_sender';
 export type InboxStatus = InboxIgnoreReasons | 'received' | 'processed' | 'failed';
 
 export const inbox = pgTable('inbox', {

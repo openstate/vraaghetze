@@ -5,7 +5,7 @@
 </script>
 
 <ContentPage title={data.meta.title}>
-	<p class="text-osf-canvas-600" >
+	<p class="text-osf-canvas-600">
 		Download het privacybeleid
 		<a href="/files/privacybeleid-v1.pdf">als pdf</a>.
 	</p>

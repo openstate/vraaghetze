@@ -9,7 +9,7 @@ vi.mock(import('$lib/server/auth'), async (importOriginal) => {
 	return {
 		...actual,
 		sendSignInLink
-	}
+	};
 });
 
 // For the tests in this file the captcha is actually validated.
@@ -20,7 +20,7 @@ function myMakeActionEvent(
 	fields: Record<string, string> = {},
 	tAndCAccepted: boolean = true
 ) {
-	const useFields = tAndCAccepted ? {...fields, acceptTandC: '1'} : {...fields}
+	const useFields = tAndCAccepted ? { ...fields, acceptTandC: '1' } : { ...fields };
 
 	return makeActionEvent<typeof page.actions.default>(
 		`http://localhost/vragen/stellen/controle`,
@@ -51,7 +51,11 @@ describe('default action', () => {
 	test('validates the captcha for an anonymous asker', async () => {
 		const { politician } = await createPolitician();
 		const email = `nieuw-${crypto.randomUUID()}@test.example`;
-		const event = myMakeActionEvent(null, { ...questionFields, email, politicianId: politician.id });
+		const event = myMakeActionEvent(null, {
+			...questionFields,
+			email,
+			politicianId: politician.id
+		});
 
 		const result = await page.actions.default(event);
 

@@ -2,8 +2,8 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import {
-	activeModeForFormType,
-	clearDetails,
+		activeModeForFormType,
+		clearDetails,
 		DEFAULT_ASK_DETAILS,
 		draftFromUrl,
 		readDetails,
@@ -11,11 +11,11 @@
 		writeDetails,
 		type ActiveMode,
 		type AskDetails,
-		type AskFormType,
+		type AskFormType
 	} from '$lib/ask';
 	import { authClient } from '$lib/auth-client.js';
 	import { submitDirectly } from '$lib/general.js';
-	import RegisterOrLogin from '$lib/components/register-or-login.svelte'
+	import RegisterOrLogin from '$lib/components/register-or-login.svelte';
 
 	let { data, form } = $props();
 
@@ -30,7 +30,9 @@
 	let askForCode = $derived(form?.askForCode ?? false);
 	let formTypeFromForm = $derived(form?.formType);
 	let activeMode = $derived(activeModeForFormType(formTypeFromForm, !!data.changing));
-	const setActiveMode = (mode: ActiveMode) => { activeMode = mode }
+	const setActiveMode = (mode: ActiveMode) => {
+		activeMode = mode;
+	};
 
 	const draft = $derived({ ...draftFromUrl(page.url), aan: data.politician?.slug ?? '' });
 
@@ -41,7 +43,9 @@
 
 	const persist = () => writeDetails(details);
 
-	const handleSubmit = async (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement}) => {
+	const handleSubmit = async (
+		event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }
+	) => {
 		const currentTarget = event.currentTarget as HTMLFormElement;
 		const submitter = event.submitter;
 
@@ -61,20 +65,21 @@
 			});
 
 			if (error) {
-				issues = {...issues, emailExisting: ["E-mailadres is niet geldig"]}
+				issues = { ...issues, emailExisting: ['E-mailadres is niet geldig'] };
 			} else {
 				submitDirectly(currentTarget, submitter, { formType: formType ?? '' });
 			}
 		}
-	}
+	};
 </script>
+
 <h1 class="mb-6 font-serif text-4xl">Vul je gegevens in</h1>
 
 <RegisterOrLogin
-	identifyMode='asking_question'
+	identifyMode="asking_question"
 	user={data.user}
 	{form}
-	bind:details={details}
+	bind:details
 	{issues}
 	{askForCode}
 	{activeMode}

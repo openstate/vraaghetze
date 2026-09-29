@@ -22,12 +22,7 @@
 </script>
 
 <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-<a
-	{href}
-	class={cardClass}
-	onclick={(e) => preventAdding(e, disabled)}
-	title={hoverText ?? ''}
->
+<a {href} class={cardClass} onclick={(e) => preventAdding(e, disabled)} title={hoverText ?? ''}>
 	<span class="font-serif text-2xl/snug">{@render children()}</span>
 
 	<span aria-hidden="true" class={arrowClass}>

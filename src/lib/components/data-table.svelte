@@ -26,7 +26,7 @@
 		}
 	});
 
-	const tableClass = $derived(fullWidth ? "w-full min-w-6xl" : "")
+	const tableClass = $derived(fullWidth ? 'w-full min-w-6xl' : '');
 </script>
 
 <div class="overflow-x-auto">

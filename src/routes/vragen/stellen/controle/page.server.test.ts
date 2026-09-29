@@ -2,7 +2,13 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { db, schema } from '$lib/server/db';
 import { QUESTION_TITLE_MAX_LENGTH } from '$lib/ask';
 import * as page from './+page.server';
-import { createPolitician, createUser, getQuestionBySlug, getUserByEmail, makeActionEvent } from '$lib/test-utils';
+import {
+	createPolitician,
+	createUser,
+	getQuestionBySlug,
+	getUserByEmail,
+	makeActionEvent
+} from '$lib/test-utils';
 import { userExists } from '$lib/server/auth';
 
 const sendSignInLink = vi.hoisted(() => vi.fn());
@@ -11,12 +17,12 @@ vi.mock(import('$lib/server/auth'), async (importOriginal) => {
 	return {
 		...actual,
 		sendSignInLink
-	}
+	};
 });
 
 // For the tests in this file the validation of the captcha is mocked.
 // For tests that actually validate the captcha, see page.server.captcha.test.ts.
-const validateCaptcha = vi.hoisted(() => (() => Promise.resolve(true)));
+const validateCaptcha = vi.hoisted(() => () => Promise.resolve(true));
 vi.mock('$lib/server/utils/captcha', () => ({ validateCaptcha }));
 
 async function insertQuestion(
@@ -142,7 +148,11 @@ describe('default action', () => {
 	test('sends a confirmation link for an anonymous asker', async () => {
 		const { politician } = await createPolitician();
 		const email = `nieuw-${crypto.randomUUID()}@test.example`;
-		const event = myMakeActionEvent(null, { ...questionFields, email, politicianId: politician.id });
+		const event = myMakeActionEvent(null, {
+			...questionFields,
+			email,
+			politicianId: politician.id
+		});
 
 		const result = await page.actions.default(event);
 
@@ -153,8 +163,8 @@ describe('default action', () => {
 			email,
 			'http://localhost/vragen/wat-vindt-u-van-de-toeslagen?doel=bevestigen'
 		);
-		const user = await getUserByEmail(email)
-    expect(user.tAndCAccepted).toBeTruthy();
+		const user = await getUserByEmail(email);
+		expect(user.tAndCAccepted).toBeTruthy();
 	});
 
 	test('redirects to gegevens page if email exists for anonymous user', async () => {
@@ -187,7 +197,7 @@ describe('default action', () => {
 
 		expect(result).toMatchObject({
 			status: 403,
-			data: { error: "Met dit account kun je geen vragen stellen." }
+			data: { error: 'Met dit account kun je geen vragen stellen.' }
 		});
 
 		expect(await db.select().from(schema.question)).toHaveLength(0);

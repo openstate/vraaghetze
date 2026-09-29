@@ -2,7 +2,14 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as moderation from './moderation';
-import { createAnswer, createQuestion, createUser, getAnswer, getAnswerAudit, getQuestion } from '$lib/test-utils';
+import {
+	createAnswer,
+	createQuestion,
+	createUser,
+	getAnswer,
+	getAnswerAudit,
+	getQuestion
+} from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',

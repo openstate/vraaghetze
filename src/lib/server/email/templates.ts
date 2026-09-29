@@ -21,25 +21,25 @@ export const resolveMailAddress = (address: string) => env.DIVERSION_EMAIL || ad
 
 const stripComments = (body: string) => {
 	return body.replace(/<!--[^-]*-->/g, '');
-}
+};
 
 // the sign-in link is worded after the flow it was requested from
 const magicLinkCopy = {
 	confirm: (url: string) => ({
 		subject: 'Bevestig je vraag op VraagHetZe',
-		body: stripComments(render(MagicLinkConfirm, { props: {url: url}}).body)
+		body: stripComments(render(MagicLinkConfirm, { props: { url: url } }).body)
 	}),
 	follow: (url: string) => ({
 		subject: 'Volg een vraag op VraagHetZe',
-		body: stripComments(render(MagicLinkFollow, { props: {url: url}}).body)
+		body: stripComments(render(MagicLinkFollow, { props: { url: url } }).body)
 	}),
 	login: (url: string) => ({
 		subject: 'Je inloglink voor VraagHetZe',
-		body: stripComments(render(MagicLinkLogin, { props: {url: url}}).body)
+		body: stripComments(render(MagicLinkLogin, { props: { url: url } }).body)
 	}),
 	sendCode: (code: string) => ({
 		subject: 'Je inlogcode voor VraagHetZe',
-		body: stripComments(render(MagicLinkCode, { props: {code: code}}).body)
+		body: stripComments(render(MagicLinkCode, { props: { code: code } }).body)
 	})
 };
 
@@ -81,13 +81,15 @@ export async function sendConfirmationMail(question: VerifiedQuestion) {
 		.where(eq(schema.user.id, question.assigneeId))
 		.limit(1);
 
-	const result = render(QuestionConfirmation, { props: {
-		askerName: asker.name,
-		politicianName: politician.name,
-		questionTitle: question.title,
-		questionUrl: `${env.ORIGIN}/vragen/${question.slug}`,
-		moderationUrl: `${env.ORIGIN}/moderatie`
-	}});
+	const result = render(QuestionConfirmation, {
+		props: {
+			askerName: asker.name,
+			politicianName: politician.name,
+			questionTitle: question.title,
+			questionUrl: `${env.ORIGIN}/vragen/${question.slug}`,
+			moderationUrl: `${env.ORIGIN}/moderatie`
+		}
+	});
 
 	return sendMail({
 		kind: 'question-confirmation',
@@ -122,13 +124,15 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 		.where(eq(schema.user.id, question.assigneeId))
 		.limit(1);
 
-	const resultPolitician = render(QuestionPolitician, { props: {
-		askerName: asker.name,
-		politicianName: politician.name,
-		questionTitle: question.title,
-		questionBody: question.body,
-		questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
-	}});
+	const resultPolitician = render(QuestionPolitician, {
+		props: {
+			askerName: asker.name,
+			politicianName: politician.name,
+			questionTitle: question.title,
+			questionBody: question.body,
+			questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
+		}
+	});
 
 	await enqueueMail({
 		kind: 'question-notification',
@@ -140,12 +144,14 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 		transaction: tx
 	});
 
-	const resultAsker = render(QuestionApproved, { props: {
-		askerName: asker.name,
-		politicianName: politician.name,
-		questionTitle: question.title,
-		questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
-	}});
+	const resultAsker = render(QuestionApproved, {
+		props: {
+			askerName: asker.name,
+			politicianName: politician.name,
+			questionTitle: question.title,
+			questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
+		}
+	});
 
 	await enqueueMail({
 		kind: 'moderation-notification',
@@ -158,7 +164,11 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 }
 
 // enqueues a rejection notice to the asker, no mail to the politician
-export async function enqueueRejectionMail(tx: Transaction, question: ModeratedQuestion, rejectionReason: string) {
+export async function enqueueRejectionMail(
+	tx: Transaction,
+	question: ModeratedQuestion,
+	rejectionReason: string
+) {
 	const [asker] = await tx
 		.select({ name: schema.user.name, email: schema.user.email })
 		.from(schema.user)
@@ -171,14 +181,16 @@ export async function enqueueRejectionMail(tx: Transaction, question: ModeratedQ
 		.where(eq(schema.user.id, question.assigneeId))
 		.limit(1);
 
-	const result = render(QuestionRejected, { props: {
-		askerName: asker.name,
-		politicianName: politician.name,
-		questionTitle: question.title,
-		questionBody: question.body,
-		moderationUrl: `${env.ORIGIN}/moderatie`,
-		rejectionReasons: rejectionReasonTexts(rejectionReason)
-	}});
+	const result = render(QuestionRejected, {
+		props: {
+			askerName: asker.name,
+			politicianName: politician.name,
+			questionTitle: question.title,
+			questionBody: question.body,
+			moderationUrl: `${env.ORIGIN}/moderatie`,
+			rejectionReasons: rejectionReasonTexts(rejectionReason)
+		}
+	});
 
 	return enqueueMail({
 		kind: 'moderation-notification',
@@ -201,12 +213,14 @@ type AnsweredQuestion = {
 
 // enqueues a notification to the asker that their question received a public answer
 export function enqueueAnswerMail(tx: Transaction, question: AnsweredQuestion) {
-	const result = render(QuestionAnswered, { props: {
-		askerName: question.askerName,
-		politicianName: question.politicianName,
-		questionTitle: question.title,
-		questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
-	}});
+	const result = render(QuestionAnswered, {
+		props: {
+			askerName: question.askerName,
+			politicianName: question.politicianName,
+			questionTitle: question.title,
+			questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
+		}
+	});
 
 	return enqueueMail({
 		kind: 'answer-notification',
@@ -227,12 +241,14 @@ export async function enqueueFollowerMails(tx: Transaction, question: AnsweredQu
 		.where(eq(schema.questionFollow.questionId, question.id));
 
 	for (const follower of followers) {
-		const result = render(QuestionAnsweredFollowers, { props: {
-			followerName: follower.name,
-			politicianName: question.politicianName,
-			questionTitle: question.title,
-			questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
-		}});
+		const result = render(QuestionAnsweredFollowers, {
+			props: {
+				followerName: follower.name,
+				politicianName: question.politicianName,
+				questionTitle: question.title,
+				questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
+			}
+		});
 
 		await enqueueMail({
 			kind: 'follow-notification',

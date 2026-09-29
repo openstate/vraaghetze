@@ -15,12 +15,15 @@ const testEnv = vi.hoisted(() => ({
 vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
 
 async function myCreateQuestion(overrides: Partial<typeof schema.question.$inferInsert> = {}) {
-	return createQuestion({
-		verifiedAt: null,
-		status: 'approved',
-		emailToken: crypto.randomUUID(),
-		...overrides
-	}, false)
+	return createQuestion(
+		{
+			verifiedAt: null,
+			status: 'approved',
+			emailToken: crypto.randomUUID(),
+			...overrides
+		},
+		false
+	);
 }
 
 function makeEmail(

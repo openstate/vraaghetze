@@ -49,18 +49,14 @@
 					{@render menuLinks()}
 				</div>
 
-				<div class="flex justify-end items-center">
+				<div class="flex items-center justify-end">
 					{#if hasPermission(page.data.user, { user: ['create'] })}
 						<a href={resolve('/gebruikers')} title="Beheer" class="mr-2">
 							<span class="iconify size-8 mdi--cog"></span>
 						</a>
 					{/if}
 
-					<Button
-						href={resolve('/mijn-vragen')}
-						variant="primary"
-						class="max-lg:hidden"
-					>
+					<Button href={resolve('/mijn-vragen')} variant="primary" class="max-lg:hidden">
 						Mijn vragen
 					</Button>
 					{#if page.data.user}
@@ -90,11 +86,7 @@
 					Mijn vragen
 				</Button>
 				{#if page.data.user}
-					<Button
-						href={resolve('/profiel')}
-						variant="primary"
-						spanPadding="px-2"
-					>
+					<Button href={resolve('/profiel')} variant="primary" spanPadding="px-2">
 						<span class="iconify size-6 mdi--user-outline"></span>
 					</Button>
 				{/if}

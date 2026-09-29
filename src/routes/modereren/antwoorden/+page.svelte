@@ -14,7 +14,7 @@
 	<ul class="grid gap-3">
 		{#each data.queue as answer (answer.id)}
 			<li>
-				<Answer answer={answer} />
+				<Answer {answer} />
 			</li>
 		{/each}
 	</ul>

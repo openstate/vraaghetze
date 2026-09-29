@@ -70,7 +70,10 @@
 			['Kamerlid', row.politicianName],
 			['Aangemaakt op', row.createdAt],
 			['Moderatiestatus', moderationStatusPills[row.status].label],
-			['Moderatiereden', new HTMLSafeString(rejectionReasonTexts(row.rejectionReason).join("<br/>"))],
+			[
+				'Moderatiereden',
+				new HTMLSafeString(rejectionReasonTexts(row.rejectionReason).join('<br/>'))
+			],
 			['Moderatienotitie', row.note],
 			['Gemodereerd op', row.moderatedAt],
 			['Gemodereerd door', row.moderatorName],

@@ -44,10 +44,10 @@ export function formatDateTimeLong(value: Date | null) {
 
 export function readableSeconds(seconds: number) {
 	if (seconds > 86400) {
-		const d = Math.round(seconds/8640) / 10.0; // 1 decimal precision
+		const d = Math.round(seconds / 8640) / 10.0; // 1 decimal precision
 		return [`${d} d`, `${d} dagen`];
 	} else if (seconds > 3600) {
-		const h = Math.round(seconds/360) / 10.0; // 1 decimal precision
+		const h = Math.round(seconds / 360) / 10.0; // 1 decimal precision
 		return [`${h} u`, `${h} uren`];
 	} else {
 		const s = Math.round(seconds);

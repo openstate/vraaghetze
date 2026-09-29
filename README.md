@@ -17,7 +17,8 @@
 
 ## Development
 
-Make sure you have Node, pnpm and Docker installed.
+Make sure you have Node, pnpm and Docker installed. Recommendation: install the extensions listed in `extensions.json` to
+keep formatting consistent.
 
 1. Copy `.env.example` to `.env`. A development environment needs values for `POSTGRES_*`, `DATABASE_URL`, `ORIGIN` and `BETTER_AUTH_SECRET`. Keep the other keys in the file empty.
 
@@ -32,7 +33,6 @@ Make sure you have Node, pnpm and Docker installed.
    ```bash
    pnpm db:start
    ```
-
 
 1. Push the schema to the database:
 
@@ -64,12 +64,11 @@ Make sure you have Node, pnpm and Docker installed.
 
 1. Run the tests once:
 
-    ```bash
-    pnpm test:setup
-    ```
+   ```bash
+   pnpm test:setup
+   ```
 
 1. To elevate a user to the `admin` role you can use `bin/make_admin.sh`
-
 
 ## Commands
 

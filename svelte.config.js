@@ -9,7 +9,7 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		alias: {
-			'$routes': './src/routes',
+			$routes: './src/routes'
 		},
 		csrf: { trustedOrigins: ['*'] },
 		typescript: {

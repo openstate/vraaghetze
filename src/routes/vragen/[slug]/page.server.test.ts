@@ -96,7 +96,7 @@ describe('load', () => {
 	});
 
 	test('hides an invisible question behind the same 404 as a missing one', async () => {
-		const { politicianUser} = await createPolitician();
+		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const pending = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
 

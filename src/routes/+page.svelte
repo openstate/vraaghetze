@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { browser } from "$app/environment";
+	import { browser } from '$app/environment';
 	import { resolve } from '$app/paths';
 	import openStateLogo from '$lib/assets/open-state-logo.svg?raw';
 	import sparks from '$lib/assets/sparks.svg';
@@ -8,7 +8,7 @@
 	import Button from '$lib/components/button.svelte';
 	import HeroPlanes from '$lib/components/hero-planes.svelte';
 	import QuestionCard from '$lib/components/question-card.svelte';
-	import { readableSeconds } from "$lib/date-time.js";
+	import { readableSeconds } from '$lib/date-time.js';
 
 	let { data } = $props();
 
@@ -49,13 +49,11 @@
 		},
 		{
 			title: 'Stel je vraag',
-			description:
-				'Kort en duidelijk, in je eigen woorden en met een vraagteken. Klaar!'
+			description: 'Kort en duidelijk, in je eigen woorden en met een vraagteken. Klaar!'
 		},
 		{
 			title: 'Je krijgt een reactie',
-			description:
-				'Het Kamerlid antwoordt, zichtbaar voor iedereen die hetzelfde wil weten.'
+			description: 'Het Kamerlid antwoordt, zichtbaar voor iedereen die hetzelfde wil weten.'
 		}
 	];
 </script>
@@ -176,7 +174,9 @@
 	<div class="relative mx-auto max-w-7xl px-6 py-24 md:py-32">
 		<h2 class="text-center font-serif text-3xl md:text-4xl">VraagHetZe in cijfers</h2>
 		<!-- TODO: remove -->
-		<p class="text-center mt-2">Aantallen hieronder staan nu op 0 en worden na de opstartfase gedeeld.</p>
+		<p class="mt-2 text-center">
+			Aantallen hieronder staan nu op 0 en worden na de opstartfase gedeeld.
+		</p>
 
 		<div class="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-4">
 			{#each stats as stat (stat.label)}
@@ -258,7 +258,15 @@
 				Opvallende vragen, antwoorden en nieuws over het platform en events.
 			</p>
 
-			<form action="https://openstate.us4.list-manage.com/subscribe/post?u=03355fd4f1a7935cae63b21aa&amp;id=2f09e8274d" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank" novalidate>
+			<form
+				action="https://openstate.us4.list-manage.com/subscribe/post?u=03355fd4f1a7935cae63b21aa&amp;id=2f09e8274d"
+				method="post"
+				id="mc-embedded-subscribe-form"
+				name="mc-embedded-subscribe-form"
+				class="validate"
+				target="_blank"
+				novalidate
+			>
 				<div
 					class="mx-auto mt-10 flex max-w-md flex-col gap-2 rounded border border-osf-canvas-200 bg-osf-neutral-50 p-2 md:flex-row md:items-center md:justify-between md:gap-8 md:pl-5"
 				>
@@ -273,10 +281,16 @@
 							id="mce-EMAIL"
 						/>
 					</label>
-					<Button type="submit" variant="primary" class="shrink-0 max-md:w-full" name="subscribe" id="mc-embedded-subscribe">Aanmelden</Button>
+					<Button
+						type="submit"
+						variant="primary"
+						class="shrink-0 max-md:w-full"
+						name="subscribe"
+						id="mc-embedded-subscribe">Aanmelden</Button
+					>
 				</div>
 				<div style="position: absolute; left: -5000px;" aria-hidden="true">
-					<input type="text" name="b_03355fd4f1a7935cae63b21aa_2f09e8274d" tabindex="-1" value="">
+					<input type="text" name="b_03355fd4f1a7935cae63b21aa_2f09e8274d" tabindex="-1" value="" />
 				</div>
 				<div id="mce-responses" class="clear mt-[8px]">
 					<div class="response text-white" id="mce-error-response" style="display:none"></div>
@@ -297,14 +311,16 @@
 
 		<div class="flex flex-col items-start gap-4 lg:mt-8">
 			<p>
-				Het vertrouwen in de politiek staat onder druk. Het online debat met Kamerleden speelt zich vooral af op polariserende
-				sociale media, waar een serieus gesprek nauwelijks te voeren is. Wie een Kamerlid mailt, krijgt vaak geen antwoord.
-				Veel Kamerleden ontvangen dagelijks meer dan honderd e-mails.
+				Het vertrouwen in de politiek staat onder druk. Het online debat met Kamerleden speelt zich
+				vooral af op polariserende sociale media, waar een serieus gesprek nauwelijks te voeren is.
+				Wie een Kamerlid mailt, krijgt vaak geen antwoord. Veel Kamerleden ontvangen dagelijks meer
+				dan honderd e-mails.
 			</p>
 
 			<p>
-				VraagHetZe maakt de politiek weer toegankelijk. Iedereen kan een vraag stellen, en Kamerleden beantwoorden die in het
-				openbaar, zichtbaar voor iedereen. Zo ontstaat er weer een gelijk speelveld voor het publieke gesprek.
+				VraagHetZe maakt de politiek weer toegankelijk. Iedereen kan een vraag stellen, en
+				Kamerleden beantwoorden die in het openbaar, zichtbaar voor iedereen. Zo ontstaat er weer
+				een gelijk speelveld voor het publieke gesprek.
 			</p>
 
 			<Button
@@ -319,5 +335,5 @@
 	</div>
 </section>
 {#if browser}
-<script src='https://s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js'></script>
+	<script src="https://s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js"></script>
 {/if}

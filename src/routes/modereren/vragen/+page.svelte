@@ -1,5 +1,5 @@
 <script lang="ts">
-	import OneQuestion from './one_question.svelte'
+	import OneQuestion from './one_question.svelte';
 
 	let { data, form } = $props();
 </script>
@@ -13,7 +13,7 @@
 {:else}
 	<ul class="grid gap-3">
 		{#each data.queue as question (question.id)}
-      <OneQuestion question={question} />
+			<OneQuestion {question} />
 		{/each}
 	</ul>
 {/if}

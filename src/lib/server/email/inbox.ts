@@ -80,7 +80,11 @@ export async function processMail(mail: InboxRow, ignoreErrors: ignorableErrors[
 	}
 
 	if (question.status !== 'approved') {
-		return settle(mail, 'ignored_question_not_approved', `Vraag niet goedgekeurd (status=${question.status})`);
+		return settle(
+			mail,
+			'ignored_question_not_approved',
+			`Vraag niet goedgekeurd (status=${question.status})`
+		);
 	}
 
 	const [publishedAnswer] = await db
@@ -90,12 +94,22 @@ export async function processMail(mail: InboxRow, ignoreErrors: ignorableErrors[
 		.limit(1);
 
 	if (publishedAnswer) {
-		return settle(mail, 'ignored_question_already_answered', `Vraag al beantwoord (id=${publishedAnswer.id})`);
+		return settle(
+			mail,
+			'ignored_question_already_answered',
+			`Vraag al beantwoord (id=${publishedAnswer.id})`
+		);
 	}
 
-	if (mail.fromAddress !== resolveMailAddress(question.politicianEmail).toLowerCase() &&
-		!ignoreErrors.includes('wrong_sender')) {
-		return settle(mail, 'ignored_different_sender', `Afzender is niet het Kamerlid (${mail.fromAddress} versus ${resolveMailAddress(question.politicianEmail).toLowerCase()})`);
+	if (
+		mail.fromAddress !== resolveMailAddress(question.politicianEmail).toLowerCase() &&
+		!ignoreErrors.includes('wrong_sender')
+	) {
+		return settle(
+			mail,
+			'ignored_different_sender',
+			`Afzender is niet het Kamerlid (${mail.fromAddress} versus ${resolveMailAddress(question.politicianEmail).toLowerCase()})`
+		);
 	}
 
 	const replyText = extractReplyText(email.text);
@@ -119,7 +133,6 @@ export async function processMail(mail: InboxRow, ignoreErrors: ignorableErrors[
 			.update(schema.inbox)
 			.set({ status: 'processed', reason: null, answerId, processedAt: new Date() })
 			.where(eq(schema.inbox.id, mail.id));
-
 	});
 
 	return answerId as string;
