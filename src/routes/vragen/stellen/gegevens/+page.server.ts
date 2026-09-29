@@ -4,7 +4,7 @@ import { hasPermission } from '$lib/permissions';
 import { db, schema } from '$lib/server/db/index.js';
 import { askSchema, draftFromUrl, stepHref, type AskField, type AskFormType } from '$lib/ask.js';
 import { validateForm } from '$lib/server/utils/forms';
-import { auth, userExists, type UserType } from '$lib/server/auth';
+import { auth, sendSignInLink, userExists, type UserType } from '$lib/server/auth';
 import type { Actions } from './$types';
 
 export type defaultActionType = {
@@ -51,7 +51,13 @@ export const actions = {
 		} else if (data.formType == 'missingName') {
 			if (locals.user && !locals.user.name) await handleMissingName(locals.user, data.name);
 		} else if (data.formType == 'userLogin') {
-			return { ...returnValues, askForCode: true };
+			const sendResult = await sendSignInLink(data.emailExisting, undefined, { sendCode: true });
+
+			if (sendResult.status == 'success') {
+				return { ...returnValues, askForCode: true };
+			} else {
+				return { ...returnValues, error: sendResult.error };
+			}
 		} else if (data.formType == 'codeFromEmail') {
 			const session = await handleCodeFromEmail(data.code, request.headers);
 			if (session) {

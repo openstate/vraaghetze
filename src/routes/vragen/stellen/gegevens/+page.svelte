@@ -13,8 +13,6 @@
 		type AskDetails,
 		type AskFormType
 	} from '$lib/ask';
-	import { authClient } from '$lib/auth-client.js';
-	import { submitDirectly } from '$lib/general.js';
 	import RegisterOrLogin from '$lib/components/register-or-login.svelte';
 
 	let { data, form } = $props();
@@ -53,22 +51,6 @@
 		const formType = formData.get('formType') as AskFormType;
 		if (formType != 'codeFromEmail') {
 			persist();
-		}
-
-		if (formType == 'userLogin') {
-			event.preventDefault();
-			if (form) form.error = '';
-
-			const { error } = await authClient.signIn.magicLink({
-				email: details.emailExisting,
-				metadata: { sendCode: true }
-			});
-
-			if (error) {
-				issues = { ...issues, emailExisting: ['E-mailadres is niet geldig'] };
-			} else {
-				submitDirectly(currentTarget, submitter, { formType: formType ?? '' });
-			}
 		}
 	};
 </script>

@@ -43,12 +43,13 @@ export const actions = {
 
 		const currentUserId = locals.user?.id ?? null;
 		const data = result.data as AskQuestionFields;
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { formType, ...questionFields } = data;
 
 		// existing users should have been forced to login on the gegevens page
 		if (!currentUserId && (await userExists(data.email))) {
 			const draft = draftFromUrl(url);
-			redirect(303, stepHref('gegevens', draft));
+			return redirect(303, stepHref('gegevens', draft));
 		}
 
 		if (!currentUserId) {
@@ -76,9 +77,13 @@ export const actions = {
 		if (!currentUserId) {
 			const callback = new URL(`/vragen/${created.slug}`, url.origin);
 			callback.searchParams.set('doel', 'bevestigen');
-			await sendSignInLink(questionFields.email, callback.toString());
+			const sendResult = await sendSignInLink(questionFields.email, callback.toString());
 
-			return { email: questionFields.email };
+			if (sendResult.status == 'success') {
+				return { email: questionFields.email };
+			} else {
+				return { error: sendResult.error };
+			}
 		}
 
 		redirect(303, `/vragen/${created.slug}`);

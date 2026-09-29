@@ -8,7 +8,7 @@
 		issues: AskIssues;
 		previousUrl?: string;
 		formError: string | undefined;
-		handleSubmit: (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }) => {};
+		handleSubmit: (event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }) => void;
 	};
 	let {
 		details = $bindable(),

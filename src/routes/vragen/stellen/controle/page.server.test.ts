@@ -9,9 +9,9 @@ import {
 	getUserByEmail,
 	makeActionEvent
 } from '$lib/test-utils';
-import { userExists } from '$lib/server/auth';
 
 const sendSignInLink = vi.hoisted(() => vi.fn());
+sendSignInLink.mockReturnValue({ status: 'success' });
 vi.mock(import('$lib/server/auth'), async (importOriginal) => {
 	const actual = await importOriginal();
 	return {

@@ -25,6 +25,8 @@ export const actions = {
 		if (!result.valid) return fail(400, { ...returnValues, error: '', issues: result.issues });
 
 		const data = result.data;
+		const callback = new URL('/mijn-vragen', url.origin);
+		let useEmail;
 
 		if (data.formType == 'newUser') {
 			const captchaValid = await validateCaptcha(data.capToken);
@@ -46,10 +48,17 @@ export const actions = {
 				.insert(schema.user)
 				.values({ id: userId, name: data.name, email: data.email, tAndCAccepted: new Date() });
 
-			const callback = new URL('/mijn-vragen', url.origin);
-			await sendSignInLink(data.email, callback.toString());
+			useEmail = data.email;
+		}
 
-			return { ...returnValues, sent: true };
+		if (data.formType == 'userLogin') {
+			useEmail = data.emailExisting;
+		}
+
+		if (useEmail) {
+			const sendResult = await sendSignInLink(useEmail, callback.toString());
+
+			return { ...returnValues, sent: sendResult.status == 'success', error: sendResult.error };
 		}
 
 		redirect(303, '/');
