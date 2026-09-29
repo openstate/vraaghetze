@@ -41,7 +41,7 @@
 
 	<p class="mb-4 text-osf-canvas-600">
 		{#if formType == 'newUser'}
-			Voor nieuwe gebruikers.
+			Voor <strong>nieuwe</strong> gebruikers.
 		{/if}
 		{#if identifyMode == 'asking_question'}
 			Je vraag wordt openbaar onder jouw naam. Je emailadres blijft privé.

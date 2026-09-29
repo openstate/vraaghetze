@@ -29,7 +29,7 @@
 	<input type="hidden" name="formType" value="userLogin" />
 
 	<p class="mb-4 text-osf-canvas-600">
-		Voor bestaande gebruikers.
+		Voor <strong>bestaande</strong> gebruikers.
 		{#if identifyMode == 'asking_question'}
 			Je ontvangt een code in een e-mail om hier in te vullen.
 		{/if}

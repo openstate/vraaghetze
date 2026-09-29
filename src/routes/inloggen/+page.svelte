@@ -29,7 +29,7 @@
 	let issues = $derived(form?.issues || {});
 	let askForCode = false;
 	let sent = $state(false);
-	let formTypeFromForm = $derived(form?.formType);
+	let formTypeFromForm = $derived(form?.formType ?? 'userLogin');
 	let activeMode = $derived(activeModeForFormType(formTypeFromForm));
 	const setActiveMode = (mode: ActiveMode) => {
 		activeMode = mode;

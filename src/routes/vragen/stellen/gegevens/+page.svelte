@@ -28,7 +28,7 @@
 	let details = $state<AskDetails>({ ...DEFAULT_ASK_DETAILS });
 	let issues = $derived(form?.issues || {});
 	let askForCode = $derived(form?.askForCode ?? false);
-	let formTypeFromForm = $derived(form?.formType);
+	let formTypeFromForm = $derived(form?.formType ?? 'newUser');
 	let activeMode = $derived(activeModeForFormType(formTypeFromForm, !!data.changing));
 	const setActiveMode = (mode: ActiveMode) => {
 		activeMode = mode;
