@@ -20,6 +20,7 @@
 	}: Props = $props();
 
 	function gotoRegister(e: Event) {
+		e.preventDefault();
 		clearDetails();
 		setActiveMode('registering');
 	}
@@ -34,9 +35,7 @@
 			Je ontvangt een code in een e-mail om hier in te vullen.
 		{/if}
 		Heb je nog geen account? Ga naar
-		<button type="submit" onclick={gotoRegister} class="cursor-pointer text-osf-shocking-pink"
-			>registeren</button
-		>.
+		<a onclick={gotoRegister} class="cursor-pointer text-osf-shocking-pink" href="#top">registeren</a>.
 	</p>
 	<Field name="emailExisting" label="Je e-mailadres" issues={issues.emailExisting}>
 		{#snippet children(control)}

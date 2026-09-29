@@ -31,6 +31,7 @@
 	let capToken = $state('');
 
 	function gotoLogin(e: Event) {
+		e.preventDefault();
 		clearDetails();
 		if (setActiveMode) setActiveMode('login');
 	}
@@ -48,9 +49,7 @@
 		{/if}
 		{#if formType == 'newUser'}
 			Heb je al een account? Ga naar
-			<button type="submit" onclick={gotoLogin} class="cursor-pointer text-osf-shocking-pink"
-				>inloggen</button
-			>.
+			<a onclick={gotoLogin} class="cursor-pointer text-osf-shocking-pink" href="#top">inloggen</a>.
 		{/if}
 	</p>
 	<div class="grid gap-6">
