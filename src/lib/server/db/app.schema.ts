@@ -23,6 +23,10 @@ export type FractionRole = 'member' | 'chair';
 
 export type ModerationStatus = 'pending' | 'approved' | 'rejected';
 
+export type MetaType = {
+	proposedPoliticianSlug?: string;
+};
+
 const postColumns = {
 	id: text().primaryKey(),
 	userId: text()
@@ -114,6 +118,8 @@ export const moderationAction = pgTable(
 		rejectionReason: text(),
 		// internal free-text note from the moderator
 		note: text(),
+		// additional information, e.g. slug of politician chosen by moderator if original politician was not correct one
+		meta: jsonb().$type<MetaType>(),
 		createdAt: timestamp().defaultNow().notNull()
 	},
 	(table) => [

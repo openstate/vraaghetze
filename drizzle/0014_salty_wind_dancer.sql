@@ -1,0 +1,1 @@
+ALTER TABLE "moderation_action" ADD COLUMN "meta" jsonb;
