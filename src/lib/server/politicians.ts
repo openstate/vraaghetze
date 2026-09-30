@@ -1,5 +1,6 @@
 import { and, asc, eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
+import type { CommissionsType, PoliticiansType } from '$lib/politicians';
 
 export const COMMISSION_KIND = 'Vaste commissies';
 
@@ -12,10 +13,10 @@ export async function listActiveWithCommissions() {
 		politicians: active.map((politician) => ({
 			...politician,
 			commissions: (seatsByPolitician.get(politician.id) ?? []).map((seat) => seat.abbreviation)
-		})),
+		})) as PoliticiansType[],
 		commissions: [...new Map(seats.map((seat) => [seat.abbreviation, seat.shortName]))].map(
 			([abbreviation, shortName]) => ({ abbreviation, shortName })
-		)
+		) as CommissionsType[]
 	};
 }
 
@@ -35,7 +36,7 @@ function listActive() {
 		.innerJoin(schema.user, eq(schema.politician.userId, schema.user.id))
 		.innerJoin(schema.fraction, eq(schema.politician.fractionId, schema.fraction.id))
 		.where(eq(schema.politician.isActive, true))
-		.orderBy(asc(schema.user.name));
+		.orderBy(asc(schema.user.name)); // as ListActiveType[]
 }
 
 function activeCommissionSeats() {
