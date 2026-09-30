@@ -48,6 +48,14 @@ export function authorizeAdmin(user: App.Locals['user']) {
 // only verified questions enter the queue; unverified ones get their own list with a
 // manual-verify action in a later phase
 export function listQuestionQueue() {
+	const sq = db
+		.select({questionId: schema.moderationAction.questionId, note: schema.moderationAction.note})
+		.from(schema.moderationAction)
+		.where(eq(schema.moderationAction.action, 'pending'))
+		.orderBy(desc(schema.moderationAction.createdAt))
+		.limit(1)
+		.as('sq');
+
 	return db
 		.select({
 			id: schema.question.id,
@@ -59,13 +67,15 @@ export function listQuestionQueue() {
 			politicianName: politicianUser.name,
 			politicianSlug: schema.politician.slug,
 			fraction: schema.fraction.abbreviation,
-			fractionName: schema.fraction.name
+			fractionName: schema.fraction.name,
+			note: sq.note
 		})
 		.from(schema.question)
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
+		.leftJoin(sq, eq(schema.question.id, sq.questionId))
 		.where(and(eq(schema.question.status, 'pending'), isNotNull(schema.question.verifiedAt)))
 		.orderBy(asc(schema.question.createdAt));
 }
@@ -143,6 +153,18 @@ export function countQueues() {
 }
 
 export function listQuestions({ page, perPage }: Pagination) {
+	const sq = db
+		.select({
+			questionId: schema.moderationAction.questionId,
+			moderatorId: schema.moderationAction.moderatorId,
+			moderatedAt: schema.moderationAction.createdAt,
+			rejectionReason: schema.moderationAction.rejectionReason,
+			note: schema.moderationAction.note})
+		.from(schema.moderationAction)
+		.orderBy(desc(schema.moderationAction.createdAt))
+		.limit(1)
+		.as('sq');
+
 	return db.transaction(async (tx) => {
 		const rows = await tx
 			.select({
@@ -158,17 +180,17 @@ export function listQuestions({ page, perPage }: Pagination) {
 				answeredAt: schema.answer.createdAt,
 				answerStatus: schema.answer.status,
 				moderatorName: moderatorUser.name,
-				moderatedAt: schema.moderationAction.createdAt,
-				rejectionReason: schema.moderationAction.rejectionReason,
-				note: schema.moderationAction.note
+				moderatedAt: sq.moderatedAt,
+				rejectionReason: sq.rejectionReason,
+				note: sq.note
 			})
 			.from(schema.question)
 			.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 			.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 			.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
 			.leftJoin(schema.answer, latestAnswer)
-			.leftJoin(schema.moderationAction, eq(schema.moderationAction.questionId, schema.question.id))
-			.leftJoin(moderatorUser, eq(schema.moderationAction.moderatorId, moderatorUser.id))
+			.leftJoin(sq, eq(sq.questionId, schema.question.id))
+			.leftJoin(moderatorUser, eq(sq.moderatorId, moderatorUser.id))
 			.orderBy(desc(schema.question.createdAt))
 			.limit(perPage)
 			.offset((page - 1) * perPage);
@@ -238,7 +260,7 @@ export function listOutbox({ page, perPage }: Pagination) {
 type QuestionModeration = {
 	questionId: string;
 	moderatorId: string;
-	action: 'approved' | 'rejected';
+	action: 'approved' | 'rejected' | 'pending';
 	note?: string;
 	rejectionReason?: string;
 };
@@ -306,7 +328,7 @@ export function moderateQuestion({
 
 		// enqueue notification emails to asker/politician on the moderated question
 		if (action === 'approved') await enqueueApprovalMails(tx, question);
-		else await enqueueRejectionMail(tx, question, rejectionReason);
+		else if (action === 'rejected') await enqueueRejectionMail(tx, question, rejectionReason ?? '');
 
 		return { action };
 	});

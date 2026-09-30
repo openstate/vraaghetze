@@ -9,10 +9,6 @@ const moderationSchema = z.discriminatedUnion('action', [
 	z.object({
 		questionId: z.string().min(1),
 		action: z.literal('approved'),
-		rejectionReason: z
-			.string()
-			.optional()
-			.transform((_value) => ''),
 		note: z.string().trim().optional()
 	}),
 	z.object({
@@ -24,13 +20,18 @@ const moderationSchema = z.discriminatedUnion('action', [
 			.nonempty()
 			.refine((str) => {
 				const reasons = str.split(',') as rejectionKey[];
-				for (let reason of reasons) {
+				for (const reason of reasons) {
 					if (!rejectionKeys.includes(reason)) return false;
 				}
 				return true;
 			}),
 		note: z.string().trim().optional()
-	})
+	}),
+	z.object({
+		questionId: z.string().min(1),
+		action: z.literal('pending'),
+		note: z.string().trim()
+	}),
 ]);
 
 export const load: PageServerLoad = async () => {

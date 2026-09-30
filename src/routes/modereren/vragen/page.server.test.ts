@@ -3,9 +3,12 @@ import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
 import {
+	createModerationAction,
 	createQuestion,
 	createUser,
+	getNumberOfQuestionAudits,
 	getQuestion,
+	getQuestionAudit,
 	makeActionEvent,
 	statusOf
 } from '$lib/test-utils';
@@ -17,6 +20,16 @@ const testEnv = vi.hoisted(() => ({
 }));
 
 vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
+
+const enqueueMail = vi.hoisted(() => vi.fn());
+enqueueMail.mockReturnValue(crypto.randomUUID());
+vi.mock(import('$lib/server/email/outbox'), async (importOriginal) => {
+	const actual = await importOriginal();
+	return {
+		...actual,
+		enqueueMail
+	};
+});
 
 async function getModerationAction(questionId: string) {
 	const [moderationAction] = await db
@@ -40,6 +53,8 @@ function myMakeActionEvent(
 }
 
 beforeEach(async () => {
+	enqueueMail.mockClear();
+
 	await db.transaction(async (tx) => {
 		await tx.delete(schema.moderationAction);
 		await tx.delete(schema.inbox);
@@ -69,6 +84,7 @@ describe('default action', () => {
 
 		expect(await statusOf(page.actions.default(event))).toBe(400);
 		expect(await getQuestion(question.id)).toMatchObject({ status: 'pending' });
+		expect(enqueueMail).not.toHaveBeenCalled();
 	});
 
 	test('moderates a question for a moderator', async () => {
@@ -80,6 +96,7 @@ describe('default action', () => {
 
 		expect(result).toEqual({ moderated: question.id });
 		expect(await getQuestion(question.id)).toMatchObject({ status: 'approved' });
+		expect(enqueueMail).toHaveBeenCalled();
 	});
 
 	test('fails on an invalid form', async () => {
@@ -89,6 +106,7 @@ describe('default action', () => {
 		const result = await page.actions.default(event);
 
 		expect(result).toMatchObject({ status: 400 });
+		expect(enqueueMail).not.toHaveBeenCalled();
 	});
 
 	test('requires rejection reasons when rejecting', async () => {
@@ -103,6 +121,7 @@ describe('default action', () => {
 		const result = await page.actions.default(event);
 
 		expect(result).toMatchObject({ status: 400 });
+		expect(enqueueMail).not.toHaveBeenCalled();
 	});
 
 	test('stores rejection reasons when rejecting', async () => {
@@ -118,6 +137,7 @@ describe('default action', () => {
 
 		expect(result).toMatchObject({ moderated: question.id });
 		expect((await getModerationAction(question.id)).rejectionReason).toBe('offensive');
+		expect(enqueueMail).toHaveBeenCalled();
 	});
 
 	test('validates rejection reasons when rejecting', async () => {
@@ -132,6 +152,7 @@ describe('default action', () => {
 		const result = await page.actions.default(event);
 
 		expect(result).toMatchObject({ status: 400 });
+		expect(enqueueMail).not.toHaveBeenCalled();
 	});
 
 	test('handles multiple valid rejection reasons', async () => {
@@ -147,6 +168,7 @@ describe('default action', () => {
 
 		expect(result).toMatchObject({ moderated: question.id });
 		expect((await getModerationAction(question.id)).rejectionReason).toBe('offensive,duplicate');
+		expect(enqueueMail).toHaveBeenCalled();
 	});
 
 	test('rejects multiple rejection reasons if one is invalid (1)', async () => {
@@ -161,6 +183,7 @@ describe('default action', () => {
 		const result = await page.actions.default(event);
 
 		expect(result).toMatchObject({ status: 400 });
+		expect(enqueueMail).not.toHaveBeenCalled();
 	});
 
 	test('rejects multiple rejection reasons if one is invalid (2)', async () => {
@@ -175,6 +198,7 @@ describe('default action', () => {
 		const result = await page.actions.default(event);
 
 		expect(result).toMatchObject({ status: 400 });
+		expect(enqueueMail).not.toHaveBeenCalled();
 	});
 
 	test('ignores rejection reasons when approving', async () => {
@@ -189,7 +213,8 @@ describe('default action', () => {
 		const result = await page.actions.default(event);
 
 		expect(result).toMatchObject({ moderated: question.id });
-		expect((await getModerationAction(question.id)).rejectionReason).toBe('');
+		expect((await getModerationAction(question.id)).rejectionReason).toBe(null);
+		expect(enqueueMail).toHaveBeenCalled();
 	});
 
 	test('reports an already handled question', async () => {
@@ -205,6 +230,7 @@ describe('default action', () => {
 
 		expect(result).toMatchObject({ status: 409 });
 		expect((await getQuestion(question.id)).status).toBe('approved');
+		expect(enqueueMail).not.toHaveBeenCalled();
 	});
 
 	test('reports an unverified question', async () => {
@@ -216,5 +242,38 @@ describe('default action', () => {
 
 		expect(result).toMatchObject({ status: 409 });
 		expect((await getQuestion(question.id)).status).toBe('pending');
+		expect(enqueueMail).not.toHaveBeenCalled();
+	});
+
+	test('stores a note', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const { question } = await createQuestion();
+		const note = "This is my note for this question."
+		const event = myMakeActionEvent(moderator, { questionId: question.id, note: note, action: 'pending' });
+
+		const result = await page.actions.default(event);
+
+		expect(result).toEqual({ moderated: question.id });
+		expect(await getQuestion(question.id)).toMatchObject({ status: 'pending' });
+		expect(await getQuestionAudit(question.id)).toMatchObject({ note: note });
+		expect(enqueueMail).not.toHaveBeenCalled();
+	});
+
+	test('stores each note separately', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const { question } = await createQuestion();
+		const note1 = "This is my first note for this question."
+		const note2 = "This is my second note for this question."
+		await createModerationAction(moderator, { questionId: question.id, note: note1, action: 'pending' });
+
+		const event = myMakeActionEvent(moderator, { questionId: question.id, note: note2, action: 'pending' });
+
+		const result = await page.actions.default(event);
+
+		expect(result).toEqual({ moderated: question.id });
+		expect(await getQuestion(question.id)).toMatchObject({ status: 'pending' });
+		expect(await getQuestionAudit(question.id)).toMatchObject({ note: note2 });
+		expect(await getNumberOfQuestionAudits(question.id)).toBe(2);
+		expect(enqueueMail).not.toHaveBeenCalled();
 	});
 });

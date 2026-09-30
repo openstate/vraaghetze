@@ -5,30 +5,34 @@
 	import { formatDateLong } from '$lib/date-time';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import Button from '$lib/components/button.svelte';
 
 	type Question = {
 		id: string;
-		slug: string;
 		title: string;
 		body: string;
 		createdAt: Date;
-		status?: 'pending' | 'approved' | 'rejected';
 		authorName: string;
 		politicianName: string;
 		politicianSlug: string;
 		fraction: string | null;
 		fractionName: string | null;
+		note: string;
 	};
 
 	type Props = {
 		question: Question;
 	};
 
-	let { question }: Props = $props();
+	const { question }: Props = $props();
+	let note = $derived(question.note)
 	const inputClass =
 		'rounded border bg-white border-osf-canvas-200 px-3 py-2 focus:border-osf-violet-500 focus:outline-none';
 
 	let selectedRejections = $state([] as string[]);
+	let saveDisabled: boolean = $derived.by(() => {
+		return note == question.note;
+	});
 </script>
 
 <li>
@@ -78,39 +82,38 @@
 
 			<label class="grid gap-1.5">
 				<span class="text-sm font-medium">Interne notitie (optioneel)</span>
-				<textarea name="note" rows="2" class={inputClass}></textarea>
+				<textarea name="note" rows="2" class={inputClass} bind:value={note}></textarea>
 			</label>
 
 			<div class="flex flex-wrap gap-2">
-				<ModerationDialog
-					title="Bevestigen"
-					triggerTitle="Keur goed"
-					triggerVariant="primary"
-					actionValue="approved"
-				>
-					{#snippet children()}
+				{#if saveDisabled}
+					<ModerationDialog
+						title="Bevestigen"
+						triggerTitle="Keur goed"
+						triggerVariant="primary"
+						actionValue="approved"
+					>
 						<p>
 							Na goedkeuren zal de vraag naar het Kamerlid gestuurd worden. Weet je zeker dat je
 							deze vraag wilt goedkeuren?
 						</p>
-					{/snippet}
-				</ModerationDialog>
-				<ModerationDialog
-					title="Geef reden(en) van afwijzing"
-					triggerTitle="Wijs af"
-					triggerVariant="secondary"
-					actionValue="rejected"
-					buttonDisabled={selectedRejections.length == 0}
-				>
-					{#snippet children()}
-						{#each Object.entries(allRejectionReasons) as [key, title]}
+					</ModerationDialog>
+					<ModerationDialog
+						title="Geef reden(en) van afwijzing"
+						triggerTitle="Wijs af"
+						triggerVariant="secondary"
+						actionValue="rejected"
+						buttonDisabled={selectedRejections.length == 0}
+					>
+						{#each Object.entries(allRejectionReasons) as [key, title] (key)}
 							<label>
 								<input type="checkbox" name="reasons" value={key} bind:group={selectedRejections} />
 								<span class="min-w-0 flex-1" {title}>{title}</span>
 							</label>
 						{/each}
-					{/snippet}
-				</ModerationDialog>
+					</ModerationDialog>
+				{/if}
+				<Button type="submit" name="action" value="pending" variant="secondary" disabled={saveDisabled} class={saveDisabled ? 'disabled:opacity-40' : ''}>Notitie opslaan</Button>
 			</div>
 		</form>
 	</article>

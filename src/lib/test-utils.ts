@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, desc, count, and } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import { MAGIC_LINK_EXPIRY } from './server/auth';
 import * as InloggenPage from '$routes/inloggen/+page.server';
@@ -162,6 +162,24 @@ export async function createVerification(
 	return created;
 }
 
+export async function createModerationAction(
+	moderator: { id: string },
+	overrides: Partial<typeof schema.moderationAction.$inferInsert> = {}
+) {
+	const [created] = await db
+		.insert(schema.moderationAction)
+		.values({
+			id: crypto.randomUUID(),
+			moderatorId: moderator.id,
+			action: 'pending',
+			createdAt: new Date(),
+			...overrides
+		})
+		.returning();
+
+	return created;
+}
+
 export async function getUser(userId: string) {
 	const [user] = await db.select().from(schema.user).where(eq(schema.user.id, userId));
 	return user;
@@ -189,6 +207,25 @@ export async function getAnswer(answerId: string) {
 	const [answer] = await db.select().from(schema.answer).where(eq(schema.answer.id, answerId));
 	return answer;
 }
+
+export async function getQuestionAudit(questionId: string) {
+	const [audit] = await db
+		.select()
+		.from(schema.moderationAction)
+		.where(eq(schema.moderationAction.questionId, questionId))
+		.orderBy(desc(schema.moderationAction.createdAt))
+		.limit(1);
+	return audit;
+}
+
+export async function getNumberOfQuestionAudits(questionId: string) {
+	const result = await db
+		.select({ count: count() })
+		.from(schema.moderationAction)
+		.where(and(eq(schema.moderationAction.questionId, questionId)));
+	return result[0].count;
+}
+
 
 export async function getAnswerAudit(answerId: string) {
 	return db
