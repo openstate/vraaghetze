@@ -8,7 +8,9 @@ import { sendMagicLinkMail, type MagicLinkPurpose } from './email/templates';
 import { ac, defaultRole, roles } from '$lib/permissions';
 import { eq } from 'drizzle-orm';
 
-export const MAGIC_LINK_EXPIRY_SECONDS = 30 * 60;
+// This was originally 30 minutes, but received many emails about links not working anymore. Now 48 hours
+export const MAGIC_LINK_EXPIRY_HOURS = 48;
+export const MAGIC_LINK_EXPIRY_SECONDS = MAGIC_LINK_EXPIRY_HOURS * 60 * 60;
 export const MAGIC_LINK_EXPIRY = MAGIC_LINK_EXPIRY_SECONDS * 1000;
 
 // the flow that asked for the link, carried in the callback url the mail links to

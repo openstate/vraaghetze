@@ -14,6 +14,7 @@ import QuestionAnswered from './templates/question-answered.svelte';
 import QuestionAnsweredFollowers from './templates/question-answered-followers.svelte';
 import { render } from 'svelte/server';
 import { rejectionReasonTexts } from '$lib/moderation';
+import { MAGIC_LINK_EXPIRY_HOURS } from '../auth';
 
 // pre-launch safety: when DIVERSION_EMAIL is set, all politician-facing mail goes to
 // that address and replies from it are accepted as if from the assigned politician
@@ -27,7 +28,7 @@ const stripComments = (body: string) => {
 const magicLinkCopy = {
 	confirm: (url: string) => ({
 		subject: 'Bevestig je vraag op VraagHetZe',
-		body: stripComments(render(MagicLinkConfirm, { props: { url: url } }).body)
+		body: stripComments(render(MagicLinkConfirm, { props: { url: url, valid: MAGIC_LINK_EXPIRY_HOURS } }).body)
 	}),
 	follow: (url: string) => ({
 		subject: 'Volg een vraag op VraagHetZe',
