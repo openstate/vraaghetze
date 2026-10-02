@@ -365,8 +365,8 @@ describe('visibility', () => {
 		const asker = await createUser('Vera Vraagsteller');
 		const pending = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
 
-		expect(await questions.bySlug(pending.slug, null)).toBeNull();
-		expect(await questions.bySlug('bestaat-niet', null)).toBeNull();
+		expect(await questions.bySlug(pending.slug, null)).toMatchObject({ question: null, answer: null });
+		expect(await questions.bySlug('bestaat-niet', null)).toMatchObject({ question: null, answer: null });
 
 		const ownerResult = await questions.bySlug(pending.slug, asker.id);
 		expect(ownerResult?.question).toMatchObject({ title: pending.title, status: 'pending' });

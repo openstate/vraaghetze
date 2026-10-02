@@ -77,6 +77,7 @@ export function activeCommissions() {
 		.orderBy(asc(schema.commission.shortName));
 }
 
+export type PoliticianType = Awaited<ReturnType<typeof bySlug>>;
 export async function bySlug(slug: string) {
 	const [politician] = await db
 		.select({
@@ -88,6 +89,7 @@ export async function bySlug(slug: string) {
 			name: schema.user.name,
 			email: schema.user.email,
 			fractionRole: schema.politician.fractionRole,
+			fractionId: schema.fraction.id,
 			fraction: schema.fraction.abbreviation,
 			fractionName: schema.fraction.name,
 			fractionSlug: schema.fraction.slug

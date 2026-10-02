@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { db, schema } from '$lib/server/db';
 import { parsePoliticianSearch, POLITICIANS_PER_PAGE } from '$lib/search';
 import { searchPoliticians } from './politicians';
-import { createPolitician, createUser } from '$lib/test-utils';
+import { createPolitician } from '$lib/test-utils';
 
 async function createCommission(overrides: Partial<typeof schema.commission.$inferInsert> = {}) {
 	const [commission] = await db

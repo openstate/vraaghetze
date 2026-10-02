@@ -1,38 +1,59 @@
 <script lang="ts">
 	import Avatar from '$lib/components/avatar.svelte';
 	import ModerationDialog from '$lib/components/moderation-dialog.svelte';
-	import { allRejectionReasons } from '$lib/moderation.js';
+	import OneModerationAction from './one_moderation_action.svelte';
+	import { rejectionReasons } from '$lib/moderation.js';
 	import { formatDateLong } from '$lib/date-time';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import Button from '$lib/components/button.svelte';
+	import type { QuestionStatus } from '$lib/server/db/app.schema';
+	import SelectPolitician from '$lib/components/select-politician.svelte';
+	import type { CommissionsType, PoliticiansType } from '$lib/politicians';
+	import type { schema } from '$lib/server/db';
 
 	type Question = {
 		id: string;
 		title: string;
 		body: string;
+		status: QuestionStatus,
 		createdAt: Date;
 		authorName: string;
 		politicianName: string;
 		politicianSlug: string;
 		fraction: string | null;
 		fractionName: string | null;
-		note: string;
 	};
 
 	type Props = {
 		question: Question;
+		moderationActions: typeof schema.moderationAction.$inferSelect[],
+    politicians: PoliticiansType[];
+    commissions: CommissionsType[];
 	};
 
-	const { question }: Props = $props();
-	let note = $derived(question.note)
+	const { question, moderationActions, politicians, commissions }: Props = $props();
+	let note = $state('');
 	const inputClass =
 		'rounded border bg-white border-osf-canvas-200 px-3 py-2 focus:border-osf-violet-500 focus:outline-none';
 
 	let selectedRejections = $state([] as string[]);
 	let saveDisabled: boolean = $derived.by(() => {
-		return note == question.note;
+		return note === '';
 	});
+
+	let changePoliticianState: 'select' | 'confirm' = $state('select');
+
+	const hrefForPolitician = (slug: string) => {
+		return "#top";
+	};
+
+	let selectedPolitician = $derived(question.politicianSlug);
+
+	const selectedHandler = (slug: string) => {
+		selectedPolitician = slug;
+		changePoliticianState = 'confirm';
+	};
 </script>
 
 <li>
@@ -72,9 +93,22 @@
 					</a>
 				</p>
 			</div>
+
+		{#if moderationActions.length > 0}
+				<hr class="border-osf-canvas-200 mt-4" />
+				<p class="text-sm font-medium mt-4">Moderatie geschiedenis</p>
+				<table class="table-auto text-sm history">
+					<tbody>
+						{#each moderationActions as moderationAction (moderationAction.id)}
+							<OneModerationAction {moderationAction} />
+						{/each}
+					</tbody>
+				</table>
+			{/if}
 		</div>
 
 		<hr class="mx-5 border-osf-canvas-200" />
+
 
 		<form method="POST" use:enhance class="grid gap-4 p-5">
 			<input type="hidden" name="questionId" value={question.id} />
@@ -105,7 +139,7 @@
 						actionValue="rejected"
 						buttonDisabled={selectedRejections.length == 0}
 					>
-						{#each Object.entries(allRejectionReasons) as [key, title] (key)}
+						{#each Object.entries(rejectionReasons) as [key, title] (key)}
 							<label>
 								<input type="checkbox" name="reasons" value={key} bind:group={selectedRejections} />
 								<span class="min-w-0 flex-1" {title}>{title}</span>
@@ -113,7 +147,32 @@
 						{/each}
 					</ModerationDialog>
 				{/if}
-				<Button type="submit" name="action" value="pending" variant="secondary" disabled={saveDisabled} class={saveDisabled ? 'disabled:opacity-40' : ''}>Notitie opslaan</Button>
+				<Button type="submit" name="action" value="note-added" variant="secondary" disabled={saveDisabled} class={saveDisabled ? 'disabled:opacity-40' : ''}>Notitie opslaan</Button>
+				{#if saveDisabled}
+					<ModerationDialog
+						title="Selecteer ander Kamerlid"
+						triggerTitle="Kamerlid aanpassen"
+						triggerVariant="secondary"
+						actionValue="pending-wrong-politician"
+						hideActionButton={changePoliticianState == 'select'}
+					>
+						{#if changePoliticianState == 'select'}
+							<div class="max-h-[73vh] overflow-y-auto">
+								<SelectPolitician
+									politicians={politicians}
+									commissions={commissions}
+									politiciansPerPage={150}
+									slugChosenPolitician={question.politicianSlug}
+									{selectedHandler}
+									{hrefForPolitician}
+								/>
+							</div>
+						{:else}
+							<input type="hidden" name="proposedPoliticianSlug" value={selectedPolitician}/>
+							<p>Bevestig het aanpassen van het Kamerlid naar {selectedPolitician}:</p>
+						{/if}
+					</ModerationDialog>
+				{/if}
 			</div>
 		</form>
 	</article>

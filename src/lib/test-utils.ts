@@ -1,8 +1,11 @@
-import { eq, desc, count, and } from 'drizzle-orm';
+import { eq, desc, count, and, inArray, isNotNull } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import { MAGIC_LINK_EXPIRY } from './server/auth';
 import * as InloggenPage from '$routes/inloggen/+page.server';
 import * as VraagGegevensPage from '$routes/vragen/stellen/gegevens/+page.server';
+import type { ModerationAction } from './server/db/app.schema';
+import { getStatus } from './server/questions';
+import { actionToStatus } from './server/moderation';
 
 export async function createUser(
 	name: string,
@@ -163,19 +166,40 @@ export async function createVerification(
 }
 
 export async function createModerationAction(
+	action: ModerationAction,
 	moderator: { id: string },
+	question: typeof schema.question.$inferInsert,
 	overrides: Partial<typeof schema.moderationAction.$inferInsert> = {}
 ) {
 	const [created] = await db
 		.insert(schema.moderationAction)
 		.values({
 			id: crypto.randomUUID(),
+			questionId: question.id,
 			moderatorId: moderator.id,
-			action: 'pending',
+			action: action,
 			createdAt: new Date(),
 			...overrides
 		})
 		.returning();
+
+	// Mimic partly what is done in moderateQuestion
+	const currentStatus = await getStatus(question.id);
+	const questionStatus = actionToStatus(action, currentStatus);
+	await db
+		.update(schema.question)
+		.set(
+			action === 'approved'
+				? { status: questionStatus, emailToken: crypto.randomUUID() }
+				: { status: questionStatus }
+		)
+		.where(
+			and(
+				eq(schema.question.id, question.id),
+				inArray(schema.question.status, ['pending', 'pending-wrong-politician']),
+				isNotNull(schema.question.verifiedAt)
+			)
+		)
 
 	return created;
 }
@@ -208,12 +232,13 @@ export async function getAnswer(answerId: string) {
 	return answer;
 }
 
-export async function getQuestionAudit(questionId: string) {
+export async function getQuestionAudit(questionId: string, offset: number = 0) {
 	const [audit] = await db
 		.select()
 		.from(schema.moderationAction)
 		.where(eq(schema.moderationAction.questionId, questionId))
 		.orderBy(desc(schema.moderationAction.createdAt))
+		.offset(offset)
 		.limit(1);
 	return audit;
 }

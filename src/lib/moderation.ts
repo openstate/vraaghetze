@@ -12,10 +12,10 @@ export const rejectionKeys = [
 	'personal_data',
 	'no_author'
 ] as const;
-export type rejectionKey = (typeof rejectionKeys)[number];
-type allRejectionReasonsType = Record<rejectionKey, string>;
 
-export const allRejectionReasons: allRejectionReasonsType = {
+export type rejectionKeyType = (typeof rejectionKeys)[number];
+type rejectionReasonsType = Record<rejectionKeyType, string>;
+export const rejectionReasons: rejectionReasonsType = {
 	spam_promotion: 'Je vraag is als spam beoordeeld.',
 	duplicate: 'Deze vraag is eerder gesteld en beantwoord.',
 	no_question: 'Het bericht bevat geen beantwoordbare vraag.',
@@ -30,9 +30,23 @@ export const allRejectionReasons: allRejectionReasonsType = {
 	no_author: 'De vraag is niet vanuit een persoonlijk account gesteld.'
 };
 
+export const hiddenRejectionKeys = [
+	'politician_change_rejected'
+] as const;
+
+export type hiddenRejectionKeyType = (typeof hiddenRejectionKeys)[number];
+type hiddenRejectionReasonsType = Record<hiddenRejectionKeyType, string>;
+export const hiddenRejectionReasons: hiddenRejectionReasonsType = {
+	politician_change_rejected: 'De vraag is aan het verkeerde Kamerlid gesteld.'
+};
+
+export type allRejectionKeyType = rejectionKeyType | hiddenRejectionKeyType;
+type allRejectionReasonsType = Record<allRejectionKeyType, string>;
+export const allRejectionReasons: allRejectionReasonsType = {...rejectionReasons, ...hiddenRejectionReasons};
+
 export const rejectionReasonTexts = (rejectionReason?: string | null) => {
 	if (!rejectionReason) return [];
 
-	let reasons: rejectionKey[] = rejectionReason.split(',').map((reason) => reason as rejectionKey);
+	const reasons: allRejectionKeyType[] = rejectionReason.split(',').map((reason) => reason as allRejectionKeyType);
 	return reasons.map((reason) => allRejectionReasons[reason]);
 };

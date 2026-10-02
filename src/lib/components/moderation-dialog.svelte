@@ -9,10 +9,11 @@
 		triggerVariant: 'primary' | 'secondary';
 		actionValue: string;
 		buttonDisabled?: boolean;
+		hideActionButton?: boolean;
 		children: Snippet;
 	};
 
-	let { title, triggerTitle, triggerVariant, actionValue, buttonDisabled, children }: Props =
+	let { title, triggerTitle, triggerVariant, actionValue, buttonDisabled, hideActionButton, children }: Props =
 		$props();
 </script>
 
@@ -48,16 +49,18 @@
 			</div>
 			<div class="flex flex-col items-start gap-1 ps-6 pt-7 pb-11">
 				{@render children()}
-				<Button
-					type="submit"
-					name="action"
-					value={actionValue}
-					variant="primary"
-					class="mt-3 {buttonDisabled ? 'disabled:opacity-40' : ''}"
-					disabled={buttonDisabled}
-				>
-					{triggerTitle}
-				</Button>
+				{#if !hideActionButton}
+					<Button
+						type="submit"
+						name="action"
+						value={actionValue}
+						variant="primary"
+						class="mt-3 {buttonDisabled ? 'disabled:opacity-40' : ''}"
+						disabled={buttonDisabled}
+					>
+						{triggerTitle}
+					</Button>
+				{/if}
 			</div>
 		</Dialog.Content>
 	</Dialog.Portal>

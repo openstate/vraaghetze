@@ -2,10 +2,34 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
-import { createPolitician, createUser, getQuestionBySlug, makeActionEvent } from '$lib/test-utils';
+import { createModerationAction, createPolitician, createUser, getQuestionAudit, getQuestionBySlug, makeActionEvent } from '$lib/test-utils';
+
+const testEnv = vi.hoisted(() => ({
+	DIVERSION_EMAIL: '',
+	EMAIL_DOMAIN: 'test.example',
+	ORIGIN: 'https://test.example'
+}));
+
+vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
+
+const enqueueMail = vi.hoisted(() => vi.fn());
+enqueueMail.mockReturnValue(crypto.randomUUID());
+vi.mock(import('$lib/server/email/outbox'), async (importOriginal) => {
+	const actual = await importOriginal();
+	return {
+		...actual,
+		enqueueMail
+	};
+});
 
 const sendSignInLink = vi.hoisted(() => vi.fn());
-vi.mock('$lib/server/auth', () => ({ sendSignInLink }));
+vi.mock(import('$lib/server/auth'), async (importOriginal) => {
+	const actual = await importOriginal();
+	return {
+		...actual,
+		sendSignInLink
+	};
+});
 
 async function insertQuestion(
 	askerId: string,
@@ -93,6 +117,17 @@ describe('load', () => {
 		const result = (await page.load(makeLoadEvent(question.slug, null))) as LoadData;
 
 		expect(result.question).toMatchObject({ title: question.title });
+	});
+
+	test('hides an invisible question from other users', async () => {
+		const { politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const stranger = await createUser('Sjaak Stranger');
+		const pending = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
+
+		await expect(page.load(makeLoadEvent(pending.slug, stranger))).rejects.toMatchObject({
+			status: 404
+		});
 	});
 
 	test('hides an invisible question behind the same 404 as a missing one', async () => {
@@ -259,5 +294,104 @@ describe('follow banner', () => {
 		await page.actions.volgen(myMakeActionEvent(question.slug, follower));
 
 		expect(((await page.load(event)) as LoadData).banner).toBeNull();
+	});
+});
+
+describe('kamerlid_wijzigen action', () => {
+	test('requires a signed-in user', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const { politicianUser } = await createPolitician();
+		const { politician: proposedPolitician } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const question = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
+		await createModerationAction('pending-wrong-politician', moderator, question, { meta: {proposedPoliticianSlug: proposedPolitician.slug} });
+
+		const event = myMakeActionEvent(question.slug, null, { keuze: 'ja' });
+
+		await expect(page.actions.kamerlid_wijzigen(event)).rejects.toMatchObject({ status: 401 });
+		expect((await getQuestionBySlug(question.slug)).status).toBe('pending-wrong-politician')
+	});
+
+	test('approves the question when the owner confirms', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const { politician, politicianUser } = await createPolitician();
+		const { politician: proposedPolitician, politicianUser: proposedPoliticianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		let question = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
+		await createModerationAction('pending-wrong-politician', moderator, question, { meta: {proposedPoliticianSlug: proposedPolitician.slug} });
+
+		const event = myMakeActionEvent(question.slug, asker, { keuze: 'ja' });
+		const result = await page.actions.kamerlid_wijzigen(event);
+
+		expect(result).toEqual({ politician_changed: true });
+		question = await getQuestionBySlug(question.slug);
+		expect(question.status).toBe('approved')
+		expect(question.assigneeId).toBe(proposedPoliticianUser.id)
+
+		const lastModerationAction = await getQuestionAudit(question.id);
+		expect(lastModerationAction.action).toBe('approved');
+		expect(lastModerationAction.moderatorId).toBe(moderator.id);
+		expect(lastModerationAction.note).toBe('Geautomatiseerde notitie: deze vraag werd automatisch goedgekeurd na bevestiging door vrager om Kamerlid aan te passen.');
+		expect(lastModerationAction.meta).toBeNull();
+
+		const lastButOneModerationAction = await getQuestionAudit(question.id, 1);
+		expect(lastButOneModerationAction.action).toBe('politician-changed');
+		expect(lastButOneModerationAction.moderatorId).toBe(moderator.id);
+		expect(lastButOneModerationAction.note).toBe(`Geautomatiseerde notitie: na bevestiging door vrager Kamerlid aangepast van ${politician.slug} naar ${proposedPolitician.slug}.`);
+		expect(lastButOneModerationAction.meta).toMatchObject({currentSlug: politician.slug, newSlug: proposedPolitician.slug});
+	});
+
+	test('answers someone else than the owner with a 404 without verifying', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const { politicianUser } = await createPolitician();
+		const { politician: proposedPolitician } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const stranger = await createUser('Sjaak Stranger');
+		const question = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
+		await createModerationAction('pending-wrong-politician', moderator, question, { meta: {proposedPoliticianSlug: proposedPolitician.slug} });
+
+		const event = myMakeActionEvent(question.slug, stranger, { keuze: 'ja' });
+
+		await expect(page.actions.kamerlid_wijzigen(event)).rejects.toMatchObject({ status: 404 });
+		expect((await getQuestionBySlug(question.slug)).status).toBe('pending-wrong-politician')
+	});
+
+	test('checks that new politician accepts answers', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const { politicianUser } = await createPolitician();
+		const { politician: proposedPolitician } = await createPolitician('Jan Jansen', { acceptsQuestions: false });
+		const asker = await createUser('Vera Vraagsteller');
+		const question = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
+		await createModerationAction('pending-wrong-politician', moderator, question, { meta: {proposedPoliticianSlug: proposedPolitician.slug} });
+
+		const event = myMakeActionEvent(question.slug, asker, { keuze: 'ja' });
+
+		const result = await page.actions.kamerlid_wijzigen(event);
+
+		expect(result).toMatchObject({ status: 400, data: {error: 'Dit Kamerlid heeft ervoor gekozen niet openbaar antwoord te geven via VraagHetZe.'} });
+		expect((await getQuestionBySlug(question.slug)).status).toBe('pending-wrong-politician')
+	});
+
+	test('rejects the question when the owner does not confirm', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const { politician, politicianUser } = await createPolitician();
+		const { politician: proposedPolitician } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		let question = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
+		await createModerationAction('pending-wrong-politician', moderator, question, { meta: {proposedPoliticianSlug: proposedPolitician.slug} });
+
+		const event = myMakeActionEvent(question.slug, asker, { keuze: 'nee' });
+		const result = await page.actions.kamerlid_wijzigen(event);
+
+		expect(result).toEqual({ politician_changed: false });
+		question = await getQuestionBySlug(question.slug);
+		expect(question.status).toBe('rejected')
+		expect(question.assigneeId).toBe(politicianUser.id)
+
+		const lastModerationAction = await getQuestionAudit(question.id);
+		expect(lastModerationAction.action).toBe('rejected');
+		expect(lastModerationAction.moderatorId).toBe(moderator.id);
+		expect(lastModerationAction.note).toBe('Geautomatiseerde notitie: deze vraag werd automatisch afgekeurd na bevestiging door vrager om Kamerlid niet aan te passen.');
+		expect(lastModerationAction.meta).toMatchObject({currentSlug: politician.slug, newSlug: proposedPolitician.slug});
 	});
 });

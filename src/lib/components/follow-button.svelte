@@ -52,11 +52,11 @@
 
 				<Dialog.Description class="text-osf-canvas-600">
 					Als je een vraag volgt ontvang je een mail zodra de vraag beantwoord is. Het volgen van
-					vragen is alleen mogelijk met een account. Klik de knop hieronder om een account aan te
-					maken of om in te loggen.
+					vragen is alleen mogelijk met een account. Klik de knop hieronder om in te loggen of een
+					account aan te maken.
 				</Dialog.Description>
 				<Button href={resolve('/inloggen')} variant="primary" icon="mdi--arrow-right">
-					Inloggen
+					Inloggen/Registreren
 				</Button>
 			</Dialog.Content>
 		</Dialog.Portal>

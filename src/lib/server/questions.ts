@@ -18,6 +18,7 @@ import { sendConfirmationMail } from '$lib/server/email/templates';
 import { splitWords } from '$lib/server/search';
 import { slugify, slugifyUnique } from '$lib/server/utils/slug';
 import { hasPermission } from '$lib/permissions';
+import type { QuestionStatus } from './db/app.schema';
 
 export const politicianUser = alias(schema.user, 'politicianUser');
 export const newerAnswer = alias(schema.answer, 'newerAnswer');
@@ -309,8 +310,22 @@ export async function listForUser(userId: string) {
 	return nestAnswer(rows);
 }
 
+export type QuestionType = {
+	id: string;
+	title: string;
+	body: string;
+	status: QuestionStatus;
+	createdAt: Date;
+	authorName: string;
+	isAsker: boolean;
+	assigneeName: string;
+	assigneeSlug: string;
+	fraction: string | null;
+	fractionName: string | null;
+};
+
 export async function bySlug(slug: string, viewerId: string | null) {
-	const [question] = await db
+	const [question]: QuestionType[] = await db
 		.select({
 			id: schema.question.id,
 			title: schema.question.title,
@@ -334,7 +349,7 @@ export async function bySlug(slug: string, viewerId: string | null) {
 		.limit(1);
 
 	// the question doesn't exist or the viewer can't see it, which is indistinguishable on purpose
-	if (!question) return null;
+	if (!question) return {question: null, answer: null};
 
 	const [answer] = await db
 		.select({
@@ -453,6 +468,22 @@ export async function create({
 	if (currentUserId) await sendConfirmationMail(created);
 
 	return { slug: created.slug };
+}
+
+export async function getStatus(questionId: string) {
+	const result = await db
+		.select({status: schema.question.status})
+		.from(schema.question)
+		.where(eq(schema.question.id, questionId));
+
+	return result[0].status;
+}
+
+export async function updatePolitician(questionId: string, userId: string, fractionId: string, tx?: Transaction) {
+	await (tx ?? db)
+		.update(schema.question)
+		.set({ assigneeId: userId, assigneeFractionId: fractionId })
+		.where(eq(schema.question.id, questionId))
 }
 
 export async function pendingConfirmation(slug: string, userId: string) {

@@ -9,7 +9,7 @@ Beste vrager,
 
 Met dit e-mailadres is een vraag gesteld op VraagHetZe.
 
-Was jij dat? Bevestig je vraag via deze link: {@html url}. Deze link is {valid} uur geldig.
+Was jij dat? Bevestig je vraag via deze link: {@html url}. Deze link is {valid} dagen geldig.
 
 Was je dat niet? Dan hoef je niets te doen, de vraag zal genegeerd worden.
 

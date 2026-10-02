@@ -8,7 +8,7 @@
 		slug: string;
 		title: string;
 		createdAt: Date;
-		status?: 'pending' | 'approved' | 'rejected';
+		status?: 'pending' | 'pending-wrong-politician' | 'approved' | 'rejected';
 		authorName: string;
 		politicianName: string;
 		politicianSlug: string;
@@ -22,11 +22,13 @@
 	const recipientLabel = $derived(
 		question.status === 'pending'
 			? 'Wacht op moderatie, gesteld aan'
-			: question.status === 'rejected'
-				? 'Afgewezen, was gesteld aan'
-				: question.answer
-					? 'Antwoord van'
-					: 'Wacht op antwoord van'
+			: question.status === 'pending-wrong-politician'
+				? 'Wacht op input, gesteld aan'
+				:question.status === 'rejected'
+					? 'Afgewezen, was gesteld aan'
+					: question.answer
+						? 'Antwoord van'
+						: 'Wacht op antwoord van'
 	);
 
 	const fractionLabel = $derived(question.fraction ?? question.fractionName);

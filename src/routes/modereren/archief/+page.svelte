@@ -4,7 +4,7 @@
 	import DetailsDialog, { type Detail } from '$lib/components/details-dialog.svelte';
 	import DataTable, { features } from '$lib/components/data-table.svelte';
 	import DateTime from '$lib/components/date-time.svelte';
-	import StatusPill, { moderationStatusPills } from '$lib/components/status-pill.svelte';
+	import StatusPill, { questionStatusPills } from '$lib/components/status-pill.svelte';
 	import Pagination from '$lib/components/pagination.svelte';
 	import { rejectionReasonTexts } from '$lib/moderation.js';
 	import { HTMLSafeString } from '$lib/general.js';
@@ -42,7 +42,11 @@
 		helper.accessor('status', {
 			header: 'Status',
 			meta: { class: 'w-40' },
-			cell: (cell) => renderComponent(StatusPill, moderationStatusPills[cell.getValue()])
+			cell: (cell) =>
+				renderComponent(
+					StatusPill,
+					questionStatusPills[cell.row.original.verifiedAt ? cell.getValue() : 'unverified']
+				)
 		}),
 		helper.accessor('createdAt', {
 			header: 'Aangemaakt',
@@ -58,6 +62,7 @@
 
 	const dialogTitles = {
 		pending: 'Ongemodereerde vraag',
+		'pending-wrong-politician': 'Vraag wacht op input',
 		approved: 'Goedgekeurde vraag',
 		rejected: 'Afgewezen vraag'
 	} satisfies Record<Row['status'], string>;
@@ -69,7 +74,7 @@
 			['Vraagsteller', row.authorName],
 			['Kamerlid', row.politicianName],
 			['Aangemaakt op', row.createdAt],
-			['Moderatiestatus', moderationStatusPills[row.status].label],
+			['Moderatiestatus', questionStatusPills[row.status].label],
 			[
 				'Moderatiereden',
 				new HTMLSafeString(rejectionReasonTexts(row.rejectionReason).join('<br/>'))
@@ -78,7 +83,7 @@
 			['Gemodereerd op', row.moderatedAt],
 			['Gemodereerd door', row.moderatorName],
 			['Beantwoord op', row.answerStatus === 'approved' ? row.answeredAt : null],
-			['Antwoordstatus', row.answerStatus && moderationStatusPills[row.answerStatus].label]
+			['Antwoordstatus', row.answerStatus && questionStatusPills[row.answerStatus].label]
 		] satisfies Detail[];
 	}
 </script>

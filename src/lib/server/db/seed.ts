@@ -7,7 +7,7 @@ import { writeFile } from 'node:fs/promises';
 import { client, db, schema } from '$lib/server/db';
 import { dedupKey } from '$lib/server/email/parse-inbound';
 import { slugify, slugifyUnique } from '$lib/server/utils/slug';
-import type { InboxStatus, ModerationStatus } from './app.schema';
+import type { InboxStatus, QuestionStatus } from './app.schema';
 import {
 	answerVoices,
 	approvalNotes,
@@ -20,7 +20,7 @@ import {
 	topics,
 	type SeedQuestion
 } from './seed-corpus';
-import { allRejectionReasons } from '$lib/moderation';
+import { rejectionReasons } from '$lib/moderation';
 import { MAGIC_LINK_EXPIRY } from '../auth';
 
 const ADMINS = [{ name: 'Open State Developers', email: 'developers@openstate.eu' }];
@@ -348,7 +348,7 @@ for (const [index, draft] of drafts.entries()) {
 		!verifiedAt ||
 		(!draft.alwaysAnswered && chance(Math.max(0, 1 - age / MODERATION_WINDOW_DAYS) ** 0.5));
 
-	let status: ModerationStatus = 'pending';
+	let status: QuestionStatus = 'pending';
 	let moderatedAt: Date | null = null;
 	let emailToken: string | null = null;
 
@@ -421,7 +421,7 @@ for (const [index, draft] of drafts.entries()) {
 			// the queue form only submits a note today, so this column has no writer yet. it is
 			// filled here so the archive already shows what it will look like once it does
 			rejectionReason:
-				status === 'rejected' && chance(0.6) ? pick(Object.keys(allRejectionReasons)) : null,
+				status === 'rejected' && chance(0.6) ? pick(Object.keys(rejectionReasons)) : null,
 			note: chance(status === 'rejected' ? 0.65 : 0.25)
 				? pick(status === 'rejected' ? rejectionNotes : approvalNotes)
 				: null,

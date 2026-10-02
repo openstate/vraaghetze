@@ -47,7 +47,7 @@ describe('listQuestionQueue', () => {
 
 		const queue = await moderation.listQuestionQueue();
 
-		expect(queue.map((row) => row.id)).toEqual([older.question.id, newer.question.id]);
+		expect(queue.map((row) => row.question.id)).toEqual([older.question.id, newer.question.id]);
 	});
 });
 

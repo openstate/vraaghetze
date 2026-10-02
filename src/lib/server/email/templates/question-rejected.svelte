@@ -19,7 +19,7 @@ Bedankt voor je vraag "{questionTitle}" aan {politicianName} op VraagHetZe met a
 
 Na controle voldoet je vraag helaas niet aan onze moderatierichtlijnen om de volgende redenen:
 
-{#each rejectionReasons as reason}
+{#each rejectionReasons as reason (reason)}
 - {reason}
 {/each}
 

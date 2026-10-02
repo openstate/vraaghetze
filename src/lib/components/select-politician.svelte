@@ -12,11 +12,12 @@
     commissions: CommissionsType[];
     politiciansPerPage: number;
     slugChosenPolitician: string;
-    backToFirstPage: () => void;
+    backToFirstPage?: () => void;
+		selectedHandler?: (slug: string) => void;
     hrefForPolitician: (slug: string) => string;
   }
 
-  const { politicians, commissions, politiciansPerPage, slugChosenPolitician, backToFirstPage, hrefForPolitician }: Props = $props();
+  const { politicians, commissions, politiciansPerPage, slugChosenPolitician, backToFirstPage, selectedHandler, hrefForPolitician }: Props = $props();
 
 	let politicianSearch = $state('');
 	let selectedFraction = $state('');
@@ -68,6 +69,13 @@
 			currentPage * politiciansPerPage
 		)
 	);
+
+	const onclickHandler = (event: Event, slug: string, acceptsQuestions: boolean) => {
+		preventAdding(event, !acceptsQuestions);
+		if (!event.defaultPrevented && selectedHandler) {
+			selectedHandler(slug);
+		}
+	}
 </script>
 
 <search class="mb-6 grid gap-6">
@@ -158,7 +166,7 @@
 							? 'bg-osf-violet-50 ring-2 ring-osf-violet-500'
 							: 'bg-osf-canvas-100 hover:bg-osf-canvas-200'
 					]}
-					onclick={(e) => preventAdding(e, !politician.acceptsQuestions)}
+					onclick={(e) => onclickHandler(e, politician.slug, politician.acceptsQuestions)}
 				>
 					<Avatar
 						class="text-xl"

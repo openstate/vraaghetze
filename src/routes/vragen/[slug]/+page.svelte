@@ -11,6 +11,8 @@
 
 	let { data } = $props();
 
+	let buttonClicked = $state(false);
+
 	const fractionLabel = $derived(data.question.fraction ?? data.question.fractionName);
 
 	const politicianHref = $derived(
@@ -39,13 +41,24 @@
 				{:else if data.banner === 'follow'}
 					Je e-mailadres is bevestigd. Klik nogmaals op de bel om een mail te krijgen zodra deze
 					vraag beantwoord is.
+				{:else if data.banner === 'accept-politician-change'}
+					Als je hieronder "Ja" kiest zal het Kamerlid aangepast worden naar {data.proposedPoliticianName}
+					die verantwoordelijk is voor het betreffende onderwerp binnen de fractie, en zal de vraag direct verstuurd worden.
+					Als je hieronder "Nee" kiest dan wordt de vraag automatisch afgewezen.
 				{/if}
 			</p>
 
 			{#if data.banner === 'needs-confirm'}
 				<form method="POST" action="?/bevestigen" use:enhance class="flex flex-wrap gap-2">
-					<Button type="submit" name="keuze" value="ja" variant="primary">Ja, dit was ik</Button>
-					<Button type="submit" name="keuze" value="nee" variant="primary">Nee</Button>
+					<Button type="submit" name="keuze" value="ja" variant="primary" class={buttonClicked ? 'disabled:opacity-40' : ''} disabled={buttonClicked}>Ja, dit was ik</Button>
+					<Button type="submit" name="keuze" value="nee" variant="primary" class={buttonClicked ? 'disabled:opacity-40' : ''} disabled={buttonClicked}>Nee</Button>
+				</form>
+			{/if}
+
+			{#if data.banner === 'accept-politician-change'}
+				<form method="POST" action="?/kamerlid_wijzigen" use:enhance class="flex flex-wrap gap-2">
+					<Button type="submit" name="keuze" value="ja" variant="primary" class={buttonClicked ? 'disabled:opacity-40' : ''} disabled={buttonClicked}>Ja, wijzig het Kamerlid</Button>
+					<Button type="submit" name="keuze" value="nee" variant="primary" class={buttonClicked ? 'disabled:opacity-40' : ''} disabled={buttonClicked}>Nee, wijzig het Kamerlid niet</Button>
 				</form>
 			{/if}
 		</div>
@@ -95,6 +108,8 @@
 								dat hij van jou is.
 							{:else if data.question.status === 'pending'}
 								Deze vraag aan {@render assignee()} wacht op moderatie en is nog niet openbaar
+							{:else if data.question.status === 'pending-wrong-politician'}
+								Deze vraag aan {@render assignee()} wacht op input en is nog niet openbaar
 							{:else if data.question.status === 'rejected'}
 								Deze vraag aan {@render assignee()} is afgewezen door de moderatoren en wordt niet beantwoord
 							{:else if data.answer}

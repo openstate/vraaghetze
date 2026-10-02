@@ -1,22 +1,24 @@
 import { betterAuth } from 'better-auth/minimal';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { admin, magicLink } from 'better-auth/plugins';
-import { db, schema } from './db';
+import { db, schema, type Transaction } from './db';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
 import { sendMagicLinkMail, type MagicLinkPurpose } from './email/templates';
 import { ac, defaultRole, roles } from '$lib/permissions';
 import { eq } from 'drizzle-orm';
 
-// This was originally 30 minutes, but received many emails about links not working anymore. Now 48 hours
-export const MAGIC_LINK_EXPIRY_HOURS = 48;
-export const MAGIC_LINK_EXPIRY_SECONDS = MAGIC_LINK_EXPIRY_HOURS * 60 * 60;
+// This was originally 30 minutes, but received many emails about links not working anymore. Now 5 days
+export const MAGIC_LINK_EXPIRY_DAYS = 5;
+const MAGIC_LINK_EXPIRY_HOURS = MAGIC_LINK_EXPIRY_DAYS * 24;
+const MAGIC_LINK_EXPIRY_SECONDS = MAGIC_LINK_EXPIRY_HOURS * 60 * 60;
 export const MAGIC_LINK_EXPIRY = MAGIC_LINK_EXPIRY_SECONDS * 1000;
 
 // the flow that asked for the link, carried in the callback url the mail links to
 const purposeByGoal: Record<string, MagicLinkPurpose> = {
 	bevestigen: 'confirm',
-	volgen: 'follow'
+	volgen: 'follow',
+	kamerlid_wijzigen: 'proposedPolitician'
 };
 
 class VerificationNotWrittenError extends Error {
@@ -67,7 +69,8 @@ export const auth = betterAuth({
 					recipient: email,
 					urlOrToken,
 					purpose,
-					expiresAt: new Date(Date.now() + MAGIC_LINK_EXPIRY)
+					expiresAt: new Date(Date.now() + MAGIC_LINK_EXPIRY),
+					metadata
 				});
 			}
 		})
@@ -107,6 +110,23 @@ export async function userExists(email: string): Promise<boolean> {
 		.limit(1);
 
 	return !!existing;
+}
+
+type BasicUserInfo = {
+	id: string;
+	name: string;
+	email: string;
+	role: string | null;
+}
+
+export async function getBasicUserInfoById(userId: string, tx?: Transaction): Promise<BasicUserInfo> {
+	const [user] = await (tx ?? db)
+		.select({ id: schema.user.id, name: schema.user.name, email: schema.user.email, role: schema.user.role })
+		.from(schema.user)
+		.where(eq(schema.user.id, userId))
+		.limit(1);
+
+	return user;
 }
 
 export async function verificationExists(token: string): Promise<boolean> {

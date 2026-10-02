@@ -58,7 +58,7 @@ describe('load', () => {
 
 		const result = (await page.load(makeLoadEvent(answer.id, moderator))) as LoadData;
 		// The answer inside the load function does not have all the properties
-		let expectedAnswer = (({ questionId, searchVector, status, updatedAt, userId, ...object }) =>
+		const expectedAnswer = (({ questionId, searchVector, status, updatedAt, userId, ...object }) =>
 			object)(answer);
 		expect(result.answer).toMatchObject(expectedAnswer);
 	});

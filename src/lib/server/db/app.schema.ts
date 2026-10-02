@@ -21,10 +21,13 @@ const tsvector = customType<{ data: string; driverData: string }>({ dataType: ()
 
 export type FractionRole = 'member' | 'chair';
 
-export type ModerationStatus = 'pending' | 'approved' | 'rejected';
+export type ModerationAction = 'pending' | 'pending-wrong-politician' | 'approved' | 'rejected' | 'politician-changed' | 'note-added';
+export type QuestionStatus = 'pending' | 'pending-wrong-politician' | 'approved' | 'rejected';
 
 export type MetaType = {
 	proposedPoliticianSlug?: string;
+	currentSlug?: string;
+	newSlug?: string;
 };
 
 const postColumns = {
@@ -33,7 +36,7 @@ const postColumns = {
 		.references(() => user.id)
 		.notNull(),
 	body: text().notNull(),
-	status: text().$type<ModerationStatus>().default('pending').notNull(),
+	status: text().$type<QuestionStatus>().default('pending').notNull(),
 	createdAt: timestamp().defaultNow().notNull(),
 	updatedAt: timestamp()
 		.defaultNow()
@@ -113,7 +116,7 @@ export const moderationAction = pgTable(
 			.notNull(),
 		questionId: text().references(() => question.id),
 		answerId: text().references(() => answer.id),
-		action: text().$type<ModerationStatus>().notNull(),
+		action: text().$type<ModerationAction>().notNull(),
 		// reason sent to the user
 		rejectionReason: text(),
 		// internal free-text note from the moderator

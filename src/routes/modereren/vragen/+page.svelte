@@ -12,8 +12,13 @@
 	<p class="text-osf-canvas-500">Geen vragen in de wachtrij.</p>
 {:else}
 	<ul class="grid gap-3">
-		{#each data.queue as question (question.id)}
-			<OneQuestion {question} />
+		{#each data.queue as entry (entry.question.id)}
+			<OneQuestion
+			 question={entry.question}
+			 moderationActions={entry.moderationActions}
+			 politicians={data.politicians}
+			 commissions={data.commissions}
+			/>
 		{/each}
 	</ul>
 {/if}
