@@ -19,15 +19,18 @@
 
 <Dialog.Root>
 	<Dialog.Trigger type="button">
-		<Button
-			type="button"
-			name="action"
-			variant={triggerVariant}
-			title={triggerTitle}
-			aria-label={triggerTitle}
-		>
-			{triggerTitle}
-		</Button>
+		{#snippet child({ props })}
+			<Button
+				{...props}
+				type="button"
+				name="action"
+				variant={triggerVariant}
+				title={triggerTitle}
+				aria-label={triggerTitle}
+			>
+				{triggerTitle}
+			</Button>
+		{/snippet}
 	</Dialog.Trigger>
 
 	<Dialog.Portal disabled>

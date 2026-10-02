@@ -23,6 +23,9 @@
     {moderationAction.action}
   </td>
   <td>
+    {#if moderationAction.action === 'pending-wrong-politician'}
+      naar {moderationAction.meta?.proposedPoliticianSlug}
+    {/if}
     {moderationAction.note}
   </td>
 </tr>
