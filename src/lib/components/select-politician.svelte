@@ -73,6 +73,7 @@
 	const onclickHandler = (event: Event, slug: string, acceptsQuestions: boolean) => {
 		preventAdding(event, !acceptsQuestions);
 		if (!event.defaultPrevented && selectedHandler) {
+			event.preventDefault();
 			selectedHandler(slug);
 		}
 	}

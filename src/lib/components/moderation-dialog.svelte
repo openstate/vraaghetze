@@ -10,14 +10,22 @@
 		actionValue: string;
 		buttonDisabled?: boolean;
 		hideActionButton?: boolean;
+		closeAfterSubmit?: boolean;
 		children: Snippet;
 	};
 
-	let { title, triggerTitle, triggerVariant, actionValue, buttonDisabled, hideActionButton, children }: Props =
+	let isOpen = $state(false);
+
+	let { title, triggerTitle, triggerVariant, actionValue, buttonDisabled, hideActionButton, closeAfterSubmit, children }: Props =
 		$props();
+
+	const clickHandler = () => {
+		if (!closeAfterSubmit) return;
+		isOpen = false;
+	}
 </script>
 
-<Dialog.Root>
+<Dialog.Root bind:open={isOpen}>
 	<Dialog.Trigger type="button">
 		{#snippet child({ props })}
 			<Button
@@ -60,6 +68,7 @@
 						variant="primary"
 						class="mt-3 {buttonDisabled ? 'disabled:opacity-40' : ''}"
 						disabled={buttonDisabled}
+						onclick={clickHandler}
 					>
 						{triggerTitle}
 					</Button>

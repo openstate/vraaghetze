@@ -155,6 +155,7 @@
 						triggerVariant="secondary"
 						actionValue="pending-wrong-politician"
 						hideActionButton={changePoliticianState == 'select'}
+						closeAfterSubmit={true}
 					>
 						{#if changePoliticianState == 'select'}
 							<div class="max-h-[73vh] overflow-y-auto">
