@@ -11,7 +11,8 @@
 - [SendGrid](https://www.twilio.com/docs/sendgrid) for outgoing and incoming email
 - [Tailwind CSS](https://tailwindcss.com) for styling
 - [Bits UI](https://bits-ui.com) for unstyled components
-- [Vitest](https://vitest.dev) for testing
+- [Vitest](https://vitest.dev) for unit and database integration testing
+- [Playwright](https://playwright.dev) for end-to-end browser testing
 - [Croner](https://croner.56k.guru) for the background jobs
 - [sharp](https://sharp.pixelplumbing.com) for scaling politician images
 
@@ -62,11 +63,22 @@ keep formatting consistent.
    pnpm db:seed
    ```
 
-1. Run the tests once:
+1. Run the Vitest unit and integration tests once:
 
    ```bash
    pnpm test:setup
    ```
+
+1. Install Chromium and run the end-to-end tests:
+
+   ```bash
+   pnpm exec playwright install chromium
+   pnpm test:e2e
+   ```
+
+   The E2E command recreates its own database from the same template as Vitest, builds the
+   application, and runs the tests against the production preview server. Run `pnpm test:setup`
+   again after a database schema change.
 
 1. To elevate a user to the `admin` role you can use `bin/make_admin.sh`
 
@@ -79,14 +91,19 @@ keep formatting consistent.
 | `pnpm check`       | Do the TypeScript and Svelte checks.                            |
 | `pnpm lint`        | Do the Prettier and ESLint checks.                              |
 | `pnpm format`      | Correct the format of all files.                                |
-| `pnpm test`        | Do the tests. The database must run.                            |
-| `pnpm test:setup`  | Make the test database again. Necessary after a schema change.  |
+| `pnpm test`        | Do the Vitest unit and integration tests.                       |
+| `pnpm test:setup`  | Rebuild their databases. Necessary after a schema change.       |
+| `pnpm test:e2e`    | Do the Playwright E2E tests against a production build.         |
+| `pnpm test:e2e:ui` | Open Playwright's interactive test runner.                      |
 | `pnpm db:start`    | Start the local database in Docker.                             |
 | `pnpm db:push`     | Write the schema to the local database. For local use only.     |
 | `pnpm db:seed`     | Fill the local database with test data. For local use only.     |
 | `pnpm db:generate` | Make a migration file from a schema change. For production.     |
 | `pnpm db:studio`   | Open Drizzle Studio on the database. For local use only.        |
 | `pnpm auth:schema` | Make `auth.schema.ts` again from the Better Auth configuration. |
+
+Vitest tests are colocated with the code as `src/**/*.test.ts`. Playwright tests live in `e2e`
+and exercise the running application through a browser.
 
 ## Architecture
 

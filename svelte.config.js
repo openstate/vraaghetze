@@ -17,7 +17,10 @@ const config = {
 				...config,
 				include: [
 					...config.include,
+					'../test-database.setup.ts',
 					'../drizzle.config.ts',
+					'../e2e/**/*.ts',
+					'../playwright.config.ts',
 					'../scripts/**/*.ts',
 					'../vitest.setup.ts',
 					'../vitest.worker.ts'
