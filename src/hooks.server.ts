@@ -12,7 +12,7 @@ import { authorizeAdmin, authorizeModerator } from '$lib/server/moderation';
 import type { ENV_TYPE } from '$lib/general';
 
 export const init: ServerInit = () => {
-	if (building) return;
+	if (building || env.BACKGROUND_JOBS_ENABLED === 'false') return;
 
 	const syncJob = new Cron('0 4 * * *', () =>
 		syncPoliticians().catch((error) => console.error('Politician sync failed:', error))
