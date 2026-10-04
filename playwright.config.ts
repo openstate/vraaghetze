@@ -22,6 +22,7 @@ Object.assign(process.env, {
 export default defineConfig({
 	workers: 1,
 	testDir: './e2e',
+	// To watch a scenario play out, use "headless: false" or "video: 'on'"" in `use`
 	use: {
 		baseURL,
 		trace: 'retain-on-failure',
