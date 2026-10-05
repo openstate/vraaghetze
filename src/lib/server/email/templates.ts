@@ -6,16 +6,16 @@ import MagicLinkConfirm from './templates/magic-link-confirm.svelte';
 import MagicLinkFollow from './templates/magic-link-follow.svelte';
 import MagicLinkLogin from './templates/magic-link-login.svelte';
 import MagicLinkCode from './templates/magic-link-code.svelte';
-import MagicLinkProposedPolitician from './templates/magic-link-proposed-politician.svelte';
 import QuestionConfirmation from './templates/question-confirmation.svelte';
 import QuestionPolitician from './templates/question-politician.svelte';
 import QuestionApproved from './templates/question-approved.svelte';
 import QuestionRejected from './templates/question-rejected.svelte';
+import QuestionProposedPolitician from './templates/question-proposed-politician.svelte';
 import QuestionAnswered from './templates/question-answered.svelte';
 import QuestionAnsweredFollowers from './templates/question-answered-followers.svelte';
 import { render } from 'svelte/server';
 import { rejectionReasonTexts } from '$lib/moderation';
-import { MAGIC_LINK_EXPIRY_DAYS, sendSignInLink } from '../auth';
+import { MAGIC_LINK_EXPIRY_DAYS } from '../auth';
 import { getBasicUserInfoById } from '../auth';
 import type { PoliticianType } from '../politicians';
 
@@ -29,44 +29,23 @@ const stripComments = (body: string) => {
 
 // the sign-in link is worded after the flow it was requested from
 const magicLinkCopy = {
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-	confirm: (url: string, metadata: Record<string, any>) => ({
+	confirm: (url: string) => ({
 		subject: 'Bevestig je vraag op VraagHetZe',
 		body: stripComments(
 			render(MagicLinkConfirm, { props: { url: url, valid: MAGIC_LINK_EXPIRY_DAYS } }).body
 		)
 	}),
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-	follow: (url: string, metadata: Record<string, any>) => ({
+	follow: (url: string) => ({
 		subject: 'Volg een vraag op VraagHetZe',
 		body: stripComments(render(MagicLinkFollow, { props: { url: url } }).body)
 	}),
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-	login: (url: string, metadata: Record<string, any>) => ({
+	login: (url: string) => ({
 		subject: 'Je inloglink voor VraagHetZe',
 		body: stripComments(render(MagicLinkLogin, { props: { url: url } }).body)
 	}),
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-	sendCode: (code: string, metadata: Record<string, any>) => ({
+	sendCode: (code: string) => ({
 		subject: 'Je inlogcode voor VraagHetZe',
 		body: stripComments(render(MagicLinkCode, { props: { code: code } }).body)
-	}),
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	proposedPolitician: (url: string, metadata: Record<string, any>) => ({
-		subject: 'Voorgestelde wijziging Kamerlid voor jouw vraag',
-		body: stripComments(
-			render(MagicLinkProposedPolitician, {
-				props: {
-					askerName: metadata.askerName,
-					politicianName: metadata.politicianName,
-					proposedPoliticianName: metadata.proposedPoliticianName,
-					questionTitle: metadata.questionTitle,
-					questionUrl: `${env.ORIGIN}/vragen/${metadata.questionSlug}`,
-					approvalUrl: url,
-					valid: MAGIC_LINK_EXPIRY_DAYS
-				}
-			}).body
-		)
 	})
 };
 
@@ -77,18 +56,15 @@ type MagicLink = {
 	urlOrToken: string;
 	purpose: MagicLinkPurpose;
 	expiresAt: Date;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	metadata?: Record<string, any>;
 };
 
 export function sendMagicLinkMail({
 	recipient,
 	urlOrToken,
 	purpose,
-	expiresAt,
-	metadata
+	expiresAt
 }: MagicLink) {
-	const { subject, body } = magicLinkCopy[purpose](urlOrToken, metadata ?? {});
+	const { subject, body } = magicLinkCopy[purpose](urlOrToken);
 
 	return sendMail({ kind: 'magic-link', recipient, subject, body, expiresAt });
 }
@@ -272,21 +248,36 @@ export async function enqueueFollowerMails(tx: Transaction, question: AnsweredQu
 	}
 }
 
-export async function sendProposedPoliticianMail(
-	question: Pick<typeof schema.question.$inferInsert, 'userId' | 'assigneeId' | 'slug' | 'title'>,
+// enqueues a proposed politician to the asker, no mail to the politician
+export async function enqueueProposedPoliticianMail(
+	tx: Transaction,
+	question: Pick<typeof schema.question.$inferInsert, 'id' | 'userId' | 'assigneeId' | 'slug' | 'title'>,
 	proposedPolitician: PoliticianType
 ) {
-	const user = await getBasicUserInfoById(question.userId);
-	const politician = await getBasicUserInfoById(question.assigneeId);
-	const callback = new URL(`/vragen/${question.slug}`, process.env.ORIGIN);
-	callback.searchParams.set('doel', 'kamerlid_wijzigen');
-	const sendResult = await sendSignInLink(user.email, callback.toString(), {
-		askerName: user.name,
-		politicianName: politician.name,
-		proposedPoliticianName: proposedPolitician.name,
-		questionTitle: question.title,
-		questionSlug: question.slug
+
+	const asker = await getBasicUserInfoById(question.userId, tx);
+
+	const politician = await getBasicUserInfoById(question.assigneeId, tx);
+
+	const approvalUrl = new URL(`/vragen/${question.slug}`, process.env.ORIGIN);
+	approvalUrl.searchParams.set('doel', 'kamerlid_wijzigen');
+
+	const result = render(QuestionProposedPolitician, {
+		props: {
+			askerName: asker.name,
+			politicianName: politician.name,
+			proposedPoliticianName: proposedPolitician.name,
+			questionTitle: question.title,
+			approvalUrl: approvalUrl.toString()
+		}
 	});
 
-	if (sendResult.status == 'error') throw new Error('Error sending mail');
+	return enqueueMail({
+		kind: 'moderation-notification',
+		questionId: question.id,
+		recipient: asker.email,
+		subject: 'Voorgestelde wijziging Kamerlid voor jouw vraag',
+		body: stripComments(result.body),
+		transaction: tx
+	});
 }

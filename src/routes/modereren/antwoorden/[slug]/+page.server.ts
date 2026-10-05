@@ -4,6 +4,7 @@ import { z } from 'zod';
 import * as moderation from '$lib/server/moderation';
 import { validateForm } from '$lib/server/utils/forms';
 import type { Actions, PageServerLoad } from './$types';
+import { safeReturnTo } from '$lib/general';
 
 const moderationSchema = z.object({
 	answerId: z.string().min(1),
@@ -34,7 +35,7 @@ export const actions = {
 				? 'Je hebt het antwoord goedgekeurd'
 				: 'Je hebt het antwoord afgewezen';
 		const flashType = result.data.action == 'approved' ? 'success' : 'neutral';
-		const returnTo = url.searchParams.get('returnTo');
+		const returnTo = safeReturnTo(url.searchParams.get('returnTo'));
 		if (returnTo) {
 			return redirect(returnTo, { type: flashType, message }, cookies);
 		}

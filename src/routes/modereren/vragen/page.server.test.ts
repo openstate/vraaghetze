@@ -329,8 +329,7 @@ describe('default action, proposing other politician', () => {
 		const audit = await getQuestionAudit(question.id);
 		const expected = JSON.parse(`{"proposedPoliticianSlug": "${otherPolitician.slug}"}`);
 		expect(audit.meta).toStrictEqual(expected);
-		expect(enqueueMail).not.toHaveBeenCalled();
-		expect(sendSignInLink).toHaveBeenCalled(); // mail to user to confirm changed politician
+		expect(enqueueMail).toHaveBeenCalled();
 	});
 
 	test('requires a politician slug', async () => {

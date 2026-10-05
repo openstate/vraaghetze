@@ -45,7 +45,10 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 	const viewerId = locals.user?.id ?? null;
 
 	const result = await questions.bySlug(params.slug, viewerId);
-	if (!result.question) error(404, 'Vraag niet gevonden');
+	if (!result.question) {
+		if (locals.user) error(404, 'Vraag niet gevonden');
+		else return redirect(307, `/inloggen?returnTo=${encodeURIComponent(url.toString())}`);
+	}
 
 	let acceptPoliticianChange = url.searchParams.get('doel') === 'kamerlid_wijzigen';
 	let proposedPoliticianName: string | undefined = undefined;

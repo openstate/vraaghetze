@@ -6,6 +6,7 @@ import { validateForm } from '$lib/server/utils/forms';
 import { sendSignInLink, userExists } from '$lib/server/auth';
 import { db, schema } from '$lib/server/db';
 import { validateCaptcha } from '$lib/server/utils/captcha';
+import { safeReturnTo } from '$lib/general';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const parentData = await parent();
@@ -25,7 +26,7 @@ export const actions = {
 		if (!result.valid) return fail(400, { ...returnValues, error: '', issues: result.issues });
 
 		const data = result.data;
-		const callback = new URL('/mijn-vragen', url.origin);
+		const callback = safeReturnTo(url.searchParams.get('returnTo')) ?? new URL('/mijn-vragen', url.origin);
 		let useEmail;
 
 		if (data.formType == 'newUser') {

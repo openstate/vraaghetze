@@ -17,8 +17,7 @@ export const MAGIC_LINK_EXPIRY = MAGIC_LINK_EXPIRY_SECONDS * 1000;
 // the flow that asked for the link, carried in the callback url the mail links to
 const purposeByGoal: Record<string, MagicLinkPurpose> = {
 	bevestigen: 'confirm',
-	volgen: 'follow',
-	kamerlid_wijzigen: 'proposedPolitician'
+	volgen: 'follow'
 };
 
 class VerificationNotWrittenError extends Error {
@@ -69,8 +68,7 @@ export const auth = betterAuth({
 					recipient: email,
 					urlOrToken,
 					purpose,
-					expiresAt: new Date(Date.now() + MAGIC_LINK_EXPIRY),
-					metadata
+					expiresAt: new Date(Date.now() + MAGIC_LINK_EXPIRY)
 				});
 			}
 		})

@@ -6,8 +6,8 @@ import {
 	enqueueAnswerMail,
 	enqueueApprovalMails,
 	enqueueFollowerMails,
-	enqueueRejectionMail,
-	sendProposedPoliticianMail
+	enqueueProposedPoliticianMail,
+	enqueueRejectionMail
 } from '$lib/server/email/templates';
 import { getStatus, newerAnswer, updatePolitician, type QuestionType } from '$lib/server/questions';
 import { hasPermission } from '$lib/permissions';
@@ -400,7 +400,7 @@ async function moderateQuestionImplementation({
 	// enqueue notification emails to asker/politician on the moderated question
 	if (action === 'approved') await enqueueApprovalMails(tx, question);
 	else if (action === 'rejected') await enqueueRejectionMail(tx, question, rejectionReason ?? '');
-	else if (action === 'pending-wrong-politician' && proposedPolitician) await sendProposedPoliticianMail(question, proposedPolitician);
+	else if (action === 'pending-wrong-politician' && proposedPolitician) await enqueueProposedPoliticianMail(tx, question, proposedPolitician);
 
 	return { action };
 }

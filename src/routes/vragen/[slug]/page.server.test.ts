@@ -136,10 +136,12 @@ describe('load', () => {
 		const pending = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
 
 		await expect(page.load(makeLoadEvent(pending.slug, null))).rejects.toMatchObject({
-			status: 404
+			status: 307,
+			location: `/inloggen?returnTo=http%3A%2F%2Flocalhost%2Fvragen%2F${pending.slug}`
 		});
 		await expect(page.load(makeLoadEvent('bestaat-niet', null))).rejects.toMatchObject({
-			status: 404
+			status: 307,
+			location: `/inloggen?returnTo=http%3A%2F%2Flocalhost%2Fvragen%2Fbestaat-niet`
 		});
 	});
 });

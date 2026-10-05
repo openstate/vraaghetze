@@ -35,3 +35,15 @@ export const submitDirectly = async (
 
 	applyAction(result);
 };
+
+export const safeReturnTo = (urlString: string | null) => {
+	if (!urlString) return undefined;
+
+	const url = new URL(urlString);
+
+	if (`${url.protocol}//${url.host}` === process.env.ORIGIN) {
+		return url;
+	} else {
+		return undefined;
+	}
+}
