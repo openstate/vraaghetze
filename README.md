@@ -80,6 +80,14 @@ keep formatting consistent.
    application, and runs the tests against the production preview server. Run `pnpm test:setup`
    again after a database schema change.
 
+   To run a single test enclose it in
+   ```
+      test.describe.only('focused group', () => {
+      });
+   ```
+
+	To watch a scenario play out, use "headless: false" or "video: 'on'" inside `use` in `playwright.config.ts`.
+
 1. To elevate a user to the `admin` role you can use `bin/make_admin.sh`
 
 ## Commands

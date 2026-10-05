@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { mkdirSync } from 'fs';
 import {
 	ensureTestTemplate,
 	recreateTestDatabase,
@@ -35,3 +36,5 @@ try {
 } finally {
 	await client.end();
 }
+
+mkdirSync('./test-results/mails', { recursive: true }	);

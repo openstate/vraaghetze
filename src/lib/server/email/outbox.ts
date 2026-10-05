@@ -3,6 +3,7 @@ import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { db, schema, type Transaction } from '../db';
 import type { OutboxKind } from '../db/app.schema';
+import { writeFileSync } from 'fs';
 
 const MAX_ATTEMPTS = 8;
 const CLAIM_BATCH_SIZE = 10;
@@ -154,7 +155,10 @@ type EmailOptions = {
 };
 
 async function postEmail({ to, subject, text, replyTo, from }: EmailOptions) {
-	if (dev) {
+	if (process.env.ENV == 'testing') {
+		writeMailForTest({ to, subject, text, replyTo, from });
+		return;
+	} else if (dev) {
 		console.log(`Email to ${to} (reply-to ${replyTo ?? env.EMAIL_INBOX}): ${subject}\n${text}`);
 		return;
 	}
@@ -179,4 +183,30 @@ async function postEmail({ to, subject, text, replyTo, from }: EmailOptions) {
 	if (!response.ok) {
 		throw new Error(`Failed to send email: ${response.status} ${await response.text()}`);
 	}
+}
+
+function writeMailForTest({ to, subject, text, replyTo, from }: EmailOptions) {
+	// If text contains a magic link or the code from a magic link, extract ID and use that as filename
+	let filename: string;
+	let match = /verify\?token=([^&]+)/.exec(text);
+	if (match) {
+		filename = match[1];
+	} else {
+		match = /\sHierbij de code om in te loggen:\s+([^\s]+)\s/.exec(text);
+		if (match) {
+			filename = match[1];
+		} else {
+			filename = "mail";
+		}
+	}
+
+	const contents = JSON.stringify({
+		to: to,
+		replyTo: replyTo,
+		from: from,
+		subject: subject,
+		body: text
+	});
+
+	writeFileSync(`./test-results/mails/${filename}.json`, contents);
 }

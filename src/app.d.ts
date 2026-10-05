@@ -10,6 +10,7 @@ declare global {
 			isDevelopment?: boolean;
 			isProduction?: boolean;
 			isStaging?: boolean;
+			isTesting?: boolean;
 		}
 
 		interface PageData {

@@ -65,6 +65,7 @@
 							variant="primary"
 							class="ml-2 max-lg:hidden"
 							spanPadding="px-2"
+							title="Mijn profiel"
 						>
 							<span class="iconify size-6 mdi--user-outline"></span>
 						</Button>

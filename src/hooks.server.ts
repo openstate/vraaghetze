@@ -48,6 +48,9 @@ const handleSetEnv: Handle = async ({ event, resolve }) => {
 		case 'staging':
 			event.locals.isStaging = true;
 			break;
+		case 'testing':
+			event.locals.isTesting = true;
+			break;
 	}
 
 	return resolve(event);
