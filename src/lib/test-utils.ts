@@ -49,7 +49,7 @@ export async function createPolitician(
 	return { politician, politicianUser, fraction };
 }
 
-export async function createQuestion(
+export async function createQuestionAndUsers(
 	overrides: Partial<typeof schema.question.$inferInsert> = {},
 	createPolitician: boolean = true
 ) {
@@ -58,14 +58,12 @@ export async function createQuestion(
 
 	if (createPolitician) {
 		const fractionId = crypto.randomUUID();
-		await db
-			.insert(schema.fraction)
-			.values({
-				id: fractionId,
-				slug: `tf-${fractionId}`,
-				name: 'Testfractie',
-				abbreviation: 'TF'
-			});
+		await db.insert(schema.fraction).values({
+			id: fractionId,
+			slug: `tf-${fractionId}`,
+			name: 'Testfractie',
+			abbreviation: 'TF'
+		});
 
 		const politicianId = crypto.randomUUID();
 		await db.insert(schema.politician).values({
@@ -117,7 +115,7 @@ export async function createAnswer(
 export async function createAnswerAndQuestion(
 	overrides: Partial<typeof schema.answer.$inferInsert> = {}
 ) {
-	const { question } = await createQuestion({ status: 'approved' });
+	const { question } = await createQuestionAndUsers({ status: 'approved' });
 	const answer = await createAnswer(question, overrides);
 
 	return answer;
@@ -199,7 +197,7 @@ export async function createModerationAction(
 				inArray(schema.question.status, ['pending', 'pending-wrong-politician']),
 				isNotNull(schema.question.verifiedAt)
 			)
-		)
+		);
 
 	return created;
 }
@@ -250,7 +248,6 @@ export async function getNumberOfQuestionAudits(questionId: string) {
 		.where(and(eq(schema.moderationAction.questionId, questionId)));
 	return result[0].count;
 }
-
 
 export async function getAnswerAudit(answerId: string) {
 	return db

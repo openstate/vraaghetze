@@ -4,7 +4,7 @@ import { db, schema } from '$lib/server/db';
 import * as moderation from './moderation';
 import {
 	createAnswer,
-	createQuestion,
+	createQuestionAndUsers,
 	createUser,
 	getAnswer,
 	getAnswerAudit,
@@ -39,11 +39,11 @@ afterEach(() => {
 
 describe('listQuestionQueue', () => {
 	test('lists only verified pending questions, oldest first', async () => {
-		const older = await createQuestion({ createdAt: new Date('2026-07-01') });
-		const newer = await createQuestion({ createdAt: new Date('2026-07-10') });
-		await createQuestion({ verifiedAt: null });
-		await createQuestion({ status: 'approved' });
-		await createQuestion({ status: 'rejected' });
+		const older = await createQuestionAndUsers({ createdAt: new Date('2026-07-01') });
+		const newer = await createQuestionAndUsers({ createdAt: new Date('2026-07-10') });
+		await createQuestionAndUsers({ verifiedAt: null });
+		await createQuestionAndUsers({ status: 'approved' });
+		await createQuestionAndUsers({ status: 'rejected' });
 
 		const queue = await moderation.listQuestionQueue();
 
@@ -53,7 +53,7 @@ describe('listQuestionQueue', () => {
 
 describe('listAnswerQueue', () => {
 	test('lists only pending answers, oldest first', async () => {
-		const { question, asker } = await createQuestion({ status: 'approved' });
+		const { question, asker } = await createQuestionAndUsers({ status: 'approved' });
 		const older = await createAnswer(question, { createdAt: new Date('2026-07-01') });
 		const newer = await createAnswer(question, { createdAt: new Date('2026-07-10') });
 		await createAnswer(question, { status: 'approved' });
@@ -75,9 +75,9 @@ describe('listAnswerQueue', () => {
 
 describe('countQueues', () => {
 	test('counts what is waiting in both queues', async () => {
-		const { question } = await createQuestion();
-		await createQuestion({ verifiedAt: null });
-		await createQuestion({ status: 'approved' });
+		const { question } = await createQuestionAndUsers();
+		await createQuestionAndUsers({ verifiedAt: null });
+		await createQuestionAndUsers({ status: 'approved' });
 
 		await createAnswer(question);
 		await createAnswer(question);
@@ -89,7 +89,7 @@ describe('countQueues', () => {
 
 describe('moderateAnswer', () => {
 	test('approves an answer and notifies the asker and the followers', async () => {
-		const { question, asker, politician } = await createQuestion({ status: 'approved' });
+		const { question, asker, politician } = await createQuestionAndUsers({ status: 'approved' });
 		const answer = await createAnswer(question);
 		const moderator = await createUser('Mo Moderator');
 		const follower = await createUser('Fatima Volger');
@@ -122,7 +122,7 @@ describe('moderateAnswer', () => {
 	});
 
 	test('ignores an answer without mailing anyone', async () => {
-		const { question } = await createQuestion({ status: 'approved' });
+		const { question } = await createQuestionAndUsers({ status: 'approved' });
 		const answer = await createAnswer(question);
 		const moderator = await createUser('Mo Moderator');
 
@@ -139,7 +139,7 @@ describe('moderateAnswer', () => {
 	});
 
 	test('ignores the other waiting answers when one is approved', async () => {
-		const { question } = await createQuestion({ status: 'approved' });
+		const { question } = await createQuestionAndUsers({ status: 'approved' });
 		const automatic = await createAnswer(question, { body: 'Ik ben afwezig tot 1 september.' });
 		const real = await createAnswer(question);
 		const moderator = await createUser('Mo Moderator');
@@ -158,7 +158,7 @@ describe('moderateAnswer', () => {
 	});
 
 	test('treats a second moderation of the same answer as already handled', async () => {
-		const { question } = await createQuestion({ status: 'approved' });
+		const { question } = await createQuestionAndUsers({ status: 'approved' });
 		const answer = await createAnswer(question);
 		const moderator = await createUser('Mo Moderator');
 
@@ -183,7 +183,7 @@ describe('moderateAnswer', () => {
 
 describe('moderateQuestion', () => {
 	test('approves a question, mints a reply token and mails both parties', async () => {
-		const { question, asker, politician } = await createQuestion();
+		const { question, asker, politician } = await createQuestionAndUsers();
 		const moderator = await createUser('Mo Moderator');
 
 		const result = await moderation.moderateQuestion({
@@ -223,7 +223,7 @@ describe('moderateQuestion', () => {
 
 	test('diverts the politician mail when DIVERSION_EMAIL is set', async () => {
 		testEnv.DIVERSION_EMAIL = 'divert@test.example';
-		const { question } = await createQuestion();
+		const { question } = await createQuestionAndUsers();
 		const moderator = await createUser('Mo Moderator');
 
 		await moderation.moderateQuestion({
@@ -238,7 +238,7 @@ describe('moderateQuestion', () => {
 	});
 
 	test('rejects a question without a reply token and mails only the asker', async () => {
-		const { question, asker } = await createQuestion();
+		const { question, asker } = await createQuestionAndUsers();
 		const moderator = await createUser('Mo Moderator');
 
 		const result = await moderation.moderateQuestion({
@@ -258,7 +258,7 @@ describe('moderateQuestion', () => {
 	});
 
 	test('treats a second moderation of the same question as already handled', async () => {
-		const { question } = await createQuestion();
+		const { question } = await createQuestionAndUsers();
 		const moderator = await createUser('Mo Moderator');
 
 		const first = await moderation.moderateQuestion({
@@ -284,7 +284,7 @@ describe('moderateQuestion', () => {
 	});
 
 	test('refuses to moderate an unverified question', async () => {
-		const { question } = await createQuestion({ verifiedAt: null });
+		const { question } = await createQuestionAndUsers({ verifiedAt: null });
 		const moderator = await createUser('Mo Moderator');
 
 		const result = await moderation.moderateQuestion({

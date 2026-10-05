@@ -5,7 +5,7 @@ import * as page from './+page.server';
 import {
 	createModerationAction,
 	createPolitician,
-	createQuestion,
+	createQuestionAndUsers,
 	createUser,
 	getNumberOfQuestionAudits,
 	getQuestion,
@@ -81,7 +81,7 @@ beforeEach(async () => {
 describe('load', () => {
 	test('returns the queue to a moderator', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
+		const { question } = await createQuestionAndUsers();
 
 		const result = (await page.load(makeLoadEvent(moderator))) as LoadData;
 
@@ -91,7 +91,7 @@ describe('load', () => {
 
 describe('default action, approving', () => {
 	test('fails without a signed-in user', async () => {
-		const { question } = await createQuestion();
+		const { question } = await createQuestionAndUsers();
 		const event = myMakeActionEvent(null, { questionId: question.id, action: 'approved' });
 
 		expect(await statusOf(page.actions.default(event))).toBe(400);
@@ -101,7 +101,7 @@ describe('default action, approving', () => {
 
 	test('moderates a question for a moderator', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
+		const { question } = await createQuestionAndUsers();
 		const event = myMakeActionEvent(moderator, { questionId: question.id, action: 'approved' });
 
 		const result = await page.actions.default(event);
@@ -113,7 +113,7 @@ describe('default action, approving', () => {
 
 	test('ignores rejection reasons when approving', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
+		const { question } = await createQuestionAndUsers();
 		const event = myMakeActionEvent(moderator, {
 			questionId: question.id,
 			action: 'approved',
@@ -130,7 +130,7 @@ describe('default action, approving', () => {
 
 	test('reports an unverified question', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion({ verifiedAt: null });
+		const { question } = await createQuestionAndUsers({ verifiedAt: null });
 		const event = myMakeActionEvent(moderator, { questionId: question.id, action: 'approved' });
 
 		const result = await page.actions.default(event);
@@ -142,7 +142,7 @@ describe('default action, approving', () => {
 
 	test('reports an already handled question', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion({ status: 'approved' });
+		const { question } = await createQuestionAndUsers({ status: 'approved' });
 		const event = myMakeActionEvent(moderator, {
 			questionId: question.id,
 			action: 'rejected',
@@ -172,7 +172,7 @@ describe('default action, other', () => {
 describe('default action, rejecting', () => {
 	test('requires rejection reasons when rejecting', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
+		const { question } = await createQuestionAndUsers();
 		const event = myMakeActionEvent(moderator, {
 			questionId: question.id,
 			action: 'rejected',
@@ -188,7 +188,7 @@ describe('default action, rejecting', () => {
 
 	test('stores rejection reasons when rejecting', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
+		const { question } = await createQuestionAndUsers();
 		const event = myMakeActionEvent(moderator, {
 			questionId: question.id,
 			action: 'rejected',
@@ -205,7 +205,7 @@ describe('default action, rejecting', () => {
 
 	test('validates rejection reasons when rejecting', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
+		const { question } = await createQuestionAndUsers();
 		const event = myMakeActionEvent(moderator, {
 			questionId: question.id,
 			action: 'rejected',
@@ -221,7 +221,7 @@ describe('default action, rejecting', () => {
 
 	test('handles multiple valid rejection reasons', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
+		const { question } = await createQuestionAndUsers();
 		const event = myMakeActionEvent(moderator, {
 			questionId: question.id,
 			action: 'rejected',
@@ -238,7 +238,7 @@ describe('default action, rejecting', () => {
 
 	test('rejects multiple rejection reasons if one is invalid (1)', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
+		const { question } = await createQuestionAndUsers();
 		const event = myMakeActionEvent(moderator, {
 			questionId: question.id,
 			action: 'rejected',
@@ -254,7 +254,7 @@ describe('default action, rejecting', () => {
 
 	test('rejects multiple rejection reasons if one is invalid (2)', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
+		const { question } = await createQuestionAndUsers();
 		const event = myMakeActionEvent(moderator, {
 			questionId: question.id,
 			action: 'rejected',
@@ -272,9 +272,13 @@ describe('default action, rejecting', () => {
 describe('default action, storing notes', () => {
 	test('stores a note', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
-		const note = "This is my note for this question."
-		const event = myMakeActionEvent(moderator, { questionId: question.id, note: note, action: 'note-added' });
+		const { question } = await createQuestionAndUsers();
+		const note = 'This is my note for this question.';
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			note: note,
+			action: 'note-added'
+		});
 
 		const result = await page.actions.default(event);
 
@@ -286,12 +290,16 @@ describe('default action, storing notes', () => {
 
 	test('stores each note separately', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
-		const note1 = "This is my first note for this question."
-		const note2 = "This is my second note for this question."
+		const { question } = await createQuestionAndUsers();
+		const note1 = 'This is my first note for this question.';
+		const note2 = 'This is my second note for this question.';
 		await createModerationAction('note-added', moderator, question, { note: note1 });
 
-		const event = myMakeActionEvent(moderator, { questionId: question.id, note: note2, action: 'note-added' });
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			note: note2,
+			action: 'note-added'
+		});
 
 		const result = await page.actions.default(event);
 
@@ -306,16 +314,20 @@ describe('default action, storing notes', () => {
 describe('default action, proposing other politician', () => {
 	test('stores information about politician selected by moderators', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
+		const { question } = await createQuestionAndUsers();
 		const otherPolitician = (await createPolitician('Other Politician')).politician;
-		const event = myMakeActionEvent(moderator, { questionId: question.id, proposedPoliticianSlug: otherPolitician.slug, action: 'pending-wrong-politician' });
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			proposedPoliticianSlug: otherPolitician.slug,
+			action: 'pending-wrong-politician'
+		});
 
 		const result = await page.actions.default(event);
 
 		expect(result).toEqual({ moderated: question.id });
 		expect(await getQuestion(question.id)).toMatchObject({ status: 'pending-wrong-politician' });
 		const audit = await getQuestionAudit(question.id);
-		const expected = JSON.parse(`{"proposedPoliticianSlug": "${otherPolitician.slug}"}`)
+		const expected = JSON.parse(`{"proposedPoliticianSlug": "${otherPolitician.slug}"}`);
 		expect(audit.meta).toStrictEqual(expected);
 		expect(enqueueMail).not.toHaveBeenCalled();
 		expect(sendSignInLink).toHaveBeenCalled(); // mail to user to confirm changed politician
@@ -323,8 +335,11 @@ describe('default action, proposing other politician', () => {
 
 	test('requires a politician slug', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
-		const event = myMakeActionEvent(moderator, { questionId: question.id, action: 'pending-wrong-politician' });
+		const { question } = await createQuestionAndUsers();
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			action: 'pending-wrong-politician'
+		});
 
 		const result = await page.actions.default(event);
 
@@ -335,8 +350,12 @@ describe('default action, proposing other politician', () => {
 
 	test('validates that the slug exists', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
-		const event = myMakeActionEvent(moderator, { questionId: question.id, proposedPoliticianSlug: "just a non-existing slug", action: 'pending-wrong-politician' });
+		const { question } = await createQuestionAndUsers();
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			proposedPoliticianSlug: 'just a non-existing slug',
+			action: 'pending-wrong-politician'
+		});
 
 		const result = await page.actions.default(event);
 
@@ -347,13 +366,24 @@ describe('default action, proposing other politician', () => {
 
 	test('validates that the politician accepts answers', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const { question } = await createQuestion();
-		const otherPolitician = (await createPolitician('Other Politician', { acceptsQuestions: false })).politician;
-		const event = myMakeActionEvent(moderator, { questionId: question.id, proposedPoliticianSlug: otherPolitician.slug, action: 'pending-wrong-politician' });
+		const { question } = await createQuestionAndUsers();
+		const otherPolitician = (
+			await createPolitician('Other Politician', { acceptsQuestions: false })
+		).politician;
+		const event = myMakeActionEvent(moderator, {
+			questionId: question.id,
+			proposedPoliticianSlug: otherPolitician.slug,
+			action: 'pending-wrong-politician'
+		});
 
 		const result = await page.actions.default(event);
 
-		expect(result).toMatchObject({ status: 400, data: { error: 'Dit Kamerlid heeft ervoor gekozen niet openbaar antwoord te geven via VraagHetZe.' } });
+		expect(result).toMatchObject({
+			status: 400,
+			data: {
+				error: 'Dit Kamerlid heeft ervoor gekozen niet openbaar antwoord te geven via VraagHetZe.'
+			}
+		});
 		expect(await getQuestion(question.id)).toMatchObject({ status: 'pending' });
 		expect(enqueueMail).not.toHaveBeenCalled();
 	});
