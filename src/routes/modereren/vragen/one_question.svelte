@@ -32,6 +32,7 @@
     commissions: CommissionsType[];
 	};
 
+	// eslint-disable-next-line svelte/no-unused-props
 	const { question, moderationActions, politicians, commissions }: Props = $props();
 	let note = $state('');
 	const inputClass =
@@ -44,6 +45,7 @@
 
 	let changePoliticianState: 'select' | 'confirm' = $state('select');
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const hrefForPolitician = (slug: string) => {
 		return "#top";
 	};
@@ -94,7 +96,7 @@
 				</p>
 			</div>
 
-		{#if moderationActions.length > 0}
+			{#if moderationActions.length > 0}
 				<hr class="border-osf-canvas-200 mt-4" />
 				<p class="text-sm font-medium mt-4">Moderatie geschiedenis</p>
 				<table class="table-auto text-sm history">

@@ -12,9 +12,9 @@
 	<p class="text-osf-canvas-500">Geen antwoorden in de wachtrij.</p>
 {:else}
 	<ul class="grid gap-3">
-		{#each data.queue as answer (answer.id)}
+		{#each data.queue as entry (entry.answer.id)}
 			<li>
-				<Answer {answer} />
+				<Answer answer={entry.answer} moderationActions={entry.moderationActions} {form} />
 			</li>
 		{/each}
 	</ul>

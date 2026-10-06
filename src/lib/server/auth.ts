@@ -23,7 +23,7 @@ const purposeByGoal: Record<string, MagicLinkPurpose> = {
 class VerificationNotWrittenError extends Error {
 	constructor(message: string) {
 		super(message); // Call the constructor of the base class `Error`
-		this.name = "VerificationNotWrittenError"; // Set the error name to your custom error class name
+		this.name = 'VerificationNotWrittenError'; // Set the error name to your custom error class name
 		// Set the prototype explicitly to maintain the correct prototype chain
 		Object.setPrototypeOf(this, VerificationNotWrittenError.prototype);
 	}
@@ -52,7 +52,8 @@ export const auth = betterAuth({
 				// Side effect: all MagicLink mails must be sent using sendSignInLink (server-side),
 				// authClient.signIn.magicLink (client-side) should NOT be used.
 				const recordExists = await verificationExists(token);
-				if (!recordExists) throw new VerificationNotWrittenError(`Record with token ${token} not found`);
+				if (!recordExists)
+					throw new VerificationNotWrittenError(`Record with token ${token} not found`);
 
 				if (metadata?.sendCode) {
 					urlOrToken = link.searchParams.get('token') || '';
@@ -78,14 +79,21 @@ export const auth = betterAuth({
 export type UserType = typeof auth.$Infer.Session.user;
 export type SessionType = typeof auth.$Infer.Session.session;
 
-export async function sendSignInLink(email: string, callbackURL?: string, metadata?: { [key: string]: string | boolean}): Promise<{ status: "success" | "error"; error?: string; }> {
+export async function sendSignInLink(
+	email: string,
+	callbackURL?: string,
+	metadata?: { [key: string]: string | boolean }
+): Promise<{ status: 'success' | 'error'; error?: string }> {
 	let attempts = 0;
 	const maxAttempts = 3;
 	const { request } = getRequestEvent();
 
 	while (attempts < maxAttempts) {
 		try {
-			await auth.api.signInMagicLink({ headers: request.headers, body: { email, callbackURL, metadata } });
+			await auth.api.signInMagicLink({
+				headers: request.headers,
+				body: { email, callbackURL, metadata }
+			});
 			return { status: 'success' };
 		} catch (error) {
 			console.error('Magic link send failed:', error);
@@ -97,7 +105,10 @@ export async function sendSignInLink(email: string, callbackURL?: string, metada
 		}
 	}
 
-	return { status: 'error', error: `Er is een fout opgetreden, versturen van e-mail naar ${email} is niet gelukt.`}
+	return {
+		status: 'error',
+		error: `Er is een fout opgetreden, versturen van e-mail naar ${email} is niet gelukt.`
+	};
 }
 
 export async function userExists(email: string): Promise<boolean> {
@@ -115,11 +126,19 @@ type BasicUserInfo = {
 	name: string;
 	email: string;
 	role: string | null;
-}
+};
 
-export async function getBasicUserInfoById(userId: string, tx?: Transaction): Promise<BasicUserInfo> {
+export async function getBasicUserInfoById(
+	userId: string,
+	tx?: Transaction
+): Promise<BasicUserInfo> {
 	const [user] = await (tx ?? db)
-		.select({ id: schema.user.id, name: schema.user.name, email: schema.user.email, role: schema.user.role })
+		.select({
+			id: schema.user.id,
+			name: schema.user.name,
+			email: schema.user.email,
+			role: schema.user.role
+		})
 		.from(schema.user)
 		.where(eq(schema.user.id, userId))
 		.limit(1);

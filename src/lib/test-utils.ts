@@ -6,6 +6,7 @@ import * as VraagGegevensPage from '$routes/vragen/stellen/gegevens/+page.server
 import type { ModerationAction } from './server/db/app.schema';
 import { getStatus } from './server/questions';
 import { actionToStatus } from './server/moderation';
+import { createAnswer, createQuestion } from '$e2e/test-utils';
 
 export async function createUser(
 	name: string,
@@ -75,41 +76,9 @@ export async function createQuestionAndUsers(
 		});
 	}
 
-	const id = crypto.randomUUID();
-
-	const [question] = await db
-		.insert(schema.question)
-		.values({
-			id,
-			userId: asker.id,
-			assigneeId: politician.id,
-			title: 'Wat vindt u van de toeslagen?',
-			body: 'Graag een toelichting.',
-			slug: `testvraag-${id}`,
-			verifiedAt: new Date(),
-			...overrides
-		})
-		.returning();
+	const question = await createQuestion(asker, politician, overrides);
 
 	return { question, asker, politician };
-}
-
-export async function createAnswer(
-	question: { id: string; assigneeId: string },
-	overrides: Partial<typeof schema.answer.$inferInsert> = {}
-) {
-	const [answer] = await db
-		.insert(schema.answer)
-		.values({
-			id: crypto.randomUUID(),
-			questionId: question.id,
-			userId: question.assigneeId,
-			body: 'Mijn antwoord op uw vraag.',
-			...overrides
-		})
-		.returning();
-
-	return answer;
 }
 
 export async function createAnswerAndQuestion(
@@ -278,6 +247,7 @@ export function createCookiesStub(initialCookies = {}) {
 	};
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function makeActionEvent<T extends (...args: any) => any>(
 	url: string,
 	user: typeof schema.user.$inferSelect | null,
@@ -319,6 +289,7 @@ export function registerMakeActionEvent(
 	page: typeof InloggenPage | typeof VraagGegevensPage,
 	url: string
 ) {
+	// eslint-disable-next-line prefer-const
 	let { setConfirmationEmail, ...options } = allOptions;
 	if (typeof setConfirmationEmail === 'undefined') setConfirmationEmail = true;
 	if (typeof options.acceptTandC === 'undefined') options.acceptTandC = '1';
@@ -328,6 +299,7 @@ export function registerMakeActionEvent(
 		? fields['email']
 		: `${crypto.randomUUID()}@test.example`;
 
+	// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 	const capField: { capToken: string } | {} = addCapToken ? { capToken: 'a_cap_token' } : {};
 	const useFields = {
 		...fields,

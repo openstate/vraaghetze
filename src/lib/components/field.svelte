@@ -11,6 +11,7 @@
 
 	type Props = {
 		name: string;
+		idSuffix?: string;
 		label?: string;
 		optional?: boolean;
 		issues?: string[];
@@ -19,10 +20,10 @@
 		children: Snippet<[Control]>;
 	};
 
-	let { name, label, optional, issues, counter, class: className, children }: Props = $props();
+	let { name, idSuffix, label, optional, issues, counter, class: className, children }: Props = $props();
 
 	const control = $derived<Control>({
-		id: `veld-${name}`,
+		id: `veld-${name}${idSuffix ?? ''}`,
 		name,
 		class: [
 			'w-full rounded border border-osf-canvas-200 bg-transparent px-3 py-2',

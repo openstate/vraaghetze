@@ -21,13 +21,20 @@ const tsvector = customType<{ data: string; driverData: string }>({ dataType: ()
 
 export type FractionRole = 'member' | 'chair';
 
-export type ModerationAction = 'pending' | 'pending-wrong-politician' | 'approved' | 'rejected' | 'politician-changed' | 'note-added';
+export type ModerationAction = 'pending' | 'pending-wrong-politician' | 'approved' | 'rejected' | 'politician-changed' | 'note-added' | 'answer-redacted';
 export type QuestionStatus = 'pending' | 'pending-wrong-politician' | 'approved' | 'rejected';
 
 export type MetaType = {
+	// used to denote the politician for action pending-wrong-politician
 	proposedPoliticianSlug?: string;
+	// used to denote the change of politician for action politician-changed
 	currentSlug?: string;
 	newSlug?: string;
+	// used to denoted text searched for and replace text, and original and redacted body for action answer-redacted
+	searchTexts?: string[];
+	replaceTexts?: string[];
+	original?: string;
+	redacted?: string;
 };
 
 const postColumns = {

@@ -50,3 +50,13 @@ export const rejectionReasonTexts = (rejectionReason?: string | null) => {
 	const reasons: allRejectionKeyType[] = rejectionReason.split(',').map((reason) => reason as allRejectionKeyType);
 	return reasons.map((reason) => allRejectionReasons[reason]);
 };
+
+export const redactionInfo = (searchTexts: string[], replaceTexts: string[]) => {
+	const info = [];
+	for (const [index, searchText] of searchTexts.entries()) {
+		const replaceText = replaceTexts[index];
+		info.push(`"${searchText}" → "${replaceText}"`);
+	}
+
+	return info.join(' , ');
+}

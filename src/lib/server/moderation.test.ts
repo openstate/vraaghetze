@@ -3,13 +3,13 @@ import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as moderation from './moderation';
 import {
-	createAnswer,
 	createQuestionAndUsers,
 	createUser,
 	getAnswer,
 	getAnswerAudit,
 	getQuestion
 } from '$lib/test-utils';
+import { createAnswer } from '$e2e/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -61,15 +61,15 @@ describe('listAnswerQueue', () => {
 
 		const queue = await moderation.listAnswerQueue();
 
-		expect(queue.map((row) => row.id)).toEqual([older.id, newer.id]);
-		expect(queue[0]).toMatchObject({
+		expect(queue.map((row) => row.answer.id)).toEqual([older.id, newer.id]);
+		expect(queue[0]).toMatchObject({ answer: {
 			body: 'Mijn antwoord op uw vraag.',
 			questionTitle: question.title,
 			questionBody: question.body,
 			questionSlug: question.slug,
 			authorName: asker.name,
 			politicianName: 'Jan Jansen'
-		});
+		}});
 	});
 });
 

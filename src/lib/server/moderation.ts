@@ -1,4 +1,19 @@
-import { and, asc, count, desc, eq, gt, isNotNull, isNull, ne, notExists, sql, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gt,
+	isNotNull,
+	isNull,
+	ne,
+	notExists,
+	sql,
+	inArray,
+	SQL
+} from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { error } from '@sveltejs/kit';
 import { db, schema, type Transaction } from '$lib/server/db';
@@ -14,6 +29,9 @@ import { hasPermission } from '$lib/permissions';
 import type { Pagination } from '$lib/pagination';
 import type { MetaType, ModerationAction, QuestionStatus } from './db/app.schema';
 import type { PoliticianType } from './politicians';
+import { validateForm } from './utils/forms';
+import type { UserType } from './auth';
+import { jsonCodec } from './utils/zod';
 
 const politicianUser = alias(schema.user, 'politicianUser');
 const moderatorUser = alias(schema.user, 'moderatorUser');
@@ -88,13 +106,21 @@ export async function listQuestionQueue() {
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
 		.leftJoin(schema.moderationAction, eq(schema.question.id, schema.moderationAction.questionId))
-		.where(and(inArray(schema.question.status, ['pending', 'pending-wrong-politician']), isNotNull(schema.question.verifiedAt)))
+		.where(
+			and(
+				inArray(schema.question.status, ['pending', 'pending-wrong-politician']),
+				isNotNull(schema.question.verifiedAt)
+			)
+		)
 		.orderBy(asc(schema.question.createdAt), asc(schema.moderationAction.createdAt));
 
 	// rows contain question-moderationAction pairs ({question: question, moderationAction: moderationAction}).
 	// If a question has multiple moderationActions there are multiple rows with the same question but different moderationAction.
 	// The rewrite to results keeps the ordering of both questions and moderationActions intact.
-	const results: { question: ListQuestionType; moderationActions: typeof schema.moderationAction.$inferSelect[] }[] = [];
+	const results: {
+		question: ListQuestionType;
+		moderationActions: (typeof schema.moderationAction.$inferSelect)[];
+	}[] = [];
 	let questionId = '';
 	let index = -1;
 	for (const row of rows) {
@@ -102,7 +128,7 @@ export async function listQuestionQueue() {
 		if (questionId !== question.id) {
 			questionId = question.id;
 			index += 1;
-			results.push({ question, moderationActions: []});
+			results.push({ question, moderationActions: [] });
 		}
 		if (moderationAction) {
 			results[index].moderationActions.push(moderationAction);
@@ -112,23 +138,41 @@ export async function listQuestionQueue() {
 	return results;
 }
 
+export type ListAnswerType = {
+	id: string;
+	body: string;
+	createdAt: Date;
+	questionTitle: string;
+	questionBody: string;
+	questionSlug: string;
+	questionCreatedAt: Date;
+	authorName: string;
+	politicianName: string;
+	politicianSlug: string;
+	fraction: string | null;
+	fractionName: string | null;
+};
+
 // a politician often replies automatically before replying for real, so every answer is
 // checked by a moderator, who needs the question to judge whether the reply answers it
-export function listAnswerQueue() {
-	return db
+export async function listAnswerQueue() {
+	const rows = await db
 		.select({
-			id: schema.answer.id,
-			body: schema.answer.body,
-			createdAt: schema.answer.createdAt,
-			questionTitle: schema.question.title,
-			questionBody: schema.question.body,
-			questionSlug: schema.question.slug,
-			questionCreatedAt: schema.question.createdAt,
-			authorName: schema.user.name,
-			politicianName: politicianUser.name,
-			politicianSlug: schema.politician.slug,
-			fraction: schema.fraction.abbreviation,
-			fractionName: schema.fraction.name
+			answer: {
+				id: schema.answer.id,
+				body: schema.answer.body,
+				createdAt: schema.answer.createdAt,
+				questionTitle: schema.question.title,
+				questionBody: schema.question.body,
+				questionSlug: schema.question.slug,
+				questionCreatedAt: schema.question.createdAt,
+				authorName: schema.user.name,
+				politicianName: politicianUser.name,
+				politicianSlug: schema.politician.slug,
+				fraction: schema.fraction.abbreviation,
+				fractionName: schema.fraction.name
+			},
+			moderationAction: schema.moderationAction
 		})
 		.from(schema.answer)
 		.innerJoin(schema.question, eq(schema.answer.questionId, schema.question.id))
@@ -136,13 +180,35 @@ export function listAnswerQueue() {
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
+		.leftJoin(schema.moderationAction, eq(schema.answer.id, schema.moderationAction.answerId))
 		.where(eq(schema.answer.status, 'pending'))
 		.orderBy(asc(schema.answer.createdAt));
-}
 
-export type ListAnswerType = Awaited<ReturnType<typeof listAnswerQueue>>[number];
+		// rows contain answer-moderationAction pairs ({answer: answer, moderationAction: moderationAction}).
+		// If an answer has multiple moderationActions there are multiple rows with the same answer but different moderationAction.
+		// The rewrite to results keeps the ordering of both answer and moderationActions intact.
+		const results: {
+			answer: ListAnswerType;
+			moderationActions: (typeof schema.moderationAction.$inferSelect)[];
+		}[] = [];
+		let answerId = '';
+		let index = -1;
+		for (const row of rows) {
+			const { answer, moderationAction } = row;
+			if (answerId !== answer.id) {
+				answerId = answer.id;
+				index += 1;
+				results.push({ answer, moderationActions: [] });
+			}
+			if (moderationAction) {
+				results[index].moderationActions.push(moderationAction);
+			}
+		}
 
-export function getAnswer(answerId: string) {
+		return results;
+	}
+
+export function getAnswerEnriched(answerId: string) {
 	return db
 		.select({
 			id: schema.answer.id,
@@ -167,13 +233,23 @@ export function getAnswer(answerId: string) {
 		.where(and(eq(schema.answer.id, answerId), eq(schema.answer.status, 'pending')));
 }
 
+export async function getAnswer(answerId: string) {
+	const [answer] = await db.select().from(schema.answer).where(eq(schema.answer.id, answerId));
+	return answer;
+}
+
 // the sizes behind the tab labels, so a moderator sees what is waiting from any page
 export function countQueues() {
 	return db.transaction(async (tx) => {
 		const [questions] = await tx
 			.select({ total: count() })
 			.from(schema.question)
-			.where(and(inArray(schema.question.status, ['pending', 'pending-wrong-politician']), isNotNull(schema.question.verifiedAt)));
+			.where(
+				and(
+					inArray(schema.question.status, ['pending', 'pending-wrong-politician']),
+					isNotNull(schema.question.verifiedAt)
+				)
+			);
 
 		const [answers] = await tx
 			.select({ total: count() })
@@ -191,7 +267,7 @@ export function listQuestions({ page, perPage }: Pagination) {
 			moderatorId: schema.moderationAction.moderatorId,
 			moderatedAt: schema.moderationAction.createdAt,
 			rejectionReason: schema.moderationAction.rejectionReason,
-			note: schema.moderationAction.note,
+			note: schema.moderationAction.note
 		})
 		.from(schema.moderationAction)
 		.orderBy(desc(schema.moderationAction.createdAt))
@@ -291,8 +367,12 @@ export function listOutbox({ page, perPage }: Pagination) {
 	});
 }
 
-export function actionToStatus(action: ModerationAction, currentStatus: QuestionStatus): QuestionStatus {
-	if (['pending', 'pending-wrong-politician', 'rejected', 'approved'].includes(action)) return action as QuestionStatus;
+export function actionToStatus(
+	action: ModerationAction,
+	currentStatus: QuestionStatus
+): QuestionStatus {
+	if (['pending', 'pending-wrong-politician', 'rejected', 'approved'].includes(action))
+		return action as QuestionStatus;
 
 	return currentStatus;
 }
@@ -305,8 +385,8 @@ type QuestionModeration = {
 	proposedPolitician?: PoliticianType;
 	rejectionReason?: string;
 	meta?: MetaType;
-	createdAtOffset?: boolean
-	tx?: Transaction
+	createdAtOffset?: boolean;
+	tx?: Transaction;
 };
 
 export async function moderateQuestion(args: QuestionModeration) {
@@ -314,7 +394,7 @@ export async function moderateQuestion(args: QuestionModeration) {
 		return await moderateQuestionImplementation(args);
 	} else {
 		return await db.transaction(async (tx) => {
-			return await moderateQuestionImplementation({...args, tx});
+			return await moderateQuestionImplementation({ ...args, tx });
 		});
 	}
 }
@@ -332,7 +412,7 @@ async function moderateQuestionImplementation({
 }: QuestionModeration) {
 	// the guard makes double-clicks and concurrent moderators a no-op instead of a
 	// double action, and ensures only verified questions are ever approved/rejected
-	if (!tx) throw new Error("No transaction to run moderateQuestion in");
+	if (!tx) throw new Error('No transaction to run moderateQuestion in');
 	const currentStatus = await getStatus(questionId);
 	const questionStatus = actionToStatus(action, currentStatus);
 	const [question] = await tx
@@ -379,12 +459,12 @@ async function moderateQuestionImplementation({
 
 	if (!meta) {
 		if (action === 'pending-wrong-politician' && proposedPolitician) {
-			meta = {proposedPoliticianSlug: proposedPolitician.slug}
+			meta = { proposedPoliticianSlug: proposedPolitician.slug };
 		}
 	}
-	
+
 	// When creating multiple derationAction's in a single transaction they will receive the same createdAt and ordering will be undecided.
-	// This offset is an ugly solution to keep ordering functional. 
+	// This offset is an ugly solution to keep ordering functional.
 	const createdAt = createdAtOffset ? new Date(Date.now() + 1000) : new Date();
 	await tx.insert(schema.moderationAction).values({
 		id: crypto.randomUUID(),
@@ -400,7 +480,8 @@ async function moderateQuestionImplementation({
 	// enqueue notification emails to asker/politician on the moderated question
 	if (action === 'approved') await enqueueApprovalMails(tx, question);
 	else if (action === 'rejected') await enqueueRejectionMail(tx, question, rejectionReason ?? '');
-	else if (action === 'pending-wrong-politician' && proposedPolitician) await enqueueProposedPoliticianMail(tx, question, proposedPolitician);
+	else if (action === 'pending-wrong-politician' && proposedPolitician)
+		await enqueueProposedPoliticianMail(tx, question, proposedPolitician);
 
 	return { action };
 }
@@ -411,7 +492,7 @@ type AutomatedPoliticianChangeType = {
 	moderationAction: typeof schema.moderationAction.$inferSelect;
 	currentPolitician: PoliticianType;
 	proposedPolitician: PoliticianType;
-}
+};
 
 export async function automatedPoliticianChange({
 	accepted,
@@ -420,17 +501,21 @@ export async function automatedPoliticianChange({
 	currentPolitician,
 	proposedPolitician
 }: AutomatedPoliticianChangeType) {
-
 	if (accepted) {
 		await db.transaction(async (tx) => {
-			await updatePolitician(question.id, proposedPolitician.userId, proposedPolitician.fractionId, tx);
+			await updatePolitician(
+				question.id,
+				proposedPolitician.userId,
+				proposedPolitician.fractionId,
+				tx
+			);
 
 			await moderateQuestion({
 				questionId: question.id,
 				moderatorId: moderationAction.moderatorId,
 				action: 'politician-changed',
 				note: `Geautomatiseerde notitie: na bevestiging door vrager Kamerlid aangepast van ${currentPolitician.slug} naar ${proposedPolitician.slug}.`,
-				meta: {currentSlug: currentPolitician.slug, newSlug: proposedPolitician.slug},
+				meta: { currentSlug: currentPolitician.slug, newSlug: proposedPolitician.slug },
 				tx
 			});
 
@@ -450,20 +535,25 @@ export async function automatedPoliticianChange({
 			action: 'rejected',
 			rejectionReason: 'politician_change_rejected',
 			note: `Geautomatiseerde notitie: deze vraag werd automatisch afgekeurd na bevestiging door vrager om Kamerlid niet aan te passen.`,
-			meta: {currentSlug: currentPolitician.slug, newSlug: proposedPolitician.slug}
+			meta: { currentSlug: currentPolitician.slug, newSlug: proposedPolitician.slug }
 		});
 	}
 }
 
 export async function getProposedPoliticianModerationAction(question: QuestionType) {
 	const [moderationAction] = await db
-			.select()
-			.from(schema.moderationAction)
-			.where(and(eq(schema.moderationAction.questionId, question.id), eq(schema.moderationAction.action, 'pending-wrong-politician')))
-			.orderBy(desc(schema.moderationAction.createdAt))
-			.limit(1);
+		.select()
+		.from(schema.moderationAction)
+		.where(
+			and(
+				eq(schema.moderationAction.questionId, question.id),
+				eq(schema.moderationAction.action, 'pending-wrong-politician')
+			)
+		)
+		.orderBy(desc(schema.moderationAction.createdAt))
+		.limit(1);
 
-			return moderationAction;
+	return moderationAction;
 }
 
 type AnswerModeration = {
@@ -543,3 +633,195 @@ export function moderateAnswer({ answerId, moderatorId, action }: AnswerModerati
 		return { action };
 	});
 }
+
+export const answerModerationSchema = z.discriminatedUnion('action', [
+	z.object({
+		action: z.literal('approved'),
+		answerId: z.string().min(1)
+	}),
+	z.object({
+		action: z.literal('rejected'),
+		answerId: z.string().min(1)
+	}),
+	z.object({
+		action: z.literal('redact'),
+		answerId: z.string().min(1),
+		searchTexts: jsonCodec(z.array(z.string())),
+		replaceTexts: jsonCodec(z.array(z.string()))
+	}),
+	z.object({
+		action: z.literal('preview'),
+		answerId: z.string().min(1),
+		searchTexts: jsonCodec(z.array(z.string())),
+		replaceTexts: jsonCodec(z.array(z.string()))
+	}),
+	z.object({
+		action: z.literal('addRedaction'),
+		answerId: z.string().min(1),
+		searchTexts: jsonCodec(z.array(z.string())),
+		replaceTexts: jsonCodec(z.array(z.string()))
+	})
+]);
+export type AnswerModerationType = z.infer<typeof answerModerationSchema>['action'];
+type RedactModerationType = Pick<
+	Extract<z.infer<typeof answerModerationSchema>, { action: 'redact' }>,
+	'answerId' | 'searchTexts' | 'replaceTexts'
+>;
+
+type defaultAnswerModerationActionType = {
+	request: Request;
+	user?: UserType;
+};
+
+type defaultAnswerModerationActionResult = {
+	success: boolean;
+	action: AnswerModerationType;
+	statusCode?: number;
+	message?: string;
+	flashType?: 'success' | 'neutral';
+	answerId?: string;
+	searchTexts?: string[];
+	replaceTexts?: string[];
+	redactedBody?: string;
+};
+
+export const defaultAnswerModerationAction = async ({
+	request,
+	user
+}: defaultAnswerModerationActionType): Promise<defaultAnswerModerationActionResult> => {
+	const result = await validateForm(request, answerModerationSchema);
+	const ret = { action: result.data.action as AnswerModerationType };
+	if (!result.valid || !user)
+		return { ...ret, success: false, statusCode: 400, message: 'Ongeldige aanvraag.' };
+
+	const action = result.data.action as AnswerModerationType;
+
+	if (['redact', 'preview', 'addRedaction'].includes(action)) {
+		const data = result.data as RedactModerationType;
+		const redactedBody = await calculateRedactedBody({
+			answerId: data.answerId,
+			searchTexts: data.searchTexts,
+			replaceTexts: data.replaceTexts
+		});
+
+		if (action == 'redact') {
+			await commitRedaction(
+				user.id,
+				data.answerId,
+				data.searchTexts,
+				data.replaceTexts,
+				redactedBody
+			);
+
+			const message = 'Het antwoord is geredigeerd.';
+			const flashType = 'success';
+			return {
+				...ret,
+				success: true,
+				message,
+				flashType,
+				answerId: result.data.answerId
+			};
+		} else {
+			const searchTexts = data.searchTexts;
+			const replaceTexts = data.replaceTexts;
+			if (action === 'addRedaction') {
+				searchTexts.push('');
+				replaceTexts.push('<verwijderd>');
+			}
+			return {
+				...ret,
+				success: true,
+				answerId: result.data.answerId,
+				redactedBody,
+				searchTexts: searchTexts,
+				replaceTexts: replaceTexts
+			};
+		}
+	}
+
+	const outcome = await moderateAnswer({
+		answerId: result.data.answerId,
+		moderatorId: user.id,
+		action: action as 'approved' | 'rejected'
+	});
+
+	if ('error' in outcome)
+		return { ...ret, success: false, statusCode: 409, message: 'Dit antwoord is al behandeld.' };
+
+	const message =
+		action == 'approved' ? 'Je hebt het antwoord goedgekeurd' : 'Je hebt het antwoord afgewezen';
+	const flashType = action == 'approved' ? 'success' : 'neutral';
+
+	return {
+		...ret,
+		success: true,
+		statusCode: 200,
+		message,
+		flashType,
+		answerId: result.data.answerId
+	};
+};
+
+// Given arrays of searchTexts and replaceTexts, replace each searchText with replaceText using the PostgreSQL
+// function regexp_replace
+const calculateRedactedBody = async ({
+	answerId,
+	searchTexts,
+	replaceTexts
+}: RedactModerationType) => {
+	let query: SQL<string> = sql`body`;
+	let toChange: SQL<string> = sql`body`;
+	if (searchTexts.length > 0) {
+		for (const [index, searchText] of searchTexts.entries()) {
+			if (!searchText) continue;
+			const replaceText = replaceTexts[index];
+			const segment = sql<string>`regexp_replace(${toChange}, ${searchText},${replaceText},'g')`;
+			toChange = segment;
+			query = segment;
+		}
+	}
+	const [answer] = await db
+		.select({
+			redactedBody: sql<string>`${query}`
+		})
+		.from(schema.answer)
+		.where(eq(schema.answer.id, answerId));
+	return answer.redactedBody;
+};
+
+const commitRedaction = async (
+	moderatorId: string,
+	answerId: string,
+	searchTexts: string[],
+	replaceTexts: string[],
+	redactedBody: string
+) => {
+	await db.transaction(async (tx) => {
+		const rows = await tx
+			.select({ body: schema.answer.body })
+			.from(schema.answer)
+			.where(eq(schema.answer.id, answerId));
+		const originalBody = rows[0].body;
+
+		await tx
+			.update(schema.answer)
+			.set({ body: redactedBody })
+			.where(eq(schema.answer.id, answerId));
+
+		const meta = {
+			searchTexts: searchTexts,
+			replaceTexts: replaceTexts,
+			original: originalBody,
+			redacted: redactedBody
+		};
+
+		await tx.insert(schema.moderationAction).values({
+			id: crypto.randomUUID(),
+			moderatorId,
+			answerId,
+			action: 'answer-redacted',
+			meta
+		});
+	});
+};

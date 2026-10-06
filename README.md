@@ -88,6 +88,8 @@ keep formatting consistent.
 
 	To watch a scenario play out, use "headless: false" or "video: 'on'" inside `use` in `playwright.config.ts`.
 
+   To get debugging information when running E2E tests, see `writeTestLog`.
+
 1. To elevate a user to the `admin` role you can use `bin/make_admin.sh`
 
 ## Commands

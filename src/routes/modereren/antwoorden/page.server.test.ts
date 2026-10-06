@@ -53,7 +53,7 @@ describe('load', () => {
 
 		const result = (await page.load(makeLoadEvent(moderator))) as LoadData;
 
-		expect(result.queue).toMatchObject([{ id: answer.id }]);
+		expect(result.queue).toMatchObject([{ answer: { id: answer.id } }]);
 	});
 });
 

@@ -5,7 +5,7 @@ import {
 	recreateTestDatabase,
 	testDatabaseUrl
 } from '../test-database.setup.js';
-import { testAsker, testFraction, testPolitician } from './data';
+import { testAsker, testFraction, testModerator, testPolitician, testPoliticianUser } from './data';
 
 const baseDatabaseUrl = process.env.TEST_DATABASE_BASE_URL ?? process.env.DATABASE_URL;
 if (!baseDatabaseUrl) throw new Error('DATABASE_URL is not set');
@@ -19,17 +19,25 @@ const { client, db, schema } = await import('../src/lib/server/db/index.js');
 try {
 	await db.insert(schema.fraction).values(testFraction);
 	await db.insert(schema.user).values([
-		testAsker,
 		{
-			id: testPolitician.userId,
-			name: testPolitician.name,
-			email: testPolitician.email
+			...testAsker,
+			role: 'user'
+		},
+		{
+			...testModerator,
+			role: 'moderator'
+		},
+		{
+			id: testPoliticianUser.id,
+			name: testPoliticianUser.name,
+			email: testPoliticianUser.email,
+			role: 'politician'
 		}
 	]);
 	await db.insert(schema.politician).values({
 		id: testPolitician.id,
 		slug: testPolitician.slug,
-		userId: testPolitician.userId,
+		userId: testPoliticianUser.id,
 		fractionId: testFraction.id,
 		fractionRole: 'member'
 	});

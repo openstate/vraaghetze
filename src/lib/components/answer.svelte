@@ -1,76 +1,74 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { resolve } from '$app/paths';
-	import Avatar from '$lib/components/avatar.svelte';
 	import Button from '$lib/components/button.svelte';
-	import { formatDateLong } from '$lib/date-time';
+	import AnswerBody from './answer-body.svelte';
+	import AnswerRedacting from './answer-redacting.svelte';
 	import type { ListAnswerType } from '$lib/server/moderation';
+	import type { ActionData as AnswerListActionData } from '../../routes/modereren/antwoorden/$types';
+	import type { schema } from '$lib/server/db';
 
-	type Props = {
+	export type BasicAnswerProps = {
 		answer: ListAnswerType;
-	};
+	}
 
-	let { answer }: Props = $props();
+	export type ShowAnswerProps = {
+		moderationActions: typeof schema.moderationAction.$inferSelect[];
+	}
+
+	type RedactionAnswerProps = {
+		form: AnswerListActionData
+	}
+
+	export type AnswerProps = BasicAnswerProps & ShowAnswerProps & RedactionAnswerProps;
+
+	let { answer, moderationActions, form }: AnswerProps = $props();
+
+	let redacting = $state(false);
+
+	const redactStart = (event: Event) => {
+		event.preventDefault();
+		redacting = true;
+	}
+
+	const cancelRedact = (event: Event) => {
+		event.preventDefault();
+		redacting = false;
+	}
+
+	let startSearchTexts = [''];
+	let startReplaceTexts = ['<verwijderd>'];
+	let formRelevant = $derived(form?.answerId == answer.id && form?.redactedBody);
+	let redactedBody = $derived(formRelevant ? form?.redactedBody : answer.body);
+	let searchTexts = $derived((formRelevant && form?.searchTexts) ? form?.searchTexts : startSearchTexts);
+	let replaceTexts = $derived((formRelevant && form?.replaceTexts) ? form?.replaceTexts : startReplaceTexts);
 </script>
 
 <article class="overflow-hidden rounded bg-osf-canvas-100">
-	<div class="p-5">
-		<p class="mb-3 text-sm text-osf-canvas-600">
-			Vraag van {answer.authorName} op {formatDateLong(answer.questionCreatedAt)}
-		</p>
-
-		<a
-			href={resolve('/vragen/[slug]', { slug: answer.questionSlug })}
-			class="block font-serif text-xl/snug hover:underline"
-		>
-			{answer.questionTitle}
-		</a>
-
-		{#if answer.questionBody}
-			<p class="mt-2 whitespace-pre-wrap text-osf-canvas-500">
-				{answer.questionBody}
-			</p>
-		{/if}
-	</div>
-
-	<hr class="mx-5 border-osf-canvas-200" />
-
-	<div class="p-5">
-		<p class="whitespace-pre-wrap">{answer.body}</p>
-
-		<div class="mt-4 flex items-center gap-3">
-			<a
-				href={resolve('/politici/[slug]', { slug: answer.politicianSlug })}
-				class="shrink-0"
-				aria-hidden="true"
-				tabindex="-1"
-			>
-				<Avatar
-					size={40}
-					name={answer.politicianName}
-					src={resolve('/politici/[slug]/foto', { slug: answer.politicianSlug })}
-				/>
-			</a>
-			<p class="text-sm text-osf-canvas-600">
-				Antwoord van
-				<a
-					href={resolve('/politici/[slug]', { slug: answer.politicianSlug })}
-					class="hover:underline"
-					>{answer.politicianName}
-					{#if answer.fraction ?? answer.fractionName}({answer.fraction ??
-							answer.fractionName}){/if}</a
-				>
-				op {formatDateLong(answer.createdAt)}
-			</p>
-		</div>
-	</div>
-
-	<hr class="mx-5 border-osf-canvas-200" />
+	{#if !redacting || form?.redacted}
+		<AnswerBody {answer} {moderationActions} />
+	{/if}
 
 	<form method="POST" use:enhance class="flex flex-wrap gap-2 p-5">
 		<input type="hidden" name="answerId" value={answer.id} />
 
-		<Button type="submit" name="action" value="approved" variant="primary">Keur goed</Button>
-		<Button type="submit" name="action" value="rejected" variant="secondary">Negeer</Button>
+		{#if redacting && !form?.redacted}
+			<AnswerRedacting {answer} {redactedBody} bind:searchTexts={searchTexts} bind:replaceTexts={replaceTexts} />
+			<input type="hidden" name="searchTexts" value={JSON.stringify(searchTexts)} />
+			<input type="hidden" name="replaceTexts" value={JSON.stringify(replaceTexts)} />
+
+			<div class="flex grow justify-between">
+				<div class="flex grow basis-1 gap-5">
+					<Button type="submit" name="action" value="cancel" variant="secondary" onclick={cancelRedact}>Annuleren</Button>
+					<Button type="submit" name="action" value="preview" variant="secondary">Preview</Button>
+				</div>
+				<div>
+					<Button type="submit" name="action" value="redact" variant="primary">Opslaan</Button>
+				</div>
+			</div>
+		{:else}
+			<Button type="submit" name="action" value="approved" variant="primary">Keur goed</Button>
+			<Button type="submit" name="action" value="rejected" variant="secondary">Negeer</Button>
+			<Button type="submit" name="action" value="redactStart" variant="secondary" onclick={redactStart}>Redigeren</Button>
+		{/if}
 	</form>
 </article>

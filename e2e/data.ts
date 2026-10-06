@@ -6,10 +6,19 @@ export const testAsker = {
 
 export const testPolitician = {
 	id: 'e2e-politician',
-	userId: 'e2e-politician-user',
+	slug: 'jan-jansen'
+};
+
+export const testPoliticianUser = {
+	id: 'e2e-politician-user',
 	name: 'Jan Jansen',
 	email: 'jan.jansen@example.com',
-	slug: 'jan-jansen'
+};
+
+export const testModerator = {
+	id: 'e2e-moderator',
+	name: 'Mo Moderator',
+	email: 'mo.moderator@example.com'
 };
 
 export const testFraction = {

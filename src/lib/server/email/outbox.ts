@@ -24,6 +24,10 @@ export async function enqueueMail({ transaction, ...mail }: OutgoingMailOptions)
 
 	await (transaction ?? db).insert(schema.outbox).values({ id, ...mail });
 
+	if (process.env.ENV == 'testing') {
+		writeMailForTest({ to: mail.recipient, subject: mail.subject, text: mail.body, replyTo: mail.replyTo });
+	}
+
 	return id;
 }
 
@@ -196,7 +200,7 @@ function writeMailForTest({ to, subject, text, replyTo, from }: EmailOptions) {
 		if (match) {
 			filename = match[1];
 		} else {
-			filename = "mail";
+			filename = to;
 		}
 	}
 

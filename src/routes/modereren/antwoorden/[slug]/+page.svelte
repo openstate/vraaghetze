@@ -8,4 +8,4 @@
 {#if form?.error}
 	<p class="mb-4 text-sm text-osf-shocking-pink">{form.error}</p>
 {/if}
-<Answer {answer} />
+<Answer {answer} moderationActions={[]} {form} />

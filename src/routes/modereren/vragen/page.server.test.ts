@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as page from './+page.server';
 import {
@@ -13,6 +12,7 @@ import {
 	makeActionEvent,
 	statusOf
 } from '$lib/test-utils';
+import { getLastModerationActionForQuestion } from '$e2e/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -42,13 +42,6 @@ vi.mock(import('$lib/server/auth'), async (importOriginal) => {
 	};
 });
 
-async function getModerationAction(questionId: string) {
-	const [moderationAction] = await db
-		.select()
-		.from(schema.moderationAction)
-		.where(eq(schema.moderationAction.questionId, questionId));
-	return moderationAction;
-}
 
 type LoadData = Exclude<Awaited<ReturnType<typeof page.load>>, void>;
 
@@ -124,7 +117,7 @@ describe('default action, approving', () => {
 
 		expect(result).toMatchObject({ moderated: question.id });
 		expect(await getQuestion(question.id)).toMatchObject({ status: 'approved' });
-		expect((await getModerationAction(question.id)).rejectionReason).toBe('');
+		expect((await getLastModerationActionForQuestion(question.id)).rejectionReason).toBe('');
 		expect(enqueueMail).toHaveBeenCalled();
 	});
 
@@ -199,7 +192,7 @@ describe('default action, rejecting', () => {
 
 		expect(result).toMatchObject({ moderated: question.id });
 		expect(await getQuestion(question.id)).toMatchObject({ status: 'rejected' });
-		expect((await getModerationAction(question.id)).rejectionReason).toBe('offensive');
+		expect((await getLastModerationActionForQuestion(question.id)).rejectionReason).toBe('offensive');
 		expect(enqueueMail).toHaveBeenCalled();
 	});
 
@@ -232,7 +225,7 @@ describe('default action, rejecting', () => {
 
 		expect(result).toMatchObject({ moderated: question.id });
 		expect(await getQuestion(question.id)).toMatchObject({ status: 'rejected' });
-		expect((await getModerationAction(question.id)).rejectionReason).toBe('offensive,duplicate');
+		expect((await getLastModerationActionForQuestion(question.id)).rejectionReason).toBe('offensive,duplicate');
 		expect(enqueueMail).toHaveBeenCalled();
 	});
 
