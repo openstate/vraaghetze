@@ -19,7 +19,7 @@ type InboxRow = typeof schema.inbox.$inferSelect;
 
 type ignorableErrors = 'wrong_sender';
 
-export async function receiveInboundEmail(email: InboundEmail) {
+export async function receiveInboundEmail(email: InboundEmail, bodyBytes: Uint8Array) {
 	// store first, process second
 	const [stored] = await db
 		.insert(schema.inbox)
@@ -31,7 +31,8 @@ export async function receiveInboundEmail(email: InboundEmail) {
 			subject: email.subject,
 			dkimVerified: isSenderVerified(email),
 			status: 'received',
-			payload: email
+			payload: email,
+			bodyBytes: bodyBytes
 		})
 		.onConflictDoNothing({ target: schema.inbox.dedupKey })
 		.returning();

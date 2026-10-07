@@ -9,6 +9,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
 	if (!safeEquals(url.searchParams.get('token') ?? '', INBOUND_MAIL_TOKEN))
 		error(401, 'Ongeldig token');
 
+	const clonedRequest = request.clone();
 	const form = await validateForm(request, inboundEmailSchema);
 
 	if (!form.valid) {
@@ -16,7 +17,8 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		return new Response('ok');
 	}
 
-	await receiveInboundEmail(form.data);
+	const bodyBytes = await clonedRequest.bytes();
+	await receiveInboundEmail(form.data, bodyBytes);
 
 	return new Response('ok');
 };
