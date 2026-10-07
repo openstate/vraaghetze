@@ -48,7 +48,7 @@
 		<AnswerBody {answer} {moderationActions} />
 	{/if}
 
-	<form method="POST" use:enhance class="flex flex-wrap gap-2 p-5">
+	<form method="POST" use:enhance class="flex flex-wrap gap-2 p-5 flex-col">
 		<input type="hidden" name="answerId" value={answer.id} />
 
 		{#if redacting && !form?.redacted}
@@ -66,9 +66,11 @@
 				</div>
 			</div>
 		{:else}
-			<Button type="submit" name="action" value="approved" variant="primary">Keur goed</Button>
-			<Button type="submit" name="action" value="rejected" variant="secondary">Negeer</Button>
-			<Button type="submit" name="action" value="redactStart" variant="secondary" onclick={redactStart}>Redigeren</Button>
+			<div class="flex flex-row gap-2">
+				<Button type="submit" name="action" value="approved" variant="primary">Keur goed</Button>
+				<Button type="submit" name="action" value="rejected" variant="secondary">Negeer</Button>
+				<Button type="submit" name="action" value="redactStart" variant="secondary" onclick={redactStart}>Redigeren</Button>
+			</div>
 		{/if}
 	</form>
 </article>
