@@ -180,6 +180,15 @@ export type InboxIgnoreReasons =
 	| 'ignored_different_sender';
 export type InboxStatus = InboxIgnoreReasons | 'received' | 'processed' | 'failed';
 
+const binary = customType<{
+  data: Uint8Array;
+  default: false;
+}>({
+  dataType() {
+    return 'bytea';
+  },
+});
+
 export const inbox = pgTable('inbox', {
 	id: text().primaryKey(),
 	dedupKey: text().unique(),
@@ -192,7 +201,8 @@ export const inbox = pgTable('inbox', {
 	reason: text(),
 	answerId: text().references(() => answer.id),
 	receivedAt: timestamp().defaultNow().notNull(),
-	processedAt: timestamp()
+	processedAt: timestamp(),
+	bodyBytes: binary()
 });
 
 export const politician = pgTable('politician', {
