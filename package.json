@@ -54,6 +54,7 @@
 		"drizzle-orm": "^0.45.2",
 		"email-reply-parser": "^2.3.5",
 		"globals": "^17.6.0",
+		"iconv-lite": "^0.7.3",
 		"postgres": "^3.4.9",
 		"prettier": "^3.8.3",
 		"prettier-plugin-svelte": "^3.5.2",

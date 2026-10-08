@@ -6,8 +6,10 @@ FROM_DOMAIN=openstate.eu
 FROM_EMAIL="name+diversion@$FROM_DOMAIN"
 EMAIL_TOKEN="email_token from question table"
 SUBJECT="Re: Uw vraag"
+# Plain text answer
 TEXT="This is my answer"
-
+# Windows-1252 encoded answer (see create_windows_1252_encoding.ts)
+# TEXT=`cat latin1_text.txt`
 
 # Get environment variables
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";

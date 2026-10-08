@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 import { INBOUND_MAIL_TOKEN } from '$env/static/private';
 import { safeEquals, validateForm } from '$lib/server/utils/forms';
 import { inboundEmailSchema } from '$lib/server/email/parse-inbound';
-import { receiveInboundEmail } from '$lib/server/email/inbox';
+import { checkEncodings, receiveInboundEmail } from '$lib/server/email/inbox';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request, url }) => {
@@ -17,8 +17,11 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		return new Response('ok');
 	}
 
+	const rawData = form.data;
 	const bodyBytes = await clonedRequest.bytes();
-	await receiveInboundEmail(form.data, bodyBytes);
+	await checkEncodings({ rawData, contentType: request.headers.get('content-type') || '', bodyBytes });
+
+	await receiveInboundEmail(rawData, bodyBytes);
 
 	return new Response('ok');
 };

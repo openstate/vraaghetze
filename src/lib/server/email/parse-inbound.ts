@@ -20,10 +20,15 @@ export const inboundEmailSchema = z.object({
 	spam_score: z.coerce.number().optional(),
 	spam_report: z.string().optional(),
 	attachments: z.coerce.number().optional(),
-	email: z.string().optional()
+	email: z.string().optional(),
+	filename: z.string().optional()
 });
 
 export type InboundEmail = z.output<typeof inboundEmailSchema>;
+export type InboundEmailStringKey = Extract<
+	keyof InboundEmail,
+	'headers' | 'dkim' | 'SPF' | 'to' | 'from' | 'cc' | 'subject' | 'text' | 'html' | 'sender_ip' | 'spam_report' | 'email' | 'filename'
+>;
 
 const answerAddressPattern = /^antwoord\+([a-f0-9-]+)@/i;
 
