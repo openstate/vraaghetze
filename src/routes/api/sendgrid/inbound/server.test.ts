@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as endpoint from './+server';
+import { getInboxEmail } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -13,7 +13,12 @@ const testEnv = vi.hoisted(() => ({
 vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
 vi.mock('$env/static/private', () => ({ INBOUND_MAIL_TOKEN: 'test-webhook-token' }));
 
-function makePayload(sender: string): Record<string, string> {
+type PayLoadOptions = {
+	text?: string;
+	charsets: { to?: string, subject?: string, text?: string};
+}
+
+function makePayload(sender: string, options?: PayLoadOptions): Record<string, string> {
 	return {
 		headers: `From: Jan Jansen <${sender}>`,
 		dkim: '{@test.example : pass}',
@@ -21,10 +26,10 @@ function makePayload(sender: string): Record<string, string> {
 		to: 'info@test.example',
 		from: `Jan Jansen <${sender}>`,
 		subject: 'Re: Uw vraag',
-		text: 'Mijn antwoord op uw vraag.',
+		text: options?.text ?? 'Mijn antwoord op uw vraag.',
 		sender_ip: '127.0.0.1',
 		envelope: JSON.stringify({ from: sender, to: ['info@test.example'] }),
-		charsets: JSON.stringify({ to: 'UTF-8', subject: 'UTF-8' })
+		charsets: JSON.stringify(options?.charsets ?? { to: 'UTF-8', subject: 'UTF-8' })
 	};
 }
 
@@ -72,10 +77,7 @@ describe('POST', () => {
 		expect(response.status).toBe(200);
 		expect(await response.text()).toBe('ok');
 
-		const [stored] = await db
-			.select()
-			.from(schema.inbox)
-			.where(eq(schema.inbox.fromAddress, sender));
+		const stored = await getInboxEmail(sender);
 		expect(stored).toMatchObject({ status: 'ignored' });
 	});
 
@@ -89,5 +91,27 @@ describe('POST', () => {
 		expect(await response.text()).toBe('ok');
 		expect(await db.select().from(schema.inbox)).toHaveLength(0);
 		warn.mockRestore();
+	});
+});
+
+describe('different encodings', () => {
+	test('does not crash for unsupported encodings', async () => {
+		const sender = `${crypto.randomUUID()}@test.example`;
+
+		const payload = makePayload(
+			sender,
+			{
+				text: "Some text in non-supported encoding",
+				charsets: { to: 'UTF-8', subject: 'UTF-8', text: 'non-supported-encoding' }
+			}
+		);
+		const event = makeEvent('test-webhook-token', payload);
+
+		const response = await endpoint.POST(event);
+
+		expect(response.status).toBe(200);
+		expect(await response.text()).toBe('ok');
+		const stored = await getInboxEmail(sender);
+		expect(stored).toMatchObject({ status: 'ignored' });
 	});
 });

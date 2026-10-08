@@ -182,8 +182,16 @@ export const checkEncodings = async ({ rawData, contentType, bodyBytes }: checkE
 		const encoding = charsets[key as InboundEmailStringKey] as Encoding;
 		if (encoding.toLowerCase() === 'utf-8') continue
 
-		// Some of the encodings encountered so far: UTF-8, iso-8859-1, us-ascii, windows-1252
-		const body = iconv.decode(bodyBytes, encoding) as string;
+		let body: string;
+		try {
+			// Some of the encodings encountered so far: UTF-8, iso-8859-1, us-ascii, windows-1252
+			// icon.decode may produce the error Encoding not recognized
+			body = iconv.decode(bodyBytes, encoding) as string;
+		} catch (error) {
+			console.info(error);
+			continue;
+		}
+
 		const parts = body.split(boundary);
 		for (const part of parts) {
 			// A part consists of

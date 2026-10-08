@@ -69,7 +69,7 @@ describe('receiveInboundEmail', () => {
 	test('stores the answer for moderation without notifying anyone', async () => {
 		const { question, politician } = await myCreateQuestionAndUsers();
 
-		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
+		await receiveInboundEmail(makeEmail(politician.email, question.emailToken), new Uint8Array());
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('processed');
@@ -99,9 +99,10 @@ describe('receiveInboundEmail', () => {
 	test('stores a second reply as long as nothing has been published', async () => {
 		const { question, politician } = await myCreateQuestionAndUsers();
 
-		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
+		await receiveInboundEmail(makeEmail(politician.email, question.emailToken), new Uint8Array());
 		await receiveInboundEmail(
-			makeEmail(politician.email, question.emailToken, { text: 'Nu mijn echte antwoord.' })
+			makeEmail(politician.email, question.emailToken, { text: 'Nu mijn echte antwoord.' }),
+			new Uint8Array()
 		);
 
 		const answers = await db
@@ -117,8 +118,8 @@ describe('receiveInboundEmail', () => {
 		const { question, politician } = await myCreateQuestionAndUsers();
 		const email = makeEmail(politician.email, question.emailToken);
 
-		await receiveInboundEmail(email);
-		await receiveInboundEmail(email);
+		await receiveInboundEmail(email, new Uint8Array());
+		await receiveInboundEmail(email, new Uint8Array());
 
 		const inboxRows = await db
 			.select()
@@ -138,7 +139,7 @@ describe('receiveInboundEmail', () => {
 	test('ignores mail without an answer token', async () => {
 		const { politician } = await myCreateQuestionAndUsers();
 
-		await receiveInboundEmail(makeEmail(politician.email, null));
+		await receiveInboundEmail(makeEmail(politician.email, null), new Uint8Array());
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored');
@@ -151,7 +152,7 @@ describe('receiveInboundEmail', () => {
 			headers: 'Precedence: bulk'
 		});
 
-		await receiveInboundEmail(email);
+		await receiveInboundEmail(email, new Uint8Array());
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored');
@@ -163,7 +164,7 @@ describe('receiveInboundEmail', () => {
 		const email = makeEmail(politician.email, question.emailToken);
 		email.envelope = { ...email.envelope, from: '' };
 
-		await receiveInboundEmail(email);
+		await receiveInboundEmail(email, new Uint8Array());
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored');
@@ -176,7 +177,7 @@ describe('receiveInboundEmail', () => {
 			dkim: '{@test.example : fail}'
 		});
 
-		await receiveInboundEmail(email);
+		await receiveInboundEmail(email, new Uint8Array());
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored_dkim_failure');
@@ -186,7 +187,7 @@ describe('receiveInboundEmail', () => {
 	test('ignores mail with an unknown token', async () => {
 		const sender = `${crypto.randomUUID()}@test.example`;
 
-		await receiveInboundEmail(makeEmail(sender, crypto.randomUUID()));
+		await receiveInboundEmail(makeEmail(sender, crypto.randomUUID()), new Uint8Array());
 
 		const stored = await getInboxRow(sender);
 		expect(stored.status).toBe('ignored');
@@ -196,7 +197,7 @@ describe('receiveInboundEmail', () => {
 	test('ignores replies to a question that is not approved', async () => {
 		const { question, politician } = await myCreateQuestionAndUsers({ status: 'pending' });
 
-		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
+		await receiveInboundEmail(makeEmail(politician.email, question.emailToken), new Uint8Array());
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored_question_not_approved');
@@ -213,7 +214,7 @@ describe('receiveInboundEmail', () => {
 			status: 'approved'
 		});
 
-		await receiveInboundEmail(makeEmail(politician.email, question.emailToken));
+		await receiveInboundEmail(makeEmail(politician.email, question.emailToken), new Uint8Array());
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored_question_already_answered');
@@ -224,7 +225,7 @@ describe('receiveInboundEmail', () => {
 		const { question } = await myCreateQuestionAndUsers();
 		const stranger = await createUser('Sjaak Stranger');
 
-		await receiveInboundEmail(makeEmail(stranger.email, question.emailToken));
+		await receiveInboundEmail(makeEmail(stranger.email, question.emailToken), new Uint8Array());
 
 		const stored = await getInboxRow(stranger.email);
 		expect(stored.status).toBe('ignored_different_sender');
@@ -235,7 +236,7 @@ describe('receiveInboundEmail', () => {
 		const { question, politician } = await myCreateQuestionAndUsers();
 		const email = makeEmail(politician.email, question.emailToken, { text: '' });
 
-		await receiveInboundEmail(email);
+		await receiveInboundEmail(email, new Uint8Array());
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored');
@@ -246,7 +247,7 @@ describe('receiveInboundEmail', () => {
 		testEnv.DIVERSION_EMAIL = 'divert@test.example';
 		const { question } = await myCreateQuestionAndUsers();
 
-		await receiveInboundEmail(makeEmail(testEnv.DIVERSION_EMAIL, question.emailToken));
+		await receiveInboundEmail(makeEmail(testEnv.DIVERSION_EMAIL, question.emailToken), new Uint8Array());
 
 		const stored = await getInboxRow(testEnv.DIVERSION_EMAIL);
 		expect(stored.status).toBe('processed');
