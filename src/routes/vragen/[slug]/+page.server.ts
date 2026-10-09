@@ -7,6 +7,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { automatedPoliticianChange, getProposedPoliticianModerationAction } from '$lib/server/moderation';
 import type { UserType } from '$lib/server/auth';
 import type { schema } from '$lib/server/db';
+import { slugify } from '$lib/server/utils/slug';
 
 const RELATED_QUESTIONS = 3;
 
@@ -44,20 +45,24 @@ const getPoliticianChangeInfo = async ({ user, slug }: getPoliticianChangeInfoTy
 export const load: PageServerLoad = async ({ params, locals, url }) => {
 	const viewerId = locals.user?.id ?? null;
 
-	const result = await questions.bySlug(params.slug, viewerId);
+	const slug = slugify(params.slug); // Early links sent out were followed by a . ('dot') - this ensure that the question is found
+	let doel = url.searchParams.get('doel');
+	if (doel) doel = doel.replace(/\.$/, '') // Same as for slug
+
+	const result = await questions.bySlug(slug, viewerId);
 	if (!result.question) {
 		if (locals.user) error(404, 'Vraag niet gevonden');
 		else return redirect(307, `/inloggen?returnTo=${encodeURIComponent(url.toString())}`);
 	}
 
-	let acceptPoliticianChange = url.searchParams.get('doel') === 'kamerlid_wijzigen';
+	let acceptPoliticianChange = doel === 'kamerlid_wijzigen';
 	let proposedPoliticianName: string | undefined = undefined;
 	if (acceptPoliticianChange) {
-		const { user, question, currentPolitician, moderationAction, proposedPolitician } = await getPoliticianChangeInfo({ user: locals.user, slug: params.slug });
+		const { user, question, currentPolitician, moderationAction, proposedPolitician } = await getPoliticianChangeInfo({ user: locals.user, slug });
 		if (!user || !question || !currentPolitician || !moderationAction || !proposedPolitician) acceptPoliticianChange = false;
 		proposedPoliticianName = proposedPolitician?.name
 	}
-	const needsConfirm = viewerId ? await questions.pendingConfirmation(params.slug, viewerId) : null;
+	const needsConfirm = viewerId ? await questions.pendingConfirmation(slug, viewerId) : null;
 	const { followers, isFollowing } = await follows.countForQuestion(result.question.id, viewerId);
 
 	const banner =
@@ -68,10 +73,10 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 			needsConfirm
 				? 'needs-confirm'
 				: // matches if they just confirmed it through the link in their mail
-					needsConfirm === false && url.searchParams.get('doel') === 'bevestigen'
+					needsConfirm === false && doel === 'bevestigen'
 					? 'verified'
 					: // matches if they came back from the follow mail but have not pressed the bell yet
-						url.searchParams.get('doel') === 'volgen' && !isFollowing
+						doel === 'volgen' && !isFollowing
 						? 'follow'
 						: null;
 
@@ -79,7 +84,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 		...result,
 		followers,
 		isFollowing,
-		related: await questions.relatedTo(params.slug, RELATED_QUESTIONS),
+		related: await questions.relatedTo(slug, RELATED_QUESTIONS),
 		banner,
 		proposedPoliticianName: proposedPoliticianName,
 		meta: { title: result.question.title }
@@ -92,16 +97,18 @@ export const actions = {
 	bevestigen: async ({ params, locals, request }) => {
 		if (!locals.user) error(401, 'Log in om je vraag te bevestigen.');
 
+		const slug = slugify(params.slug); // Early links sent out were followed by a . ('dot') - this ensures that the question is found
+
 		const parsed = choiceSchema.safeParse(Object.fromEntries(await request.formData()));
 		if (!parsed.success) return fail(400, { error: true });
 
 		if (parsed.data.keuze === 'nee') {
-			const disowned = await questions.disownQuestion(params.slug, locals.user.id);
+			const disowned = await questions.disownQuestion(slug, locals.user.id);
 			if (!disowned) error(404, 'Vraag niet gevonden');
 			redirect(303, '/');
 		}
 
-		const claimed = await questions.claimQuestion(params.slug, locals.user.id);
+		const claimed = await questions.claimQuestion(slug, locals.user.id);
 		if (!claimed) error(404, 'Vraag niet gevonden');
 
 		return { confirmed: true };
@@ -109,7 +116,9 @@ export const actions = {
 	volgen: async ({ params, locals }) => {
 		if (!locals.user) error(401, 'Log in om deze vraag te volgen.');
 
-		const followed = await follows.follow(params.slug, locals.user.id);
+		const slug = slugify(params.slug); // Early links sent out were followed by a . ('dot') - this ensures that the question is found
+
+		const followed = await follows.follow(slug, locals.user.id);
 
 		if ('error' in followed) {
 			if (followed.error === 'unknown-question') error(404, 'Vraag niet gevonden');
@@ -127,12 +136,16 @@ export const actions = {
 	ontvolgen: async ({ params, locals }) => {
 		if (!locals.user) error(401, 'Log in om deze vraag niet meer te volgen.');
 
-		await follows.unfollow(params.slug, locals.user.id);
+		const slug = slugify(params.slug); // Early links sent out were followed by a . ('dot') - this ensures that the question is found
+
+		await follows.unfollow(slug, locals.user.id);
 
 		return { unfollowed: true };
 	},
 	kamerlid_wijzigen: async ({ params, locals, request }) => {
-		const { user, question, currentPolitician, moderationAction, proposedPolitician } = await getPoliticianChangeInfo({ user: locals.user, slug: params.slug });
+		const slug = slugify(params.slug); // Early links sent out were followed by a . ('dot') - this ensures that the question is found
+
+		const { user, question, currentPolitician, moderationAction, proposedPolitician } = await getPoliticianChangeInfo({ user: locals.user, slug });
 		if (!user) error(401, 'Log in om het Kamerlid te wijzigen.');
 		if (!question) error(404, 'Vraag niet gevonden');
 		if (!currentPolitician) error(404, 'Kamerlid niet gevonden');
