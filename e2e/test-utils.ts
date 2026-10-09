@@ -96,7 +96,7 @@ export async function getMagicLinkMail(email: string) {
 		readFileSync(`./test-results/mails/${magicLinkIdentifier}.json`).toString()
 	);
 
-	let match = /\s(http:\/\/127.0.0.1:4173\/api\/auth\/magic-link[^\s]+)\.\s/.exec(contents.body);
+	let match = /\s(http:\/\/127.0.0.1:4173\/api\/auth\/magic-link[^\s]+)\s/.exec(contents.body);
 	if (match) {
 		contents = { ...contents, magicLinkUrl: match[1] };
 	}
