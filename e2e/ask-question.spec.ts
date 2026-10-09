@@ -1,9 +1,9 @@
-import { expect, schema, signInAs, test } from './fixtures';
+import { expect, signInAs, test } from './fixtures';
 import { testAsker, testPoliticianUser } from './data';
 import { randomBytes } from 'node:crypto';
 import { getMagicLinkMail, testBeforeEach } from './test-utils';
 
-test.beforeEach(async ({ db, page }) => {
+test.beforeEach(async ({ page }) => {
 	await testBeforeEach(page);
 });
 

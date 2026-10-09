@@ -232,16 +232,6 @@ export async function getVerificationForEmail(email: string) {
 		.where(eq(schema.verification.value, `{"email":"${email}"}`));
 }
 
-export async function getInboxEmail(sender: string) {
-	const [stored] = await db
-		.select()
-		.from(schema.inbox)
-		.where(eq(schema.inbox.fromAddress, sender));
-
-	return stored;
-}
-
-
 export function createCookiesStub(initialCookies = {}) {
 	const store = new Map(Object.entries(initialCookies));
 

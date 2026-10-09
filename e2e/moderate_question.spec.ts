@@ -1,8 +1,8 @@
-import { expect, schema, signInAs, test } from './fixtures';
+import { expect, signInAs, test } from './fixtures';
 import { testAsker, testModerator, testPolitician, testPoliticianUser } from './data';
 import { createQuestion, getEnqueuedMail, testBeforeEach } from './test-utils';
 
-test.beforeEach(async ({ db, page }) => {
+test.beforeEach(async ({ page }) => {
 	await testBeforeEach(page);
 });
 

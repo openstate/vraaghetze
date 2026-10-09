@@ -46,3 +46,4 @@ try {
 }
 
 mkdirSync('./test-results/mails', { recursive: true }	);
+mkdirSync('./test-results/bash-scripts', { recursive: true }	);

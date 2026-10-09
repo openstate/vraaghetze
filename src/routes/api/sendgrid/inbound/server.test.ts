@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { db, schema } from '$lib/server/db';
 import * as endpoint from './+server';
-import { getInboxEmail } from '$lib/test-utils';
+import { getInboxEmail } from '$e2e/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',

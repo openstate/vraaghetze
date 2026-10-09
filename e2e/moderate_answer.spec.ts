@@ -2,7 +2,7 @@ import { expect, signInAs, test } from './fixtures';
 import { testAsker, testModerator, testPoliticianUser } from './data';
 import { createQuestion, createAnswer, getLastModerationActionForAnswer, testBeforeEach } from './test-utils';
 
-test.beforeEach(async ({ db, page }) => {
+test.beforeEach(async ({ page }) => {
 	await testBeforeEach(page);
 });
 

@@ -1,5 +1,5 @@
 import { db, schema } from '$lib/server/db';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { desc, eq } from 'drizzle-orm';
 import type { Page } from '@playwright/test';
 
@@ -60,7 +60,7 @@ export async function getLastModerationActionForQuestion(questionId: string) {
 		.orderBy(desc(schema.moderationAction.createdAt))
 		.limit(1);
 
-		return moderationAction;
+	return moderationAction;
 }
 
 export async function getLastModerationActionForAnswer(answerId: string) {
@@ -71,7 +71,13 @@ export async function getLastModerationActionForAnswer(answerId: string) {
 		.orderBy(desc(schema.moderationAction.createdAt))
 		.limit(1);
 
-		return moderationAction;
+	return moderationAction;
+}
+
+export async function getInboxEmail(sender: string) {
+	const [stored] = await db.select().from(schema.inbox).where(eq(schema.inbox.fromAddress, sender));
+
+	return stored;
 }
 
 async function getMagicLinkIdentifier(email: string) {
@@ -104,9 +110,69 @@ export async function getMagicLinkMail(email: string) {
 }
 
 export async function getEnqueuedMail(email: string) {
-	const contents = JSON.parse(
-		readFileSync(`./test-results/mails/${email}.json`).toString()
-	);
+	const contents = JSON.parse(readFileSync(`./test-results/mails/${email}.json`).toString());
 
 	return contents;
 }
+
+type CreateSendgridCurlScriptType = {
+	filename: string;
+	fromEmail: string;
+	emailToken: string;
+	subject?: string; // Specify either subject or subjectFilename
+	subjectFilename?: string;
+	text?: string; // specify either text or textFilename
+	textFilename?: string;
+	charsets?: { text?: string; subject?: string };
+};
+
+export const createSendgridCurlScript = (options: CreateSendgridCurlScriptType) => {
+	const script =
+		`#!/bin/bash
+FROM_NAME="Jan Jansen"
+FROM_DOMAIN=${options.fromEmail.split('@')[1]}
+FROM_EMAIL="${options.fromEmail}"
+EMAIL_TOKEN="${options.emailToken}"
+SUBJECT=` +
+		(options.subject ? `"${options.subject}"` : `\`cat ${options.subjectFilename}\``) +
+		`
+TEXT=` +
+		(options.text ? `"${options.text}"` : `\`cat ${options.textFilename}\``) +
+		`
+
+# Get environment variables
+source "${process.cwd()}/.env"
+
+PARAMS=(
+  -H 'Content-type: multipart/form-data'
+  -F headers="From: $FROM_NAME <$FROM_EMAIL>"
+  -F dkim="{@$FROM_DOMAIN : pass}"
+  -F SPF=pass
+  -F to="antwoord+$EMAIL_TOKEN@vraaghetze.nu"
+  -F from="$FROM_NAME <$FROM_EMAIL>"
+  -F subject="$SUBJECT"
+  -F text="$TEXT"
+  -F sender_ip=127.0.0.1
+  -F envelope="{ \\"from\\": \\"$FROM_EMAIL\\", \\"to\\": [\\"antwoord+$EMAIL_TOKEN@vraaghetze.nu\\"] }"
+  -F charsets="{ \\"to\\": \\"UTF-8\\", \\"subject\\": \\"${options.charsets?.subject ?? 'UTF-8'}\\", \\"text\\": \\"${options.charsets?.text ?? 'UTF-8'}\\" }"
+)
+curl -X POST "http://127.0.0.1:4173/api/sendgrid/inbound?token=$INBOUND_MAIL_TOKEN" "$\{PARAMS[@]}"`;
+
+	const scriptName = `${process.cwd()}/test-results/bash-scripts/${options.filename}`;
+	writeFileSync(scriptName, script, { mode: '555' });
+
+	return scriptName;
+};
+
+type CreateEncodedTextFileType = {
+	text: string;
+	encoding: string;
+	filename: string;
+};
+
+export const createEncodedTextFile = (options: CreateEncodedTextFileType) => {
+	const textFilename = `${process.cwd()}/test-results/bash-scripts/${options.filename}.txt`;
+	writeFileSync(textFilename, options.text, { encoding: options.encoding as BufferEncoding });
+
+	return textFilename;
+};
