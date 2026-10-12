@@ -32,6 +32,7 @@ import type { PoliticianType } from './politicians';
 import { validateForm } from './utils/forms';
 import type { UserType } from './auth';
 import { jsonCodec } from './utils/zod';
+import type { InboxStatus } from '$lib/moderation';
 
 const politicianUser = alias(schema.user, 'politicianUser');
 const moderatorUser = alias(schema.user, 'moderatorUser');
@@ -311,7 +312,7 @@ export function listQuestions({ page, perPage }: Pagination) {
 	});
 }
 
-export function listInbox({ page, perPage }: Pagination) {
+export function listInbox({ page, perPage }: Pagination, statusSelect: InboxStatus | null) {
 	return db.transaction(async (tx) => {
 		const rows = await tx
 			.select({
@@ -325,6 +326,7 @@ export function listInbox({ page, perPage }: Pagination) {
 				processedAt: schema.inbox.processedAt
 			})
 			.from(schema.inbox)
+			.where(statusSelect ? eq(schema.inbox.status, statusSelect) : undefined)
 			.orderBy(desc(schema.inbox.receivedAt))
 			.limit(perPage)
 			.offset((page - 1) * perPage);

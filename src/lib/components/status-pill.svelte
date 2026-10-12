@@ -1,5 +1,6 @@
 <script module lang="ts">
-	import type { InboxStatus, QuestionStatus, OutboxStatus } from '$lib/server/db/app.schema';
+	import type { InboxStatus } from '$lib/moderation';
+	import type { QuestionStatus, OutboxStatus } from '$lib/server/db/app.schema';
 
 	type Tone = 'neutral' | 'positive' | 'warning' | 'danger';
 

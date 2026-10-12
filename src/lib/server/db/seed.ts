@@ -7,7 +7,7 @@ import { writeFile } from 'node:fs/promises';
 import { client, db, schema } from '$lib/server/db';
 import { dedupKey } from '$lib/server/email/parse-inbound';
 import { slugify, slugifyUnique } from '$lib/server/utils/slug';
-import type { InboxStatus, QuestionStatus } from './app.schema';
+import type { QuestionStatus } from './app.schema';
 import {
 	answerVoices,
 	approvalNotes,
@@ -20,7 +20,7 @@ import {
 	topics,
 	type SeedQuestion
 } from './seed-corpus';
-import { rejectionReasons } from '$lib/moderation';
+import { rejectionReasons, type InboxStatus } from '$lib/moderation';
 import { MAGIC_LINK_EXPIRY } from '../auth';
 
 const ADMINS = [{ name: 'Open State Developers', email: 'developers@openstate.eu' }];

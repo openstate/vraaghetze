@@ -13,6 +13,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { account, session, user } from './auth.schema';
 import type { InboundEmail } from '../email/parse-inbound';
+import type { InboxStatus } from '$lib/moderation';
 
 // --- TABLES ---
 
@@ -21,7 +22,14 @@ const tsvector = customType<{ data: string; driverData: string }>({ dataType: ()
 
 export type FractionRole = 'member' | 'chair';
 
-export type ModerationAction = 'pending' | 'pending-wrong-politician' | 'approved' | 'rejected' | 'politician-changed' | 'note-added' | 'answer-redacted';
+export type ModerationAction =
+	| 'pending'
+	| 'pending-wrong-politician'
+	| 'approved'
+	| 'rejected'
+	| 'politician-changed'
+	| 'note-added'
+	| 'answer-redacted';
 export type QuestionStatus = 'pending' | 'pending-wrong-politician' | 'approved' | 'rejected';
 
 export type MetaType = {
@@ -172,21 +180,13 @@ export const outbox = pgTable(
 	(table) => [index('outbox_sweep_idx').on(table.status, table.nextAttemptAt)]
 );
 
-export type InboxIgnoreReasons =
-	| 'ignored'
-	| 'ignored_dkim_failure'
-	| 'ignored_question_not_approved'
-	| 'ignored_question_already_answered'
-	| 'ignored_different_sender';
-export type InboxStatus = InboxIgnoreReasons | 'received' | 'processed' | 'failed';
-
 const binary = customType<{
-  data: Uint8Array;
-  default: false;
+	data: Uint8Array;
+	default: false;
 }>({
-  dataType() {
-    return 'bytea';
-  },
+	dataType() {
+		return 'bytea';
+	}
 });
 
 export const inbox = pgTable('inbox', {

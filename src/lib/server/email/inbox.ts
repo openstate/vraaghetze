@@ -12,8 +12,8 @@ import {
 	type InboundEmail,
 	type InboundEmailStringKey
 } from './parse-inbound';
-import type { InboxIgnoreReasons } from '$lib/server/db/app.schema';
 import iconv, { type Encoding } from 'iconv-lite';
+import type { InboxIgnoreReason } from '$lib/moderation';
 
 const politicianUser = alias(schema.user, 'politicianUser');
 
@@ -141,7 +141,7 @@ export async function processMail(mail: InboxRow, ignoreErrors: ignorableErrors[
 	return answerId as string;
 }
 
-async function settle(mail: InboxRow, status: InboxIgnoreReasons | 'failed', reason: string) {
+async function settle(mail: InboxRow, status: InboxIgnoreReason | 'failed', reason: string) {
 	await db
 		.update(schema.inbox)
 		.set({ status, reason, processedAt: new Date() })
@@ -153,7 +153,7 @@ type checkEncodingsType = {
 	rawData: InboundEmail;
 	contentType: string;
 	bodyBytes: Uint8Array;
-}
+};
 
 // Mails received via Sendgrid are json structures in UTF-8 encoding. `rawData` is a dict containing
 // this json structure. Some values may have different encoding though. And because the whole json
@@ -171,16 +171,16 @@ type checkEncodingsType = {
 // If a certain field has a different encoding, e.g windows-1252, reprocess `bodyBytes`
 // using that encoding, extract the value and place it in `rawData`.
 export const checkEncodings = async ({ rawData, contentType, bodyBytes }: checkEncodingsType) => {
-	const charsets = (rawData['charsets'] || {}) as { [key in InboundEmailStringKey]?: string};;
+	const charsets = (rawData['charsets'] || {}) as { [key in InboundEmailStringKey]?: string };
 	const keys = Object.keys(charsets) as Array<InboundEmailStringKey>;
 	if (keys.length == 0) return;
 
 	// Now parse the rawPostData and extract the contents in the proper encoding
-	const boundary = "--" + contentType.split("boundary=")[1];
+	const boundary = '--' + contentType.split('boundary=')[1];
 
 	for (const key of keys) {
 		const encoding = charsets[key as InboundEmailStringKey] as Encoding;
-		if (encoding.toLowerCase() === 'utf-8') continue
+		if (encoding.toLowerCase() === 'utf-8') continue;
 
 		let body: string;
 		try {
@@ -200,7 +200,7 @@ export const checkEncodings = async ({ rawData, contentType, bodyBytes }: checkE
 			//		- \r\n\r\n
 			//		- body
 			//		- \r\n
-			const separatorIndex = part.indexOf("\r\n\r\n");
+			const separatorIndex = part.indexOf('\r\n\r\n');
 			if (separatorIndex == -1) continue;
 
 			const partHeader = part.substring(2, separatorIndex);

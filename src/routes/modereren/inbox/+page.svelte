@@ -5,12 +5,15 @@
 	import DateTime from '$lib/components/date-time.svelte';
 	import StatusPill, { inboxStatusPills } from '$lib/components/status-pill.svelte';
 	import Pagination from '$lib/components/pagination.svelte';
+	import { inboxStatusTitles } from '$lib/moderation.js';
 
 	let { data } = $props();
 
 	type Row = (typeof data.rows)[number];
 
 	const helper = createColumnHelper<typeof features, Row>();
+
+	const titles = inboxStatusTitles();
 
 	const columns = helper.columns([
 		helper.display({
@@ -19,7 +22,7 @@
 			meta: { class: 'w-14' },
 			cell: (cell) =>
 				renderComponent(DetailsDialog, {
-					title: dialogTitles[cell.row.original.status],
+					title: titles[cell.row.original.status],
 					details: details(cell.row.original)
 				})
 		}),
@@ -45,17 +48,6 @@
 			cell: (cell) => renderComponent(DateTime, { value: cell.getValue(), time: true })
 		})
 	]);
-
-	const dialogTitles = {
-		received: 'Onafgehandelde e-mail',
-		processed: 'Verwerkte e-mail',
-		ignored: 'Genegeerde e-mail',
-		ignored_dkim_failure: 'Genegeerde e-mail',
-		ignored_question_not_approved: 'Genegeerde e-mail',
-		ignored_question_already_answered: 'Genegeerde e-mail',
-		ignored_different_sender: 'Genegeerde e-mail',
-		failed: 'Mislukte e-mail'
-	} satisfies Record<Row['status'], string>;
 
 	function details(row: Row) {
 		return [

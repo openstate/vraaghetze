@@ -13,9 +13,11 @@ const editInboxSchema = z.object({
 	action: z.literal('process_anyway')
 });
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ parent, url }) => {
+	const parentData = await parent();
+	const statusSelect = parentData.query.statusSelect;
 	const pagination = parsePagination(url);
-	const inbox = await moderation.listInbox(pagination);
+	const inbox = await moderation.listInbox(pagination, statusSelect);
 	return { ...inbox, ...pagination };
 };
 

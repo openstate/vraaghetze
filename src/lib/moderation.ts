@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const rejectionKeys = [
 	'spam_promotion',
 	'duplicate',
@@ -30,9 +32,7 @@ export const rejectionReasons: rejectionReasonsType = {
 	no_author: 'De vraag is niet vanuit een persoonlijk account gesteld.'
 };
 
-export const hiddenRejectionKeys = [
-	'politician_change_rejected'
-] as const;
+export const hiddenRejectionKeys = ['politician_change_rejected'] as const;
 
 export type hiddenRejectionKeyType = (typeof hiddenRejectionKeys)[number];
 type hiddenRejectionReasonsType = Record<hiddenRejectionKeyType, string>;
@@ -42,12 +42,17 @@ export const hiddenRejectionReasons: hiddenRejectionReasonsType = {
 
 export type allRejectionKeyType = rejectionKeyType | hiddenRejectionKeyType;
 type allRejectionReasonsType = Record<allRejectionKeyType, string>;
-export const allRejectionReasons: allRejectionReasonsType = {...rejectionReasons, ...hiddenRejectionReasons};
+export const allRejectionReasons: allRejectionReasonsType = {
+	...rejectionReasons,
+	...hiddenRejectionReasons
+};
 
 export const rejectionReasonTexts = (rejectionReason?: string | null) => {
 	if (!rejectionReason) return [];
 
-	const reasons: allRejectionKeyType[] = rejectionReason.split(',').map((reason) => reason as allRejectionKeyType);
+	const reasons: allRejectionKeyType[] = rejectionReason
+		.split(',')
+		.map((reason) => reason as allRejectionKeyType);
 	return reasons.map((reason) => allRejectionReasons[reason]);
 };
 
@@ -59,4 +64,47 @@ export const redactionInfo = (searchTexts: string[], replaceTexts: string[]) => 
 	}
 
 	return info.join(' , ');
+};
+
+export const inboxIgnoreReasons = [
+	'ignored',
+	'ignored_dkim_failure',
+	'ignored_question_not_approved',
+	'ignored_question_already_answered',
+	'ignored_different_sender'
+] as const;
+const inboxOtherReasons = ['received', 'processed', 'failed'] as const;
+export const inboxStatuses = [...inboxIgnoreReasons, ...inboxOtherReasons];
+export type InboxIgnoreReason = (typeof inboxIgnoreReasons)[number];
+export type InboxStatus = (typeof inboxStatuses)[number];
+
+export const inboxStatusTitles = (extended?: boolean) => {
+	return {
+		received: 'Onafgehandelde e-mail',
+		processed: 'Verwerkte e-mail',
+		ignored: 'Genegeerde e-mail',
+		ignored_dkim_failure: `Genegeerde e-mail${extended ? ' (dkim)' : ''}`,
+		ignored_question_not_approved: `Genegeerde e-mail${extended ? ' (afgewezen)' : ''}`,
+		ignored_question_already_answered: `Genegeerde e-mail${extended ? ' (al beantwoord)' : ''}`,
+		ignored_different_sender: `Genegeerde e-mail${extended ? ' (andere afzender)' : ''}`,
+		failed: 'Mislukte e-mail'
+	} satisfies Record<InboxStatus, string>;
+}
+
+export type ModerationSearchQuery = {
+	statusSelect: InboxStatus | null;
+};
+
+const moderationSearchSchema = z.object({
+	statusSelect: z.enum(inboxStatuses).nullable().catch(null)
+});
+
+export function parseModerationSearch(url: URL) {
+	const parsed = moderationSearchSchema.parse({
+		statusSelect: url.searchParams.get('statusSelect')
+	});
+
+	return {
+		statusSelect: parsed.statusSelect
+	} satisfies ModerationSearchQuery;
 }
