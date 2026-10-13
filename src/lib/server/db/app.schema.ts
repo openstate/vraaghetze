@@ -27,10 +27,13 @@ export type ModerationAction =
 	| 'pending-wrong-politician'
 	| 'approved'
 	| 'rejected'
+	| 'updateAsker'
 	| 'politician-changed'
 	| 'note-added'
 	| 'answer-redacted';
 export type QuestionStatus = 'pending' | 'pending-wrong-politician' | 'approved' | 'rejected';
+
+export type AnswerStatus = 'pending' | 'approved' | 'rejected' | 'updateAsker';
 
 export type MetaType = {
 	// used to denote the politician for action pending-wrong-politician
@@ -51,7 +54,6 @@ const postColumns = {
 		.references(() => user.id)
 		.notNull(),
 	body: text().notNull(),
-	status: text().$type<QuestionStatus>().default('pending').notNull(),
 	createdAt: timestamp().defaultNow().notNull(),
 	updatedAt: timestamp()
 		.defaultNow()
@@ -63,6 +65,7 @@ export const question = pgTable(
 	'question',
 	{
 		...postColumns,
+		status: text().$type<QuestionStatus>().default('pending').notNull(),
 		title: text().notNull(),
 		slug: text().unique().notNull(),
 		assigneeId: text()
@@ -90,7 +93,8 @@ export const answer = pgTable(
 	'answer',
 	{
 		...postColumns,
-		questionId: text()
+			status: text().$type<AnswerStatus>().default('pending').notNull(),
+			questionId: text()
 			.references(() => question.id, { onDelete: 'cascade' })
 			.notNull(),
 		// weighted vector for searching and finding related answers (A/B/C is for weighting)

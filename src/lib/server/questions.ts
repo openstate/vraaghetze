@@ -18,7 +18,7 @@ import { sendConfirmationMail } from '$lib/server/email/templates';
 import { splitWords } from '$lib/server/search';
 import { slugify, slugifyUnique } from '$lib/server/utils/slug';
 import { hasPermission } from '$lib/permissions';
-import type { QuestionStatus } from './db/app.schema';
+import type { AnswerStatus, QuestionStatus } from './db/app.schema';
 
 export const politicianUser = alias(schema.user, 'politicianUser');
 export const newerAnswer = alias(schema.answer, 'newerAnswer');
@@ -324,7 +324,19 @@ export type QuestionType = {
 	fractionName: string | null;
 };
 
-export async function bySlug(slug: string, viewerId: string | null) {
+export type AnswerType = {
+	id: string;
+	userId: string;
+	body: string;
+	status: AnswerStatus;
+	createdAt: Date;
+	authorName: string;
+	authorSlug: string;
+	fraction: string | null;
+	fractionName: string | null;
+}
+
+export async function forSlugPage(slug: string, viewerId: string | null) {
 	const [question]: QuestionType[] = await db
 		.select({
 			id: schema.question.id,
@@ -349,24 +361,54 @@ export async function bySlug(slug: string, viewerId: string | null) {
 		.limit(1);
 
 	// the question doesn't exist or the viewer can't see it, which is indistinguishable on purpose
-	if (!question) return {question: null, answer: null};
+	if (!question) return { question: null, answer: null, informativeAnswers: [] };
 
-	const [answer] = await db
+	const [answer]: AnswerType[] = await db
 		.select({
 			id: schema.answer.id,
+			userId: schema.answer.userId,
 			body: schema.answer.body,
 			status: schema.answer.status,
 			createdAt: schema.answer.createdAt,
-			authorName: schema.user.name
+			authorName: schema.user.name,
+			authorSlug: schema.politician.slug,
+			fraction: schema.fraction.abbreviation,
+			fractionName: schema.fraction.name
 		})
 		.from(schema.answer)
 		.innerJoin(schema.user, eq(schema.answer.userId, schema.user.id))
+		.innerJoin(schema.politician, eq(schema.answer.userId, schema.politician.userId))
+		.leftJoin(schema.fraction, eq(schema.politician.fractionId, schema.fraction.id))
 		.where(and(eq(schema.answer.questionId, question.id), isVisibleTo(schema.answer, viewerId)))
 		// a follow-up reply supersedes the one before it
 		.orderBy(desc(schema.answer.createdAt))
 		.limit(1);
 
-	return { question, answer: answer ?? null };
+	// The asker, and answer author, can see informative non-definitive answers
+	let	informativeAnswers: AnswerType[] = await db
+		.select({
+			id: schema.answer.id,
+			userId: schema.answer.userId,
+			body: schema.answer.body,
+			status: schema.answer.status,
+			createdAt: schema.answer.createdAt,
+			authorName: schema.user.name,
+			authorSlug: schema.politician.slug,
+			fraction: schema.fraction.abbreviation,
+			fractionName: schema.fraction.name
+		})
+		.from(schema.answer)
+		.innerJoin(schema.user, eq(schema.answer.userId, schema.user.id))
+		.innerJoin(schema.politician, eq(schema.answer.userId, schema.politician.userId))
+		.leftJoin(schema.fraction, eq(schema.politician.fractionId, schema.fraction.id))
+		.where(and(eq(schema.answer.questionId, question.id), eq(schema.answer.status, 'updateAsker')))
+		.orderBy(desc(schema.answer.createdAt));
+
+	if (!question.isAsker) {
+		informativeAnswers = informativeAnswers.filter(a => a.userId === viewerId);
+	}
+
+	return { question, answer: answer ?? null, informativeAnswers };
 }
 
 const reservedSlugs = ['stellen'] as const;
@@ -472,18 +514,23 @@ export async function create({
 
 export async function getStatus(questionId: string) {
 	const result = await db
-		.select({status: schema.question.status})
+		.select({ status: schema.question.status })
 		.from(schema.question)
 		.where(eq(schema.question.id, questionId));
 
 	return result[0].status;
 }
 
-export async function updatePolitician(questionId: string, userId: string, fractionId: string, tx?: Transaction) {
+export async function updatePolitician(
+	questionId: string,
+	userId: string,
+	fractionId: string,
+	tx?: Transaction
+) {
 	await (tx ?? db)
 		.update(schema.question)
 		.set({ assigneeId: userId, assigneeFractionId: fractionId })
-		.where(eq(schema.question.id, questionId))
+		.where(eq(schema.question.id, questionId));
 }
 
 export async function pendingConfirmation(slug: string, userId: string) {

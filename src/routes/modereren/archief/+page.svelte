@@ -109,6 +109,8 @@
 		<span class="text-osf-canvas-400">
 			{#if row.answerStatus === 'pending'}
 				Wacht op moderatie
+			{:else if row.answerStatus === 'updateAsker'}
+				Geïnformeerd
 			{:else if row.status === 'approved'}
 				Niet beantwoord
 			{:else}

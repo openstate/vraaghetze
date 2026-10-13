@@ -114,10 +114,11 @@ describe('moderateAnswer', () => {
 		const mails = await getEnqueuedMails(question.id);
 		expect(mails).toHaveLength(2);
 		const askerMail = mails.find((mail) => mail.kind === 'answer-notification');
-		expect(askerMail).toMatchObject({ recipient: asker.email });
+		expect(askerMail).toMatchObject({ recipient: asker.email, subject: 'Je vraag op VraagHetZe is beantwoord' });
 		expect(askerMail?.body).toContain(politician.name);
 		expect(mails.find((mail) => mail.kind === 'follow-notification')).toMatchObject({
-			recipient: follower.email
+			recipient: follower.email,
+			subject: 'Een vraag die je volgt is beantwoord'
 		});
 	});
 
@@ -178,6 +179,38 @@ describe('moderateAnswer', () => {
 		expect((await getAnswer(answer.id)).status).toBe('approved');
 		expect(await getAnswerAudit(answer.id)).toHaveLength(1);
 		expect(await getEnqueuedMails(question.id)).toHaveLength(1);
+	});
+
+	test('accepts an informative answer and notifies the asker', async () => {
+		const { question, asker, politician } = await createQuestionAndUsers({ status: 'approved' });
+		const answer = await createAnswer(question);
+		const moderator = await createUser('Mo Moderator');
+		const follower = await createUser('Fatima Volger');
+
+		await db
+			.insert(schema.questionFollow)
+			.values({ id: crypto.randomUUID(), questionId: question.id, userId: follower.id });
+
+		const result = await moderation.moderateAnswer({
+			answerId: answer.id,
+			moderatorId: moderator.id,
+			action: 'updateAsker'
+		});
+
+		expect(result).toEqual({ action: 'updateAsker' });
+		expect((await getAnswer(answer.id)).status).toBe('updateAsker');
+
+		expect(await getAnswerAudit(answer.id)).toMatchObject([
+			{ moderatorId: moderator.id, action: 'updateAsker', note: null, questionId: null }
+		]);
+
+		const mails = await getEnqueuedMails(question.id);
+		expect(mails).toHaveLength(1);
+		const askerMail = mails.find((mail) => mail.kind === 'answer-notification');
+		expect(askerMail).toMatchObject({ recipient: asker.email, subject: 'Je vraag op VraagHetZe heeft een update' });
+		expect(askerMail?.body).toContain(politician.name);
+		const followerMail = mails.find((mail) => mail.kind === 'follow-notification');
+		expect(followerMail).toBeUndefined();
 	});
 });
 

@@ -68,6 +68,7 @@
 		{:else}
 			<div class="flex flex-row gap-2">
 				<Button type="submit" name="action" value="approved" variant="primary">Keur goed</Button>
+				<Button type="submit" name="action" value="updateAsker" variant="primary">Update vraagsteller</Button>
 				<Button type="submit" name="action" value="rejected" variant="secondary">Negeer</Button>
 				<Button type="submit" name="action" value="redactStart" variant="secondary" onclick={redactStart}>Redigeren</Button>
 			</div>

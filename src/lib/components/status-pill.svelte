@@ -1,19 +1,20 @@
 <script module lang="ts">
 	import type { InboxStatus } from '$lib/moderation';
-	import type { QuestionStatus, OutboxStatus } from '$lib/server/db/app.schema';
+	import type { QuestionStatus, OutboxStatus, AnswerStatus } from '$lib/server/db/app.schema';
 
 	type Tone = 'neutral' | 'positive' | 'warning' | 'danger';
 
 	type Pill = { label: string; tone: Tone };
 
-	type questionStatusPillsType = QuestionStatus | 'unverified';
+	type questionStatusPillsType = QuestionStatus | AnswerStatus | 'unverified';
 
 	export const questionStatusPills: Record<questionStatusPillsType, Pill> = {
 		unverified: { label: 'Ongeverifieerd', tone: 'neutral' },
 		pending: { label: 'In afwachting', tone: 'neutral' },
 		'pending-wrong-politician': { label: 'Wacht op input', tone: 'neutral' },
 		approved: { label: 'Goedgekeurd', tone: 'positive' },
-		rejected: { label: 'Afgewezen', tone: 'danger' }
+		rejected: { label: 'Afgewezen', tone: 'danger' },
+		updateAsker: { label: 'Informatief', tone: 'neutral' }
 	};
 
 	export const inboxStatusPills: Record<InboxStatus, Pill> = {

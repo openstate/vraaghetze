@@ -21,13 +21,14 @@ import {
 	enqueueAnswerMail,
 	enqueueApprovalMails,
 	enqueueFollowerMails,
+	enqueueUpdateAskerMail,
 	enqueueProposedPoliticianMail,
 	enqueueRejectionMail
 } from '$lib/server/email/templates';
 import { getStatus, newerAnswer, updatePolitician, type QuestionType } from '$lib/server/questions';
 import { hasPermission } from '$lib/permissions';
 import type { Pagination } from '$lib/pagination';
-import type { MetaType, ModerationAction, QuestionStatus } from './db/app.schema';
+import type { AnswerStatus, MetaType, ModerationAction, QuestionStatus } from './db/app.schema';
 import type { PoliticianType } from './politicians';
 import { validateForm } from './utils/forms';
 import type { UserType } from './auth';
@@ -561,7 +562,7 @@ export async function getProposedPoliticianModerationAction(question: QuestionTy
 type AnswerModeration = {
 	answerId: string;
 	moderatorId: string;
-	action: 'approved' | 'rejected';
+	action: AnswerStatus;
 };
 
 export function moderateAnswer({ answerId, moderatorId, action }: AnswerModeration) {
@@ -584,9 +585,27 @@ export function moderateAnswer({ answerId, moderatorId, action }: AnswerModerati
 			action
 		});
 
-		if (action === 'rejected') {
-			return { action };
+		const [question] = await tx
+			.select({
+				id: schema.question.id,
+				title: schema.question.title,
+				slug: schema.question.slug,
+				askerName: schema.user.name,
+				askerEmail: schema.user.email,
+				politicianName: politicianUser.name
+			})
+			.from(schema.question)
+			.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
+			.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+			.where(eq(schema.question.id, answer.questionId))
+			.limit(1);
+
+		if (action === 'updateAsker') {
+			// notify the asker that a question has been given a non-final answer
+			await enqueueUpdateAskerMail(tx, question);
 		}
+
+		if (action !== 'approved') return { action };
 
 		// the other replies to this same question can be rejected
 		const otherAnswers = await tx
@@ -613,21 +632,6 @@ export function moderateAnswer({ answerId, moderatorId, action }: AnswerModerati
 			);
 		}
 
-		const [question] = await tx
-			.select({
-				id: schema.question.id,
-				title: schema.question.title,
-				slug: schema.question.slug,
-				askerName: schema.user.name,
-				askerEmail: schema.user.email,
-				politicianName: politicianUser.name
-			})
-			.from(schema.question)
-			.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
-			.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
-			.where(eq(schema.question.id, answer.questionId))
-			.limit(1);
-
 		// notify the asker that their question has been answered, and everyone following it
 		await enqueueAnswerMail(tx, question);
 		await enqueueFollowerMails(tx, question);
@@ -639,6 +643,10 @@ export function moderateAnswer({ answerId, moderatorId, action }: AnswerModerati
 export const answerModerationSchema = z.discriminatedUnion('action', [
 	z.object({
 		action: z.literal('approved'),
+		answerId: z.string().min(1)
+	}),
+	z.object({
+		action: z.literal('updateAsker'),
 		answerId: z.string().min(1)
 	}),
 	z.object({
@@ -745,15 +753,21 @@ export const defaultAnswerModerationAction = async ({
 	const outcome = await moderateAnswer({
 		answerId: result.data.answerId,
 		moderatorId: user.id,
-		action: action as 'approved' | 'rejected'
+		action: action as AnswerStatus
 	});
 
 	if ('error' in outcome)
 		return { ...ret, success: false, statusCode: 409, message: 'Dit antwoord is al behandeld.' };
 
 	const message =
-		action == 'approved' ? 'Je hebt het antwoord goedgekeurd' : 'Je hebt het antwoord afgewezen';
-	const flashType = action == 'approved' ? 'success' : 'neutral';
+		action == 'approved'
+		? 'Je hebt het antwoord goedgekeurd'
+		: action == 'rejected'
+			? 'Je hebt het antwoord afgewezen'
+			: action == 'updateAsker'
+				? 'Het antwoord kan door de vragensteller ingezien worden'
+				: '';
+	const flashType = action == 'approved' || action == 'updateAsker' ? 'success' : 'neutral';
 
 	return {
 		...ret,

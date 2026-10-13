@@ -7,6 +7,7 @@
 	import LinkCard from '$lib/components/link-card.svelte';
 	import Page from '$lib/components/page.svelte';
 	import QuestionCard from '$lib/components/question-card.svelte';
+	import AnswerPolitician from '$lib/components/answer-politician.svelte';
 	import { formatDateLong } from '$lib/date-time';
 
 	let { data } = $props();
@@ -43,22 +44,50 @@
 					vraag beantwoord is.
 				{:else if data.banner === 'accept-politician-change'}
 					Als je hieronder "Ja" kiest zal het Kamerlid aangepast worden naar {data.proposedPoliticianName}
-					die verantwoordelijk is voor het betreffende onderwerp binnen de fractie, en zal de vraag direct verstuurd worden.
-					Als je hieronder "Nee" kiest dan wordt de vraag automatisch afgewezen.
+					die verantwoordelijk is voor het betreffende onderwerp binnen de fractie, en zal de vraag direct
+					verstuurd worden. Als je hieronder "Nee" kiest dan wordt de vraag automatisch afgewezen.
 				{/if}
 			</p>
 
 			{#if data.banner === 'needs-confirm'}
 				<form method="POST" action="?/bevestigen" use:enhance class="flex flex-wrap gap-2">
-					<Button type="submit" name="keuze" value="ja" variant="primary" class={buttonClicked ? 'disabled:opacity-40' : ''} disabled={buttonClicked}>Ja, dit was ik</Button>
-					<Button type="submit" name="keuze" value="nee" variant="primary" class={buttonClicked ? 'disabled:opacity-40' : ''} disabled={buttonClicked}>Nee</Button>
+					<Button
+						type="submit"
+						name="keuze"
+						value="ja"
+						variant="primary"
+						class={buttonClicked ? 'disabled:opacity-40' : ''}
+						disabled={buttonClicked}>Ja, dit was ik</Button
+					>
+					<Button
+						type="submit"
+						name="keuze"
+						value="nee"
+						variant="primary"
+						class={buttonClicked ? 'disabled:opacity-40' : ''}
+						disabled={buttonClicked}>Nee</Button
+					>
 				</form>
 			{/if}
 
 			{#if data.banner === 'accept-politician-change'}
 				<form method="POST" action="?/kamerlid_wijzigen" use:enhance class="flex flex-wrap gap-2">
-					<Button type="submit" name="keuze" value="ja" variant="primary" class={buttonClicked ? 'disabled:opacity-40' : ''} disabled={buttonClicked}>Ja, wijzig het Kamerlid</Button>
-					<Button type="submit" name="keuze" value="nee" variant="primary" class={buttonClicked ? 'disabled:opacity-40' : ''} disabled={buttonClicked}>Nee, wijzig het Kamerlid niet</Button>
+					<Button
+						type="submit"
+						name="keuze"
+						value="ja"
+						variant="primary"
+						class={buttonClicked ? 'disabled:opacity-40' : ''}
+						disabled={buttonClicked}>Ja, wijzig het Kamerlid</Button
+					>
+					<Button
+						type="submit"
+						name="keuze"
+						value="nee"
+						variant="primary"
+						class={buttonClicked ? 'disabled:opacity-40' : ''}
+						disabled={buttonClicked}>Nee, wijzig het Kamerlid niet</Button
+					>
 				</form>
 			{/if}
 		</div>
@@ -80,65 +109,88 @@
 
 			<hr class="mx-6 my-3 border-osf-canvas-200 sm:mx-8" />
 
-			<div class="p-6 sm:p-8">
-				{#if data.answer}
-					<p class="mb-6 whitespace-pre-wrap">{data.answer.body}</p>
-				{/if}
-
-				{#snippet assignee()}
-					<a href={politicianHref} class="font-medium hover:underline">
-						{data.question.assigneeName}
-						{#if fractionLabel}({fractionLabel}){/if}
-					</a>
-				{/snippet}
-
-				<div class="flex flex-wrap items-center justify-between gap-4">
-					<div class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full">
-						<a href={politicianHref} class="shrink-0" aria-hidden="true" tabindex="-1">
-							<Avatar
-								size={40}
-								name={data.question.assigneeName}
-								src={resolve('/politici/[slug]/foto', { slug: data.question.assigneeSlug })}
-							/>
-						</a>
-
-						<p class="text-balance text-osf-canvas-600">
-							{#if data.banner === 'needs-confirm'}
-								Deze vraag aan {@render assignee()} gaat pas naar moderatie als je hierboven bevestigt
-								dat hij van jou is.
-							{:else if data.question.status === 'pending'}
-								Deze vraag aan {@render assignee()} wacht op moderatie en is nog niet openbaar
-							{:else if data.question.status === 'pending-wrong-politician'}
-								Deze vraag aan {@render assignee()} wacht op input en is nog niet openbaar
-							{:else if data.question.status === 'rejected'}
-								Deze vraag aan {@render assignee()} is afgewezen door de moderatoren en wordt niet beantwoord
-							{:else if data.answer}
-								Antwoord van {@render assignee()} op {formatDateLong(data.answer.createdAt)}
-							{:else}
-								Wacht op antwoord van {@render assignee()}
-							{/if}
-						</p>
+			{#snippet followButton()}
+				{#if data.question.status === 'approved'}
+					<div class="max-sm:ml-auto">
+						<FollowButton
+							followers={data.followers}
+							isFollowing={data.isFollowing}
+							isSignedIn={!!data.user}
+							{canFollow}
+						/>
 					</div>
-
-					{#if data.question.status === 'approved'}
-						<div class="max-sm:ml-auto">
-							<FollowButton
-								followers={data.followers}
-								isFollowing={data.isFollowing}
-								isSignedIn={!!data.user}
-								{canFollow}
-							/>
-						</div>
-					{/if}
-				</div>
-
-				{#if data.answer?.status === 'pending'}
-					<p class="mt-5 text-sm text-osf-canvas-500">
-						Dit antwoord wacht op moderatie en is nog niet openbaar.
-					</p>
 				{/if}
-			</div>
+			{/snippet}
+
+			{#snippet assignee()}
+				<a href={politicianHref} class="font-medium hover:underline">
+					{data.question.assigneeName}
+					{#if fractionLabel}({fractionLabel}){/if}
+				</a>
+			{/snippet}
+
+			{#snippet statusLine()}
+				<p class="text-balance text-osf-canvas-600">
+					{#if data.banner === 'needs-confirm'}
+						Deze vraag aan {@render assignee()} gaat pas naar moderatie als je hierboven bevestigt
+						dat hij van jou is.
+					{:else if data.question.status === 'pending'}
+						Deze vraag aan {@render assignee()} wacht op moderatie en is nog niet openbaar
+					{:else if data.question.status === 'pending-wrong-politician'}
+						Deze vraag aan {@render assignee()} wacht op input en is nog niet openbaar
+					{:else if data.question.status === 'rejected'}
+						Deze vraag aan {@render assignee()} is afgewezen door de moderatoren en wordt niet beantwoord
+					{:else if data.answer}
+						Antwoord van {@render assignee()} op {formatDateLong(data.answer.createdAt)}
+					{:else}
+						Wacht op antwoord van {@render assignee()}
+					{/if}
+				</p>
+			{/snippet}
+
+			<AnswerPolitician
+				answer={data.answer}
+				question={data.question}
+				politicianHref={politicianHref}
+				followButton={followButton}
+				statusLine={statusLine}
+			/>
 		</article>
+
+		{#if data.informativeAnswers.length > 0}
+			<div class="lg:col-start-1 lg:row-start-2">
+				<p class="text-osf-canvas-600 text-xl">
+					Voorlopige antwoorden
+				</p>
+				<p class="text-osf-canvas-600">
+				Onderstaande voorlopige antwoorden zijn alleen door jou te zien.
+				</p>
+				{#each data.informativeAnswers as answer (answer.id) }
+					{@const answerFractionLabel = answer.fraction ?? answer.fractionName}
+					<article class="overflow-hidden rounded bg-osf-canvas-100 mt-2">
+						{#snippet answerer()}
+							<a href={resolve('/politici/[slug]', { slug: answer.authorSlug })} class="font-medium hover:underline">
+								{answer.authorName}
+								{#if answerFractionLabel}({answerFractionLabel}){/if}
+							</a>
+						{/snippet}
+
+						{#snippet answerLine()}
+							<p class="text-balance text-osf-canvas-600">
+								Antwoord van {@render answerer()} op {formatDateLong(answer.createdAt)}
+							</p>
+						{/snippet}
+
+						<AnswerPolitician
+							answer={answer}
+							question={data.question}
+							politicianHref={resolve('/politici/[slug]', { slug: answer.authorSlug })}
+							statusLine={answerLine}
+						/>
+					</article>
+				{/each}
+			</div>
+		{/if}
 
 		<aside class="@container grid lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1">
 			<div class="grid gap-4 @lg:grid-cols-2">
@@ -154,7 +206,7 @@
 		</aside>
 
 		{#if data.related.length > 0}
-			<section class="mt-8 lg:col-start-1 lg:row-start-2">
+			<section class="mt-8 lg:col-start-1 lg:row-start-3">
 				<h2 class="mb-8 font-serif text-3xl">Gerelateerde vragen</h2>
 
 				<ul class="grid gap-4">

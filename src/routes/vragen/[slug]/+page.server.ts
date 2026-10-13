@@ -4,7 +4,10 @@ import * as follows from '$lib/server/follows';
 import * as questions from '$lib/server/questions';
 import * as politicians from '$lib/server/politicians';
 import type { Actions, PageServerLoad } from './$types';
-import { automatedPoliticianChange, getProposedPoliticianModerationAction } from '$lib/server/moderation';
+import {
+	automatedPoliticianChange,
+	getProposedPoliticianModerationAction
+} from '$lib/server/moderation';
 import type { UserType } from '$lib/server/auth';
 import type { schema } from '$lib/server/db';
 import { slugify } from '$lib/server/utils/slug';
@@ -14,7 +17,7 @@ const RELATED_QUESTIONS = 3;
 type getPoliticianChangeInfoType = {
 	user?: UserType;
 	slug: string;
-}
+};
 
 type getPoliticianChangeInfoReturnType = {
 	user?: UserType;
@@ -22,13 +25,16 @@ type getPoliticianChangeInfoReturnType = {
 	currentPolitician?: politicians.PoliticianType;
 	moderationAction?: typeof schema.moderationAction.$inferSelect;
 	proposedPolitician?: politicians.PoliticianType;
-}
+};
 
-const getPoliticianChangeInfo = async ({ user, slug }: getPoliticianChangeInfoType): Promise<getPoliticianChangeInfoReturnType> => {
+const getPoliticianChangeInfo = async ({
+	user,
+	slug
+}: getPoliticianChangeInfoType): Promise<getPoliticianChangeInfoReturnType> => {
 	if (!user) return {};
 	const viewerId = user?.id ?? null;
 
-	const result = await questions.bySlug(slug, viewerId);
+	const result = await questions.forSlugPage(slug, viewerId);
 	if (!result.question || result.question.status !== 'pending-wrong-politician') return { user };
 	const question = result.question;
 
@@ -37,8 +43,10 @@ const getPoliticianChangeInfo = async ({ user, slug }: getPoliticianChangeInfoTy
 	const moderationAction = await getProposedPoliticianModerationAction(question);
 	if (!moderationAction) return { user, question, currentPolitician };
 
-	const proposedPolitician = await politicians.bySlug(moderationAction.meta?.proposedPoliticianSlug ?? '');
-	
+	const proposedPolitician = await politicians.bySlug(
+		moderationAction.meta?.proposedPoliticianSlug ?? ''
+	);
+
 	return { user, question, currentPolitician, moderationAction, proposedPolitician };
 };
 
@@ -47,9 +55,9 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 
 	const slug = slugify(params.slug); // Early links sent out were followed by a . ('dot') - this ensure that the question is found
 	let doel = url.searchParams.get('doel');
-	if (doel) doel = doel.replace(/\.$/, '') // Same as for slug
+	if (doel) doel = doel.replace(/\.$/, ''); // Same as for slug
 
-	const result = await questions.bySlug(slug, viewerId);
+	const result = await questions.forSlugPage(slug, viewerId);
 	if (!result.question) {
 		if (locals.user) error(404, 'Vraag niet gevonden');
 		else return redirect(307, `/inloggen?returnTo=${encodeURIComponent(url.toString())}`);
@@ -58,19 +66,21 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 	let acceptPoliticianChange = doel === 'kamerlid_wijzigen';
 	let proposedPoliticianName: string | undefined = undefined;
 	if (acceptPoliticianChange) {
-		const { user, question, currentPolitician, moderationAction, proposedPolitician } = await getPoliticianChangeInfo({ user: locals.user, slug });
-		if (!user || !question || !currentPolitician || !moderationAction || !proposedPolitician) acceptPoliticianChange = false;
-		proposedPoliticianName = proposedPolitician?.name
+		const { user, question, currentPolitician, moderationAction, proposedPolitician } =
+			await getPoliticianChangeInfo({ user: locals.user, slug });
+		if (!user || !question || !currentPolitician || !moderationAction || !proposedPolitician)
+			acceptPoliticianChange = false;
+		proposedPoliticianName = proposedPolitician?.name;
 	}
 	const needsConfirm = viewerId ? await questions.pendingConfirmation(slug, viewerId) : null;
 	const { followers, isFollowing } = await follows.countForQuestion(result.question.id, viewerId);
 
 	const banner =
-		// matches if the user has to confirm a politician change 
+		// matches if the user has to confirm a politician change
 		acceptPoliticianChange
-		? 'accept-politician-change'
-		: // matches if the visitor still has to confirm they asked this question
-			needsConfirm
+			? 'accept-politician-change'
+			: // matches if the visitor still has to confirm they asked this question
+				needsConfirm
 				? 'needs-confirm'
 				: // matches if they just confirmed it through the link in their mail
 					needsConfirm === false && doel === 'bevestigen'
@@ -145,14 +155,17 @@ export const actions = {
 	kamerlid_wijzigen: async ({ params, locals, request }) => {
 		const slug = slugify(params.slug); // Early links sent out were followed by a . ('dot') - this ensures that the question is found
 
-		const { user, question, currentPolitician, moderationAction, proposedPolitician } = await getPoliticianChangeInfo({ user: locals.user, slug });
+		const { user, question, currentPolitician, moderationAction, proposedPolitician } =
+			await getPoliticianChangeInfo({ user: locals.user, slug });
 		if (!user) error(401, 'Log in om het Kamerlid te wijzigen.');
 		if (!question) error(404, 'Vraag niet gevonden');
 		if (!currentPolitician) error(404, 'Kamerlid niet gevonden');
 		if (!moderationAction) error(404, 'Vraagvoorstel niet gevonden');
 		if (!proposedPolitician) error(404, 'Voorgesteld Kamerlid niet gevonden');
 		if (!proposedPolitician.acceptsQuestions) {
-			return fail(400, { error: 'Dit Kamerlid heeft ervoor gekozen niet openbaar antwoord te geven via VraagHetZe.' })
+			return fail(400, {
+				error: 'Dit Kamerlid heeft ervoor gekozen niet openbaar antwoord te geven via VraagHetZe.'
+			});
 		}
 
 		const parsed = choiceSchema.safeParse(Object.fromEntries(await request.formData()));
@@ -160,7 +173,13 @@ export const actions = {
 
 		const accepted = parsed.data.keuze === 'ja';
 		// To moderate this question, we use the moderator that proposed the politician
-		await automatedPoliticianChange({ accepted, question, moderationAction, currentPolitician, proposedPolitician })
+		await automatedPoliticianChange({
+			accepted,
+			question,
+			moderationAction,
+			currentPolitician,
+			proposedPolitician
+		});
 		return { politician_changed: accepted };
-  }
+	}
 } satisfies Actions;

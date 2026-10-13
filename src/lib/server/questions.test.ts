@@ -360,21 +360,30 @@ describe('visibility', () => {
 		expect(list.map((row) => row.slug)).toEqual([approved.slug]);
 	});
 
-	test('bySlug hides an invisible question exactly like a missing one', async () => {
+	test('forSlugPage hides an invisible question exactly like a missing one', async () => {
 		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const pending = await insertQuestion(asker.id, politicianUser.id, { status: 'pending' });
 
-		expect(await questions.bySlug(pending.slug, null)).toMatchObject({ question: null, answer: null });
-		expect(await questions.bySlug('bestaat-niet', null)).toMatchObject({ question: null, answer: null });
+		expect(await questions.forSlugPage(pending.slug, null)).toMatchObject({
+			question: null,
+			answer: null,
+			informativeAnswers: []
+		});
+		expect(await questions.forSlugPage('bestaat-niet', null)).toMatchObject({
+			question: null,
+			answer: null,
+			informativeAnswers: []
+		});
 
-		const ownerResult = await questions.bySlug(pending.slug, asker.id);
+		const ownerResult = await questions.forSlugPage(pending.slug, asker.id);
 		expect(ownerResult?.question).toMatchObject({ title: pending.title, status: 'pending' });
 	});
 
 	test('bySlug hides a pending answer from everyone but its author', async () => {
 		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
+		const user = await createUser('Karel Vraagsteller');
 		const question = await insertQuestion(asker.id, politicianUser.id);
 		await db.insert(schema.answer).values({
 			id: crypto.randomUUID(),
@@ -384,11 +393,39 @@ describe('visibility', () => {
 			status: 'pending'
 		});
 
-		const publicResult = await questions.bySlug(question.slug, null);
-		const authorResult = await questions.bySlug(question.slug, politicianUser.id);
+		const publicResult = await questions.forSlugPage(question.slug, null);
+		const userResult = await questions.forSlugPage(question.slug, user.id);
+		const askerResult = await questions.forSlugPage(question.slug, asker.id);
+		const authorResult = await questions.forSlugPage(question.slug, politicianUser.id);
 
 		expect(publicResult?.answer).toBeNull();
+		expect(userResult?.answer).toBeNull();
+		expect(askerResult?.answer).toBeNull();
 		expect(authorResult?.answer).toMatchObject({ body: 'Mijn antwoord.', status: 'pending' });
+	});
+
+	test('bySlug hides an informative answer from everyone but its author and asker', async () => {
+		const { politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const user = await createUser('Karel Vraagsteller');
+		const question = await insertQuestion(asker.id, politicianUser.id);
+		await db.insert(schema.answer).values({
+			id: crypto.randomUUID(),
+			questionId: question.id,
+			userId: politicianUser.id,
+			body: 'Mijn antwoord.',
+			status: 'updateAsker'
+		});
+
+		const publicResult = await questions.forSlugPage(question.slug, null);
+		const userResult = await questions.forSlugPage(question.slug, user.id);
+		const askerResult = await questions.forSlugPage(question.slug, asker.id);
+		const authorResult = await questions.forSlugPage(question.slug, politicianUser.id);
+
+		expect(publicResult?.informativeAnswers).toStrictEqual([]);
+		expect(userResult?.informativeAnswers).toStrictEqual([]);
+		expect(askerResult?.informativeAnswers).toMatchObject([{ body: 'Mijn antwoord.', status: 'updateAsker' }]);
+		expect(authorResult?.informativeAnswers).toMatchObject([{ body: 'Mijn antwoord.', status: 'updateAsker' }]);
 	});
 });
 

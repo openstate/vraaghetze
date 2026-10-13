@@ -12,6 +12,7 @@ import QuestionApproved from './templates/question-approved.svelte';
 import QuestionRejected from './templates/question-rejected.svelte';
 import QuestionProposedPolitician from './templates/question-proposed-politician.svelte';
 import QuestionAnswered from './templates/question-answered.svelte';
+import QuestionUpdated from './templates/question-updated.svelte';
 import QuestionAnsweredFollowers from './templates/question-answered-followers.svelte';
 import { render } from 'svelte/server';
 import { rejectionReasonTexts } from '$lib/moderation';
@@ -246,6 +247,27 @@ export async function enqueueFollowerMails(tx: Transaction, question: AnsweredQu
 			transaction: tx
 		});
 	}
+}
+
+// enqueues a notification to the asker that their question received a non-final answer
+export function enqueueUpdateAskerMail(tx: Transaction, question: AnsweredQuestion) {
+	const result = render(QuestionUpdated, {
+		props: {
+			askerName: question.askerName,
+			politicianName: question.politicianName,
+			questionTitle: question.title,
+			questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
+		}
+	});
+
+	return enqueueMail({
+		kind: 'answer-notification',
+		questionId: question.id,
+		recipient: question.askerEmail,
+		subject: 'Je vraag op VraagHetZe heeft een update',
+		body: stripComments(result.body),
+		transaction: tx
+	});
 }
 
 // enqueues a proposed politician to the asker, no mail to the politician
