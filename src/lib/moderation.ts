@@ -56,6 +56,18 @@ export const rejectionReasonTexts = (rejectionReason?: string | null) => {
 	return reasons.map((reason) => allRejectionReasons[reason]);
 };
 
+const commonStatuses = ['pending', 'approved', 'rejected'] as const;
+const questionOnlyStatuses = ['pending-wrong-politician'] as const;
+export const questionStatuses = [...commonStatuses, ...questionOnlyStatuses] as const;
+export type QuestionStatus = typeof questionStatuses[number];
+
+const answerOnlyStatuses = ['updateAsker'] as const;
+export const answerStatuses = [...commonStatuses, ...answerOnlyStatuses] as const;
+export type AnswerStatus = typeof answerStatuses[number];
+
+export const questionStatusPillsKeys = [...commonStatuses, ...questionOnlyStatuses, ...answerOnlyStatuses, 'unverified'] as const;
+export type questionStatusPillsType = typeof questionStatusPillsKeys[number];
+
 export const redactionInfo = (searchTexts: string[], replaceTexts: string[]) => {
 	const info = [];
 	for (const [index, searchText] of searchTexts.entries()) {
@@ -92,19 +104,23 @@ export const inboxStatusTitles = (extended?: boolean) => {
 }
 
 export type ModerationSearchQuery = {
-	statusSelect: InboxStatus | null;
+	inboxStatusSelect?: InboxStatus | null;
+	archiveStatusSelect?: questionStatusPillsType | null;
 };
 
 const moderationSearchSchema = z.object({
-	statusSelect: z.enum(inboxStatuses).nullable().catch(null)
+	inboxStatusSelect: z.enum(inboxStatuses).nullable().catch(null),
+	archiveStatusSelect: z.enum(questionStatusPillsKeys).nullable().catch(null)
 });
 
 export function parseModerationSearch(url: URL) {
 	const parsed = moderationSearchSchema.parse({
-		statusSelect: url.searchParams.get('statusSelect')
+		inboxStatusSelect: url.searchParams.get('inboxStatusSelect'),
+		archiveStatusSelect: url.searchParams.get('archiveStatusSelect'),
 	});
 
 	return {
-		statusSelect: parsed.statusSelect
+		inboxStatusSelect: parsed.inboxStatusSelect,
+		archiveStatusSelect: parsed.archiveStatusSelect
 	} satisfies ModerationSearchQuery;
 }

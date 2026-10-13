@@ -4,8 +4,9 @@
 	import { page } from '$app/state';
 	import { Tabs } from 'bits-ui';
 	import Page from '$lib/components/page.svelte';
-	import { inboxStatusTitles } from '$lib/moderation.js';
+	import { inboxStatusTitles } from '$lib/moderation';
 	import { SearchForm } from '$lib/search-form.svelte';
+	import { questionStatusPills } from '$lib/components/status-pill.svelte';
 
 	let { children, data } = $props();
 
@@ -27,7 +28,16 @@
 		{ value: 'outbox', label: 'Outbox', href: resolve('/modereren/outbox') }
 	]);
 
-	const titles = {'': 'Alles', ...inboxStatusTitles(true)};
+	type archiveOptionType = keyof typeof questionStatusPills | '';
+	const archiveTitles = (option: archiveOptionType) => {
+		if (option === '') {
+			return 'Alles';
+		} else {
+			return questionStatusPills[option].label;
+		}
+	};
+
+	const inboxTitles = {'': 'Alles', ...inboxStatusTitles(true)};
 
 	const currentTab = $derived(page.url.pathname.split('/')[2] ?? 'vragen');
 </script>
@@ -59,24 +69,40 @@
 
 		<form
 			method="GET"
-			// action={resolve('/vragen')}
 			bind:this={search.form}
 			{...search.events}
 			class=""
 		>
-		{#if currentTab == 'inbox'}
+		{#if currentTab == 'archief'}
 			<label class="flex items-center gap-2 text-sm text-osf-canvas-500 pt-1">
 				Status
 				<select
-					name="statusSelect"
-					value={data.query.statusSelect}
+					name="archiveStatusSelect"
+					value={data.query.archiveStatusSelect}
+					class="rounded border border-osf-canvas-200 bg-transparent px-2 py-1 focus:border-osf-violet-500 focus:outline-none"
+				>
+					{#each data.sortOptionsArchive as option (option)}
+						<option
+							value={option}
+						>
+							{archiveTitles(option)}
+						</option>
+					{/each}
+				</select>
+			</label>
+		{:else if currentTab == 'inbox'}
+			<label class="flex items-center gap-2 text-sm text-osf-canvas-500 pt-1">
+				Status
+				<select
+					name="inboxStatusSelect"
+					value={data.query.inboxStatusSelect}
 					class="rounded border border-osf-canvas-200 bg-transparent px-2 py-1 focus:border-osf-violet-500 focus:outline-none"
 				>
 					{#each data.sortOptionsInbox as option (option)}
 						<option
 							value={option}
 						>
-							{titles[option]}
+							{inboxTitles[option]}
 						</option>
 					{/each}
 				</select>

@@ -2,12 +2,11 @@
 	import Avatar from '$lib/components/avatar.svelte';
 	import ModerationDialog from '$lib/components/moderation-dialog.svelte';
 	import OneModerationAction from './one_moderation_action.svelte';
-	import { rejectionReasons } from '$lib/moderation.js';
+	import { rejectionReasons, type QuestionStatus } from '$lib/moderation.js';
 	import { formatDateLong } from '$lib/date-time';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import Button from '$lib/components/button.svelte';
-	import type { QuestionStatus } from '$lib/server/db/app.schema';
 	import SelectPolitician from '$lib/components/select-politician.svelte';
 	import type { CommissionsType, PoliticiansType } from '$lib/politicians';
 	import type { schema } from '$lib/server/db';

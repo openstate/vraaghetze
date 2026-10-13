@@ -163,7 +163,7 @@
 					Voorlopige antwoorden
 				</p>
 				<p class="text-osf-canvas-600">
-				Onderstaande voorlopige antwoorden zijn alleen door jou te zien.
+				Onderstaande antwoorden zijn nog niet definitief en alleen door jou te zien.
 				</p>
 				{#each data.informativeAnswers as answer (answer.id) }
 					{@const answerFractionLabel = answer.fraction ?? answer.fractionName}

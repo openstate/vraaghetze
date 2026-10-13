@@ -28,12 +28,12 @@ import {
 import { getStatus, newerAnswer, updatePolitician, type QuestionType } from '$lib/server/questions';
 import { hasPermission } from '$lib/permissions';
 import type { Pagination } from '$lib/pagination';
-import type { AnswerStatus, MetaType, ModerationAction, QuestionStatus } from './db/app.schema';
+import type { MetaType, ModerationAction } from './db/app.schema';
 import type { PoliticianType } from './politicians';
 import { validateForm } from './utils/forms';
 import type { UserType } from './auth';
 import { jsonCodec } from './utils/zod';
-import type { InboxStatus } from '$lib/moderation';
+import type { AnswerStatus, InboxStatus, QuestionStatus } from '$lib/moderation';
 
 const politicianUser = alias(schema.user, 'politicianUser');
 const moderatorUser = alias(schema.user, 'moderatorUser');
@@ -262,7 +262,7 @@ export function countQueues() {
 	});
 }
 
-export function listQuestions({ page, perPage }: Pagination) {
+export function listQuestions({ page, perPage }: Pagination, statusSelect: QuestionStatus | null) {
 	const sq = db
 		.select({
 			questionId: schema.moderationAction.questionId,
@@ -303,6 +303,7 @@ export function listQuestions({ page, perPage }: Pagination) {
 			.leftJoin(schema.answer, latestAnswer)
 			.leftJoin(sq, eq(sq.questionId, schema.question.id))
 			.leftJoin(moderatorUser, eq(sq.moderatorId, moderatorUser.id))
+			.where(statusSelect ? eq(schema.question.status, statusSelect) : undefined)
 			.orderBy(desc(schema.question.createdAt))
 			.limit(perPage)
 			.offset((page - 1) * perPage);

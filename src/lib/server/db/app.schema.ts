@@ -13,7 +13,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { account, session, user } from './auth.schema';
 import type { InboundEmail } from '../email/parse-inbound';
-import type { InboxStatus } from '$lib/moderation';
+import type { AnswerStatus, InboxStatus, QuestionStatus } from '$lib/moderation';
 
 // --- TABLES ---
 
@@ -31,9 +31,6 @@ export type ModerationAction =
 	| 'politician-changed'
 	| 'note-added'
 	| 'answer-redacted';
-export type QuestionStatus = 'pending' | 'pending-wrong-politician' | 'approved' | 'rejected';
-
-export type AnswerStatus = 'pending' | 'approved' | 'rejected' | 'updateAsker';
 
 export type MetaType = {
 	// used to denote the politician for action pending-wrong-politician

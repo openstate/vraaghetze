@@ -18,7 +18,7 @@ import { sendConfirmationMail } from '$lib/server/email/templates';
 import { splitWords } from '$lib/server/search';
 import { slugify, slugifyUnique } from '$lib/server/utils/slug';
 import { hasPermission } from '$lib/permissions';
-import type { AnswerStatus, QuestionStatus } from './db/app.schema';
+import type { AnswerStatus, QuestionStatus } from '$lib/moderation';
 
 export const politicianUser = alias(schema.user, 'politicianUser');
 export const newerAnswer = alias(schema.answer, 'newerAnswer');
