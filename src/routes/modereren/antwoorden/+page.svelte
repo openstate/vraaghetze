@@ -11,7 +11,7 @@
 {#if data.queue.length === 0}
 	<p class="text-osf-canvas-500">Geen antwoorden in de wachtrij.</p>
 {:else}
-	<ul class="grid gap-3">
+	<ul class="grid gap-6">
 		{#each data.queue as entry (entry.answer.id)}
 			<li>
 				<Answer answer={entry.answer} moderationActions={entry.moderationActions} {form} />

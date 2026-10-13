@@ -66,11 +66,17 @@
 				</div>
 			</div>
 		{:else}
+			<p>LET OP! Sommige onderstaande acties worden direct doorgevoerd zonder verdere bevestiging!</p>
+			<ul class="text-body mb-3 list-inside list-disc space-y-1 text-sm mb-4">
+			<li><strong>Keur goed</strong> Het antwoord wordt gepubliceerd en de vraagsteller en volgers krijgen een e-mail.</li>
+			<li><strong>Informeer vraagsteller</strong> Het antwoord wordt niet gepubliceerd maar de vraagsteller kan het antwoord zien (en krijgt een e-mail).</li>
+			<li><strong>Negeer</strong> Het antwoord wordt genegeerd.</li>
+			</ul>
 			<div class="flex flex-row gap-2">
 				<Button type="submit" name="action" value="approved" variant="primary">Keur goed</Button>
-				<Button type="submit" name="action" value="updateAsker" variant="primary">Update vraagsteller</Button>
+				<Button type="submit" name="action" value="updateAsker" variant="primary">Informeer vraagsteller</Button>
 				<Button type="submit" name="action" value="rejected" variant="secondary">Negeer</Button>
-				<Button type="submit" name="action" value="redactStart" variant="secondary" onclick={redactStart}>Redigeren</Button>
+				<Button type="submit" name="action" value="redactStart" variant="secondary" onclick={redactStart}>Redigeren...</Button>
 			</div>
 		{/if}
 	</form>

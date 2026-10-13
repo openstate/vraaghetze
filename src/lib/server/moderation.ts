@@ -766,7 +766,7 @@ export const defaultAnswerModerationAction = async ({
 		: action == 'rejected'
 			? 'Je hebt het antwoord afgewezen'
 			: action == 'updateAsker'
-				? 'Het antwoord kan door de vragensteller ingezien worden'
+				? 'Het antwoord kan door de vraagsteller ingezien worden'
 				: '';
 	const flashType = action == 'approved' || action == 'updateAsker' ? 'success' : 'neutral';
 
