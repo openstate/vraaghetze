@@ -25,7 +25,8 @@ export default defineConfig({
 	use: {
 		baseURL,
 		trace: 'retain-on-failure',
-		screenshot: 'only-on-failure'
+		screenshot: 'only-on-failure',
+		navigationTimeout: 5*1000
 	},
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 	webServer: {

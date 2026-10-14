@@ -6,7 +6,6 @@
 		value: string | Date | null | HTMLSafeString | boolean,
 		hidden?: boolean
 	];
-	let disabled = $state(false);
 </script>
 
 <script lang="ts">
@@ -14,6 +13,7 @@
 	import { formatDateTime } from '$lib/date-time';
 	import { HTMLSafeString } from '$lib/general';
 	import Button from './button.svelte';
+	import { inboxStatusPills } from './status-pill.svelte';
 
 	type Props = { title: string; details: Detail[] };
 
@@ -22,11 +22,14 @@
 	const actionable = $derived(details.find((c) => c[0] == 'Actionable')?.[1]);
 	const detailId = $derived((actionable && details.find((c) => c[0] == 'Id')?.[1]) || '');
 
+	let disabled = $state(false);
+	let isOpen = $state(false);
+
 	const cellClass = 'border-osf-canvas-200';
 	const valueClass = 'font-medium wrap-anywhere whitespace-pre-wrap';
 </script>
 
-<Dialog.Root>
+<Dialog.Root bind:open={isOpen}>
 	<Dialog.Trigger
 		title="Toon details"
 		aria-label="Toon details"
@@ -73,13 +76,17 @@
 				<div class="grid p-6 pt-0 text-sm">
 					<h2 class="font-serif text-xl">Acties</h2>
 					<p>
-						Dit antwoord is genegeerd om de gemelde reden maar kan indien gewenst toch verwerkt
-						worden.
+						Dit antwoord is genegeerd omdat de afzender niet het Kamerlid is.
 					</p>
 					<ul class="text-body mb-3 list-inside list-disc space-y-1 text-sm">
 						<li>
-							Indien <strong>status=Andere Afzender</strong> dan wordt het antwoord verwerkt alsof het
-							oorspronkelijke Kamerlid waaraan de vraag gesteld was hem beantwoord heeft.
+							Kies <strong>Toch verwerken</strong> om van deze mail een antwoord te maken dat vervolgens gemodereerd
+							moet worden. Het antwoord zal afkomstig lijken van het oorspronkelijke Kamerlid waaraan de vraag gesteld was.
+						</li>
+						<li>
+							Kies <strong>Negeren</strong> om deze mail te negeren. De status
+							<strong>{inboxStatusPills['ignored_different_sender'].label}</strong> zal aangepast
+							worden naar <strong>{inboxStatusPills['ignored'].label}</strong>.
 						</li>
 					</ul>
 					<form
@@ -90,21 +97,34 @@
 							return async ({ update }) => {
 								await update();
 								disabled = false;
+								isOpen = false;
 							};
 						}}
 					>
 						<input type="hidden" name="inboxId" value={detailId} />
 						<input type="hidden" name="returnTo" value={encodeURIComponent(window.location.href)} />
-						<Button
-							type="submit"
-							variant="primary"
-							name="action"
-							value="process_anyway"
-							{disabled}
-							class={disabled ? 'disabled:opacity-40' : ''}
-						>
-							Toch verwerken
-						</Button>
+						<div class="flex gap-4">
+							<Button
+								type="submit"
+								variant="primary"
+								name="action"
+								value="process_anyway"
+								{disabled}
+								class={disabled ? 'disabled:opacity-40' : ''}
+							>
+								Toch verwerken
+							</Button>
+							<Button
+								type="submit"
+								variant="secondary"
+								name="action"
+								value="ignore"
+								{disabled}
+								class={disabled ? 'disabled:opacity-40' : ''}
+							>
+								Negeren
+							</Button>
+						</div>
 					</form>
 				</div>
 			{/if}

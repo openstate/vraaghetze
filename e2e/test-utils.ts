@@ -2,9 +2,12 @@ import { db, schema } from '$lib/server/db';
 import { readFileSync, writeFileSync } from 'fs';
 import { desc, eq } from 'drizzle-orm';
 import type { Page } from '@playwright/test';
+import { dedupKey, extractAddress, extractToken, isSenderVerified, type InboundEmail } from '$lib/server/email/parse-inbound';
+import type { InboxStatus } from '$lib/moderation';
 
 export const testBeforeEach = async (page: Page) => {
 	await db.delete(schema.moderationAction);
+	await db.delete(schema.inbox);
 	await db.delete(schema.answer);
 	await db.delete(schema.question);
 	await db.delete(schema.session);
@@ -56,6 +59,48 @@ export async function createAnswer(
 	return answer;
 }
 
+export function makeEmail(
+	sender: string,
+	token: string | null,
+	overrides: Partial<InboundEmail> = {}
+): InboundEmail {
+	const to = token ? `antwoord+${token}@test.example` : 'info@test.example';
+
+	return {
+		headers: `From: Jan Jansen <${sender}>`,
+		dkim: `{@${sender.split('@')[1]} : pass}`,
+		SPF: 'pass',
+		to,
+		from: `Jan Jansen <${sender}>`,
+		subject: 'Re: Uw vraag',
+		text: 'Mijn antwoord op uw vraag.',
+		sender_ip: '127.0.0.1',
+		envelope: { from: sender, to: [to] },
+		charsets: {},
+		...overrides
+	};
+}
+
+export async function createInboxRow(email: InboundEmail, status?: InboxStatus, bodyBytes?: Uint8Array) {
+	const [row] = await db
+		.insert(schema.inbox)
+		.values({
+			id: crypto.randomUUID(),
+			dedupKey: dedupKey(email),
+			fromAddress: extractAddress(email.from),
+			token: extractToken(email.envelope.to, email.to),
+			subject: email.subject,
+			dkimVerified: isSenderVerified(email),
+			status: status ?? 'received',
+			payload: email,
+			bodyBytes: bodyBytes ?? new Uint8Array()
+		})
+		.onConflictDoNothing({ target: schema.inbox.dedupKey })
+		.returning();
+
+	return row;
+}
+
 export async function getLastModerationActionForQuestion(questionId: string) {
 	const [moderationAction] = await db
 		.select()
@@ -79,9 +124,15 @@ export async function getLastModerationActionForAnswer(answerId: string) {
 }
 
 export async function getInboxEmail(sender: string) {
-	const [stored] = await db.select().from(schema.inbox).where(eq(schema.inbox.fromAddress, sender));
+	const [row] = await db.select().from(schema.inbox).where(eq(schema.inbox.fromAddress, sender));
 
-	return stored;
+	return row;
+}
+
+export async function getInboxEmailById(id: string) {
+	const [row] = await db.select().from(schema.inbox).where(eq(schema.inbox.id, id));
+
+	return row;
 }
 
 async function getMagicLinkIdentifier(email: string) {

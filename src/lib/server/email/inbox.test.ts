@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import { receiveInboundEmail } from './inbox';
-import type { InboundEmail } from './parse-inbound';
+import { makeEmail } from '$e2e/test-utils';
 import { createQuestionAndUsers, createUser } from '$lib/test-utils';
 
 const testEnv = vi.hoisted(() => ({
@@ -24,28 +24,6 @@ async function myCreateQuestionAndUsers(overrides: Partial<typeof schema.questio
 		},
 		false
 	);
-}
-
-function makeEmail(
-	sender: string,
-	token: string | null,
-	overrides: Partial<InboundEmail> = {}
-): InboundEmail {
-	const to = token ? `antwoord+${token}@test.example` : 'info@test.example';
-
-	return {
-		headers: `From: Jan Jansen <${sender}>`,
-		dkim: '{@test.example : pass}',
-		SPF: 'pass',
-		to,
-		from: `Jan Jansen <${sender}>`,
-		subject: 'Re: Uw vraag',
-		text: 'Mijn antwoord op uw vraag.',
-		sender_ip: '127.0.0.1',
-		envelope: { from: sender, to: [to] },
-		charsets: {},
-		...overrides
-	};
 }
 
 async function getInboxRow(sender: string) {

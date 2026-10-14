@@ -51,8 +51,12 @@ export async function receiveInboundEmail(email: InboundEmail, bodyBytes: Uint8A
 	}
 }
 
-export async function processMail(mail: InboxRow, ignoreErrors: ignorableErrors[] = []) {
+export async function processMail(mail: InboxRow, ignoreErrors: ignorableErrors[] = [], forceError?: {status: InboxIgnoreReason, reason: string}) {
 	const email = mail.payload;
+
+	if (forceError) {
+		return settle(mail, forceError.status, forceError.reason);
+	}
 
 	if (!mail.token) {
 		return settle(mail, 'ignored', 'Geen antwoordtoken in adres');
