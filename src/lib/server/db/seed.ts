@@ -21,6 +21,7 @@ import {
 } from './seed-corpus';
 import { rejectionReasons, type InboxStatus, type QuestionStatus } from '$lib/moderation';
 import { MAGIC_LINK_EXPIRY } from '../auth';
+import type { ModerationAction } from './app.schema';
 
 const ADMINS = [{ name: 'Open State Developers', email: 'developers@openstate.eu' }];
 
@@ -347,27 +348,32 @@ for (const [index, draft] of drafts.entries()) {
 		!verifiedAt ||
 		(!draft.alwaysAnswered && chance(Math.max(0, 1 - age / MODERATION_WINDOW_DAYS) ** 0.5));
 
-	let status: QuestionStatus = 'pending';
+	let action: ModerationAction = 'pending';
+	let questionStatus: QuestionStatus;
 	let moderatedAt: Date | null = null;
 	let emailToken: string | null = null;
 
 	if (verifiedAt && !stillPending) {
-		status = draft.alwaysAnswered || chance(APPROVAL_SHARE) ? 'approved' : 'rejected';
+		action = draft.alwaysAnswered || chance(APPROVAL_SHARE) ? 'approved' : 'rejected';
 		moderatedAt = addDelay(verifiedAt, 1, 96);
 		if (moderatedAt > NOW) moderatedAt = new Date(NOW.getTime() - between(1, 60) * 60 * 1000);
-		if (status === 'approved') emailToken = randomUUID();
+		if (action === 'approved') emailToken = randomUUID();
 	}
 
 	let answeredAt: Date | null = null;
+	questionStatus = action;
 
-	if (status === 'approved' && moderatedAt) {
+	if (action === 'approved' && moderatedAt) {
 		const sinceApproval = daysSince(moderatedAt);
 		const probability = ANSWER_BY_AGE.find(([days]) => sinceApproval >= days)?.[1] ?? 0.07;
 
 		if (draft.alwaysAnswered || chance(probability)) {
 			// 2 to 21 days, weighted towards the short end
 			const candidate = new Date(moderatedAt.getTime() + (2 + 19 * Math.random() ** 2) * DAY);
-			if (candidate < NOW) answeredAt = candidate;
+			if (candidate < NOW){
+				answeredAt = candidate;
+				questionStatus = 'answered';
+			}
 		}
 	}
 
@@ -375,7 +381,7 @@ for (const [index, draft] of drafts.entries()) {
 		id: questionId,
 		userId: asker.id,
 		body: draft.body,
-		status,
+		status: questionStatus,
 		createdAt,
 		updatedAt: answeredAt ?? moderatedAt ?? verifiedAt ?? createdAt,
 		title: draft.title,
@@ -416,18 +422,18 @@ for (const [index, draft] of drafts.entries()) {
 			moderatorId: pick(admins).id,
 			questionId,
 			answerId: null,
-			action: status,
+			action: action,
 			// the queue form only submits a note today, so this column has no writer yet. it is
 			// filled here so the archive already shows what it will look like once it does
 			rejectionReason:
-				status === 'rejected' && chance(0.6) ? pick(Object.keys(rejectionReasons)) : null,
-			note: chance(status === 'rejected' ? 0.65 : 0.25)
-				? pick(status === 'rejected' ? rejectionNotes : approvalNotes)
+				action === 'rejected' && chance(0.6) ? pick(Object.keys(rejectionReasons)) : null,
+			note: chance(action === 'rejected' ? 0.65 : 0.25)
+				? pick(action === 'rejected' ? rejectionNotes : approvalNotes)
 				: null,
 			createdAt: moderatedAt
 		});
 
-		if (status === 'approved') {
+		if (action === 'approved') {
 			politicianByQuestion.set(questionId, politician);
 
 			enqueue({
@@ -576,7 +582,7 @@ for (const answer of waitingAnswers) {
 
 // --- stray inbound mail ---
 
-const approvedQuestions = questionRows.filter((question) => question.status === 'approved');
+const approvedQuestions = questionRows.filter((question) => question.status === 'approved' || question.status === 'answered');
 
 // a waiting answer does not count: processMail only refuses a reply once one was published
 const answeredIds = new Set(
@@ -904,6 +910,7 @@ questions          ${questionRows.length} over ${SPAN_DAYS} days
   unverified       ${count((question) => !question.verifiedAt)}
   in the queue     ${count((question) => question.status === 'pending' && !!question.verifiedAt)}
   approved         ${count((question) => question.status === 'approved')}
+  answered         ${count((question) => question.status === 'answered')}
   rejected         ${count((question) => question.status === 'rejected')}
 answers            ${answerRows.length}, of which ${waitingAnswers.length} in the queue
 askers             ${askerRows.length}, of which ${askerRows.filter((asker) => !asker.emailVerified).length} never confirmed

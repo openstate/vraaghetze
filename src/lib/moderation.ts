@@ -57,7 +57,7 @@ export const rejectionReasonTexts = (rejectionReason?: string | null) => {
 };
 
 const commonStatuses = ['pending', 'approved', 'rejected'] as const;
-const questionOnlyStatuses = ['pending-wrong-politician'] as const;
+const questionOnlyStatuses = ['pending-wrong-politician', 'answered'] as const;
 export const questionStatuses = [...commonStatuses, ...questionOnlyStatuses] as const;
 export type QuestionStatus = typeof questionStatuses[number];
 
@@ -65,7 +65,7 @@ const answerOnlyStatuses = ['updateAsker'] as const;
 export const answerStatuses = [...commonStatuses, ...answerOnlyStatuses] as const;
 export type AnswerStatus = typeof answerStatuses[number];
 
-export const questionStatusPillsKeys = [...commonStatuses, ...questionOnlyStatuses, ...answerOnlyStatuses, 'unverified'] as const;
+const questionStatusPillsKeys = [...commonStatuses, ...questionOnlyStatuses, ...answerOnlyStatuses, 'unverified'] as const;
 export type questionStatusPillsType = typeof questionStatusPillsKeys[number];
 
 export const redactionInfo = (searchTexts: string[], replaceTexts: string[]) => {

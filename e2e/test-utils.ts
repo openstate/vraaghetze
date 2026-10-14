@@ -49,6 +49,10 @@ export async function createAnswer(
 		})
 		.returning();
 
+		if (answer.status === 'approved') {
+			await db.update(schema.question).set({ status: 'answered' }).where(eq(schema.question.id, question.id));
+		}
+
 	return answer;
 }
 

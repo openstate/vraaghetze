@@ -20,9 +20,9 @@ export async function countForQuestion(questionId: string, viewerId: string | nu
 export function follow(slug: string, userId: string) {
 	return db.transaction(async (tx) => {
 		const [question] = await tx
-			.select({ id: schema.question.id, userId: schema.question.userId })
+			.select({ id: schema.question.id, userId: schema.question.userId, status: schema.question.status })
 			.from(schema.question)
-			.where(and(eq(schema.question.slug, slug), eq(schema.question.status, 'approved')))
+			.where(and(eq(schema.question.slug, slug), inArray(schema.question.status, ['approved', 'answered'])))
 			.limit(1);
 
 		// unknown or not published, which is indistinguishable from the outside on purpose
@@ -31,14 +31,8 @@ export function follow(slug: string, userId: string) {
 		// the asker is mailed anyway, so they never follow their own question
 		if (question.userId === userId) return { error: 'own-question' as const };
 
-		const [answered] = await tx
-			.select({ id: schema.answer.id })
-			.from(schema.answer)
-			.where(and(eq(schema.answer.questionId, question.id), eq(schema.answer.status, 'approved')))
-			.limit(1);
-
 		// a question is answered once, so there is nothing left to notify about
-		if (answered) return { error: 'already-answered' as const };
+		if (question.status === 'answered') return { error: 'already-answered' as const };
 
 		await tx
 			.insert(schema.questionFollow)
@@ -79,7 +73,7 @@ export async function listForUser(userId: string) {
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
 		.leftJoin(schema.answer, latestAnswer(null))
-		.where(and(eq(schema.questionFollow.userId, userId), eq(schema.question.status, 'approved')))
+		.where(and(eq(schema.questionFollow.userId, userId), inArray(schema.question.status, ['approved', 'answered'])))
 		.orderBy(desc(schema.questionFollow.createdAt));
 
 	return nestAnswer(rows);

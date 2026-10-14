@@ -64,7 +64,8 @@
 		pending: 'Ongemodereerde vraag',
 		'pending-wrong-politician': 'Vraag wacht op input',
 		approved: 'Goedgekeurde vraag',
-		rejected: 'Afgewezen vraag'
+		rejected: 'Afgewezen vraag',
+		answered: 'Beantwoorde vraag'
 	} satisfies Record<Row['status'], string>;
 
 	function details(row: Row) {
@@ -89,7 +90,7 @@
 </script>
 
 {#snippet titleLink(row: Row)}
-	{#if row.status === 'approved'}
+	{#if row.status === 'approved' || row.status === 'answered'}
 		<a
 			href={resolve('/vragen/[slug]', { slug: row.slug })}
 			title={row.title}

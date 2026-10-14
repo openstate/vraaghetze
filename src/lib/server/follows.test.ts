@@ -34,14 +34,19 @@ async function insertAnswer(
 	assigneeId: string,
 	overrides: Partial<typeof schema.answer.$inferInsert> = {}
 ) {
-	await db.insert(schema.answer).values({
+	const [answer] = await db.insert(schema.answer).values({
 		id: crypto.randomUUID(),
 		questionId,
 		userId: assigneeId,
 		body: 'Mijn antwoord op uw vraag.',
 		status: 'approved',
 		...overrides
-	});
+	})
+	.returning();
+
+	if (answer.status == 'approved') {
+		await db.update(schema.question).set({ status: 'answered' }).where(eq(schema.question.id, questionId));
+	}
 }
 
 function listFollows(questionId: string) {
@@ -101,7 +106,7 @@ describe('follow', () => {
 		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
-		const question = await insertQuestion(asker.id, politicianUser.id);
+		const question = await insertQuestion(asker.id, politicianUser.id, { status: 'approved' });
 		await insertAnswer(question.id, politicianUser.id);
 
 		const result = await follows.follow(question.slug, follower.id);
@@ -153,7 +158,7 @@ describe('unfollow', () => {
 		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
-		const question = await insertQuestion(asker.id, politicianUser.id);
+		const question = await insertQuestion(asker.id, politicianUser.id, { status: 'approved' });
 		await follows.follow(question.slug, follower.id);
 		await insertAnswer(question.id, politicianUser.id);
 
@@ -210,7 +215,7 @@ describe('listForUser', () => {
 		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const follower = await createUser('Fatima Volger');
-		const answered = await insertQuestion(asker.id, politicianUser.id);
+		const answered = await insertQuestion(asker.id, politicianUser.id, { status: 'approved' });
 		const open = await insertQuestion(asker.id, politicianUser.id);
 
 		await follows.follow(answered.slug, follower.id);

@@ -13,7 +13,8 @@
 		'pending-wrong-politician': { label: 'Wacht op input', tone: 'neutral' },
 		approved: { label: 'Goedgekeurd', tone: 'positive' },
 		rejected: { label: 'Afgewezen', tone: 'danger' },
-		updateAsker: { label: 'Informatief', tone: 'neutral' }
+		updateAsker: { label: 'Informatief', tone: 'neutral' },
+		answered: { label: 'Beantwoord', tone: 'positive' }
 	};
 
 	export const inboxStatusPills: Record<InboxStatus, Pill> = {

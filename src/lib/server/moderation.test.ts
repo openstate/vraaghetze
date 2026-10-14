@@ -75,6 +75,7 @@ describe('listAnswerQueue', () => {
 
 describe('countQueues', () => {
 	test('counts what is waiting in both queues', async () => {
+		await createQuestionAndUsers();
 		const { question } = await createQuestionAndUsers();
 		await createQuestionAndUsers({ verifiedAt: null });
 		await createQuestionAndUsers({ status: 'approved' });
@@ -106,6 +107,7 @@ describe('moderateAnswer', () => {
 
 		expect(result).toEqual({ action: 'approved' });
 		expect((await getAnswer(answer.id)).status).toBe('approved');
+		expect((await getQuestion(question.id)).status).toBe('answered');
 
 		expect(await getAnswerAudit(answer.id)).toMatchObject([
 			{ moderatorId: moderator.id, action: 'approved', note: null, questionId: null }
@@ -135,6 +137,7 @@ describe('moderateAnswer', () => {
 
 		expect(result).toEqual({ action: 'rejected' });
 		expect((await getAnswer(answer.id)).status).toBe('rejected');
+		expect((await getQuestion(question.id)).status).toBe('approved');
 		expect(await getAnswerAudit(answer.id)).toHaveLength(1);
 		expect(await getEnqueuedMails(question.id)).toHaveLength(0);
 	});
@@ -152,6 +155,7 @@ describe('moderateAnswer', () => {
 		});
 
 		expect((await getAnswer(automatic.id)).status).toBe('rejected');
+		expect((await getQuestion(question.id)).status).toBe('answered');
 		expect(await getAnswerAudit(automatic.id)).toMatchObject([
 			{ moderatorId: moderator.id, action: 'rejected' }
 		]);
@@ -177,6 +181,7 @@ describe('moderateAnswer', () => {
 		expect(first).toEqual({ action: 'approved' });
 		expect(second).toEqual({ error: 'already-handled' });
 		expect((await getAnswer(answer.id)).status).toBe('approved');
+		expect((await getQuestion(question.id)).status).toBe('answered');
 		expect(await getAnswerAudit(answer.id)).toHaveLength(1);
 		expect(await getEnqueuedMails(question.id)).toHaveLength(1);
 	});
@@ -199,6 +204,7 @@ describe('moderateAnswer', () => {
 
 		expect(result).toEqual({ action: 'updateAsker' });
 		expect((await getAnswer(answer.id)).status).toBe('updateAsker');
+		expect((await getQuestion(question.id)).status).toBe('approved');
 
 		expect(await getAnswerAudit(answer.id)).toMatchObject([
 			{ moderatorId: moderator.id, action: 'updateAsker', note: null, questionId: null }

@@ -107,7 +107,8 @@ describe('searchQuestions', () => {
 			for (const { label, title, body, answer } of corpus) {
 				const question = await insertQuestion(asker.id, politicianUser.id, {
 					title,
-					body: body ?? 'Kort.'
+					body: body ?? 'Kort.',
+					status: answer ? 'answered' : 'approved'
 				});
 				if (answer) await insertAnswer(question.id, politicianUser.id, { body: answer });
 
@@ -187,7 +188,8 @@ describe('searchQuestions', () => {
 		const inAnswer = await insertQuestion(asker.id, politicianUser.id, {
 			title: 'Vraag over de ggz',
 			body: 'Kort.',
-			createdAt: new Date('2026-05-01T12:00:00Z')
+			createdAt: new Date('2026-05-01T12:00:00Z'),
+			status: 'answered'
 		});
 		await insertAnswer(inAnswer.id, politicianUser.id, { body: 'Wij verwachten hier beterschap.' });
 		const inTitle = await insertQuestion(asker.id, politicianUser.id, {
@@ -232,7 +234,7 @@ describe('searchQuestions', () => {
 		const second = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
 		const inFirst = { assigneeFractionId: first.politician.fractionId };
-		const answered = await insertQuestion(asker.id, first.politicianUser.id, inFirst);
+		const answered = await insertQuestion(asker.id, first.politicianUser.id, {...inFirst, status: 'answered'});
 		await insertQuestion(asker.id, first.politicianUser.id, inFirst);
 		await insertQuestion(asker.id, second.politicianUser.id, {
 			assigneeFractionId: second.politician.fractionId

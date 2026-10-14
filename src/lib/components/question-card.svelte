@@ -3,12 +3,13 @@
 	import cardDoodle from '$lib/assets/card-doodle.webp';
 	import Avatar from '$lib/components/avatar.svelte';
 	import { formatDateLong } from '$lib/date-time';
+	import type { QuestionStatus } from '$lib/moderation';
 
 	type Question = {
 		slug: string;
 		title: string;
 		createdAt: Date;
-		status?: 'pending' | 'pending-wrong-politician' | 'approved' | 'rejected';
+		status?: QuestionStatus;
 		authorName: string;
 		politicianName: string;
 		politicianSlug: string;

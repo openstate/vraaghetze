@@ -87,7 +87,7 @@ export async function createAnswerAndQuestion(
 	const { question } = await createQuestionAndUsers({ status: 'approved' });
 	const answer = await createAnswer(question, overrides);
 
-	return answer;
+	return { answer, question };
 }
 
 export async function createSession(

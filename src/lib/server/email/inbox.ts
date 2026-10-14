@@ -82,7 +82,7 @@ export async function processMail(mail: InboxRow, ignoreErrors: ignorableErrors[
 		return settle(mail, 'ignored', `Vraag onbekend (id=${mail.token})`);
 	}
 
-	if (question.status !== 'approved') {
+	if (question.status !== 'approved' && question.status !== 'answered') {
 		return settle(
 			mail,
 			'ignored_question_not_approved',

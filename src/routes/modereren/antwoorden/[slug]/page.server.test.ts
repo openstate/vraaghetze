@@ -5,6 +5,7 @@ import {
 	createAnswerAndQuestion,
 	createUser,
 	getAnswer,
+	getQuestion,
 	makeActionEvent,
 	statusOf
 } from '$lib/test-utils';
@@ -54,7 +55,7 @@ beforeEach(async () => {
 describe('load', () => {
 	test('returns the queue to a moderator', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const answer = await createAnswerAndQuestion();
+		const { answer } = await createAnswerAndQuestion();
 
 		const result = (await page.load(makeLoadEvent(answer.id, moderator))) as LoadData;
 		// The answer inside the load function does not have all the properties
@@ -66,16 +67,17 @@ describe('load', () => {
 
 describe('default action', () => {
 	test('fails without a signed-in user', async () => {
-		const answer = await createAnswerAndQuestion();
+		const { answer, question } = await createAnswerAndQuestion();
 		const event = myMakeActionEvent(answer.id, null, { answerId: answer.id, action: 'approved' });
 
 		expect(await statusOf(page.actions.default(event))).toBe(400);
 		expect(await getAnswer(answer.id)).toMatchObject({ status: 'pending' });
+		expect(await getQuestion(question.id)).toMatchObject({ status: 'approved' });
 	});
 
 	test('moderates an answer for a moderator', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const answer = await createAnswerAndQuestion();
+		const { answer, question } = await createAnswerAndQuestion();
 		const event = myMakeActionEvent(answer.id, moderator, {
 			answerId: answer.id,
 			action: 'approved'
@@ -85,6 +87,7 @@ describe('default action', () => {
 
 		expect(result).toEqual({ moderated: answer.id });
 		expect(await getAnswer(answer.id)).toMatchObject({ status: 'approved' });
+		expect(await getQuestion(question.id)).toMatchObject({ status: 'answered' });
 	});
 
 	test('fails on an invalid form', async () => {
@@ -98,7 +101,7 @@ describe('default action', () => {
 
 	test('reports an already handled answer', async () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
-		const answer = await createAnswerAndQuestion({ status: 'rejected' });
+		const { answer, question } = await createAnswerAndQuestion({ status: 'rejected' });
 		const event = myMakeActionEvent(answer.id, moderator, {
 			answerId: answer.id,
 			action: 'approved'
@@ -108,5 +111,6 @@ describe('default action', () => {
 
 		expect(result).toMatchObject({ status: 409 });
 		expect((await getAnswer(answer.id)).status).toBe('rejected');
+		expect(await getQuestion(question.id)).toMatchObject({ status: 'approved' });
 	});
 });

@@ -25,7 +25,12 @@ export const newerAnswer = alias(schema.answer, 'newerAnswer');
 
 // approved rows for everyone, a signed-in user also sees their own regardless of status
 export const isVisibleTo = (
-	table: typeof schema.question | typeof schema.answer | typeof newerAnswer,
+	table: typeof schema.question,
+	viewerId: string | null
+) => or(inArray(table.status, ['approved', 'answered']), viewerId ? eq(table.userId, viewerId) : undefined);
+
+export const answerIsVisibleTo = (
+	table: typeof schema.answer | typeof newerAnswer,
 	viewerId: string | null
 ) => or(eq(table.status, 'approved'), viewerId ? eq(table.userId, viewerId) : undefined);
 
@@ -34,7 +39,7 @@ export const isVisibleTo = (
 export const latestAnswer = (viewerId: string | null) =>
 	and(
 		eq(schema.answer.questionId, schema.question.id),
-		isVisibleTo(schema.answer, viewerId),
+		answerIsVisibleTo(schema.answer, viewerId),
 		notExists(
 			db
 				.select({ newer: sql`1` })
@@ -42,7 +47,7 @@ export const latestAnswer = (viewerId: string | null) =>
 				.where(
 					and(
 						eq(newerAnswer.questionId, schema.question.id),
-						isVisibleTo(newerAnswer, viewerId),
+						answerIsVisibleTo(newerAnswer, viewerId),
 						gt(newerAnswer.createdAt, schema.answer.createdAt)
 					)
 				)
@@ -92,7 +97,7 @@ export async function listForPolitician(slug: string, limit: number) {
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
 		.leftJoin(schema.answer, latestAnswer(null))
-		.where(and(eq(schema.politician.slug, slug), eq(schema.question.status, 'approved')))
+		.where(and(eq(schema.politician.slug, slug), inArray(schema.question.status, ['approved', 'answered'])))
 		.orderBy(desc(schema.question.createdAt))
 		.limit(limit);
 
@@ -109,7 +114,7 @@ export async function listAnswered(limit: number) {
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
 		.innerJoin(schema.answer, latestAnswer(null))
-		.where(eq(schema.question.status, 'approved'))
+		.where(eq(schema.question.status, 'answered'))
 		.orderBy(desc(schema.answer.createdAt))
 		.limit(limit);
 
@@ -124,12 +129,8 @@ export type QuestionStat =
 	'questionsAsked' | 'questionsAnswered' | 'politicians' | 'averageAnswerTime';
 
 export const questionStats = async (): Promise<Record<QuestionStat, number>> => {
-	const questionsAsked = await db.$count(schema.question, eq(schema.question.status, 'approved'));
-	const questionsAnswered = await db
-		.select({ count: count() })
-		.from(schema.question)
-		.innerJoin(schema.answer, latestAnswer(null))
-		.where(and(eq(schema.question.status, 'approved'), eq(schema.answer.status, 'approved')));
+	const questionsAsked = await db.$count(schema.question, inArray(schema.question.status, ['approved', 'answered']));
+	const questionsAnswered = await db.$count(schema.question, eq(schema.question.status, 'answered'));
 	const politicians = await db.$count(
 		schema.politician,
 		and(eq(schema.politician.isActive, true), eq(schema.politician.acceptsQuestions, true))
@@ -145,7 +146,7 @@ export const questionStats = async (): Promise<Record<QuestionStat, number>> => 
 		.innerJoin(schema.inbox, eq(schema.answer.id, schema.inbox.answerId))
 		.where(
 			and(
-				eq(schema.question.status, 'approved'),
+				eq(schema.question.status, 'answered'),
 				eq(schema.moderationAction.action, 'approved'),
 				eq(schema.answer.status, 'approved')
 			)
@@ -153,7 +154,7 @@ export const questionStats = async (): Promise<Record<QuestionStat, number>> => 
 
 	return {
 		questionsAsked,
-		questionsAnswered: questionsAnswered[0].count,
+		questionsAnswered,
 		politicians,
 		averageAnswerTime: averageAnswerTime[0].value
 	};
@@ -221,7 +222,7 @@ async function rankedByTerms(terms: Set<string>, scope: SQL, limit: number) {
 		.where(
 			and(
 				// approved only and no viewer, so this shows nothing /vragen does not already show
-				eq(schema.question.status, 'approved'),
+				inArray(schema.question.status, ['approved', 'answered']),
 				scope,
 				sql`${schema.question.searchVector} @@ ${query}`
 			)
@@ -288,7 +289,7 @@ export async function statsForPolitician(slug: string) {
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		// no viewer, so this joins the newest approved answer and nothing else
 		.leftJoin(schema.answer, latestAnswer(null))
-		.where(and(eq(schema.politician.slug, slug), eq(schema.question.status, 'approved')));
+		.where(and(eq(schema.politician.slug, slug), inArray(schema.question.status, ['approved', 'answered'])));
 
 	return stats;
 }
@@ -379,7 +380,7 @@ export async function forSlugPage(slug: string, viewerId: string | null) {
 		.innerJoin(schema.user, eq(schema.answer.userId, schema.user.id))
 		.innerJoin(schema.politician, eq(schema.answer.userId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.politician.fractionId, schema.fraction.id))
-		.where(and(eq(schema.answer.questionId, question.id), isVisibleTo(schema.answer, viewerId)))
+		.where(and(eq(schema.answer.questionId, question.id), answerIsVisibleTo(schema.answer, viewerId)))
 		// a follow-up reply supersedes the one before it
 		.orderBy(desc(schema.answer.createdAt))
 		.limit(1);

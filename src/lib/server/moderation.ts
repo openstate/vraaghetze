@@ -633,6 +633,11 @@ export function moderateAnswer({ answerId, moderatorId, action }: AnswerModerati
 			);
 		}
 
+		await tx
+			.update(schema.question)
+			.set({ status: 'answered' })
+			.where(eq(schema.question.id, answer.questionId));
+
 		// notify the asker that their question has been answered, and everyone following it
 		await enqueueAnswerMail(tx, question);
 		await enqueueFollowerMails(tx, question);
