@@ -1,0 +1,2 @@
+ALTER TABLE "inbox" ADD COLUMN "question_id" text;--> statement-breakpoint
+ALTER TABLE "inbox" ADD CONSTRAINT "inbox_question_id_question_id_fk" FOREIGN KEY ("question_id") REFERENCES "public"."question"("id") ON DELETE no action ON UPDATE no action;
