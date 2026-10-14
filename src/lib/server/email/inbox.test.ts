@@ -14,7 +14,9 @@ const testEnv = vi.hoisted(() => ({
 
 vi.mock('$env/dynamic/private', () => ({ env: testEnv }));
 
-async function myCreateQuestionAndUsers(overrides: Partial<typeof schema.question.$inferInsert> = {}) {
+async function myCreateQuestionAndUsers(
+	overrides: Partial<typeof schema.question.$inferInsert> = {}
+) {
 	return createQuestionAndUsers(
 		{
 			verifiedAt: null,
@@ -53,6 +55,7 @@ describe('receiveInboundEmail', () => {
 		expect(stored.status).toBe('processed');
 		expect(stored.reason).toBeNull();
 		expect(stored.processedAt).not.toBeNull();
+		expect(stored.token).toBe(question.emailToken);
 
 		const [answer] = await db
 			.select()
@@ -105,6 +108,7 @@ describe('receiveInboundEmail', () => {
 			.where(eq(schema.inbox.fromAddress, politician.email));
 
 		expect(inboxRows).toHaveLength(1);
+		expect(inboxRows[0].token).toBe(question.emailToken);
 
 		const answers = await db
 			.select()
@@ -122,6 +126,7 @@ describe('receiveInboundEmail', () => {
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored');
 		expect(stored.answerId).toBeNull();
+		expect(stored.token).toBeNull();
 	});
 
 	test('ignores auto-replies', async () => {
@@ -134,6 +139,7 @@ describe('receiveInboundEmail', () => {
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored');
+		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).toBeNull();
 	});
 
@@ -146,6 +152,7 @@ describe('receiveInboundEmail', () => {
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored');
+		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).toBeNull();
 	});
 
@@ -159,16 +166,19 @@ describe('receiveInboundEmail', () => {
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored_dkim_failure');
+		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).toBeNull();
 	});
 
 	test('ignores mail with an unknown token', async () => {
+		const unknownToken = crypto.randomUUID();
 		const sender = `${crypto.randomUUID()}@test.example`;
 
-		await receiveInboundEmail(makeEmail(sender, crypto.randomUUID()), new Uint8Array());
+		await receiveInboundEmail(makeEmail(sender, unknownToken), new Uint8Array());
 
 		const stored = await getInboxRow(sender);
 		expect(stored.status).toBe('ignored');
+		expect(stored.token).toBe(unknownToken);
 		expect(stored.answerId).toBeNull();
 	});
 
@@ -179,6 +189,7 @@ describe('receiveInboundEmail', () => {
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored_question_not_approved');
+		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).toBeNull();
 	});
 
@@ -196,6 +207,7 @@ describe('receiveInboundEmail', () => {
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored_question_already_answered');
+		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).toBeNull();
 	});
 
@@ -207,6 +219,7 @@ describe('receiveInboundEmail', () => {
 
 		const stored = await getInboxRow(stranger.email);
 		expect(stored.status).toBe('ignored_different_sender');
+		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).toBeNull();
 	});
 
@@ -218,6 +231,7 @@ describe('receiveInboundEmail', () => {
 
 		const stored = await getInboxRow(politician.email);
 		expect(stored.status).toBe('ignored');
+		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).toBeNull();
 	});
 
@@ -225,10 +239,14 @@ describe('receiveInboundEmail', () => {
 		testEnv.DIVERSION_EMAIL = 'divert@test.example';
 		const { question } = await myCreateQuestionAndUsers();
 
-		await receiveInboundEmail(makeEmail(testEnv.DIVERSION_EMAIL, question.emailToken), new Uint8Array());
+		await receiveInboundEmail(
+			makeEmail(testEnv.DIVERSION_EMAIL, question.emailToken),
+			new Uint8Array()
+		);
 
 		const stored = await getInboxRow(testEnv.DIVERSION_EMAIL);
 		expect(stored.status).toBe('processed');
+		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).not.toBeNull();
 	});
 });
