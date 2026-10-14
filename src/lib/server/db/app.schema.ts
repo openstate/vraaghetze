@@ -203,8 +203,7 @@ export const inbox = pgTable('inbox', {
 	answerId: text().references(() => answer.id),
 	receivedAt: timestamp().defaultNow().notNull(),
 	processedAt: timestamp(),
-	bodyBytes: binary(),
-	questionId: text().references(() => question.id),
+	bodyBytes: binary()
 });
 
 export const politician = pgTable('politician', {
