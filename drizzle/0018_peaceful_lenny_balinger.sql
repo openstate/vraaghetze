@@ -1,0 +1,1 @@
+CREATE INDEX "inbox_token_idx" ON "inbox" USING btree ("token");

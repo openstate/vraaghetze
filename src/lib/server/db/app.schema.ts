@@ -190,21 +190,27 @@ const binary = customType<{
 	}
 });
 
-export const inbox = pgTable('inbox', {
-	id: text().primaryKey(),
-	dedupKey: text().unique(),
-	fromAddress: text().notNull(),
-	token: text(),
-	subject: text(),
-	dkimVerified: boolean().default(false).notNull(),
-	payload: jsonb().$type<InboundEmail>().notNull(),
-	status: text().$type<InboxStatus>().default('received').notNull(),
-	reason: text(),
-	answerId: text().references(() => answer.id),
-	receivedAt: timestamp().defaultNow().notNull(),
-	processedAt: timestamp(),
-	bodyBytes: binary()
-});
+export const inbox = pgTable(
+	'inbox',
+	{
+		id: text().primaryKey(),
+		dedupKey: text().unique(),
+		fromAddress: text().notNull(),
+		token: text(),
+		subject: text(),
+		dkimVerified: boolean().default(false).notNull(),
+		payload: jsonb().$type<InboundEmail>().notNull(),
+		status: text().$type<InboxStatus>().default('received').notNull(),
+		reason: text(),
+		answerId: text().references(() => answer.id),
+		receivedAt: timestamp().defaultNow().notNull(),
+		processedAt: timestamp(),
+		bodyBytes: binary()
+	},
+	(table) => [
+		index('inbox_token_idx').on(table.token)
+	]
+);
 
 export const politician = pgTable('politician', {
 	id: text().primaryKey(),
