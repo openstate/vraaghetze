@@ -336,4 +336,24 @@ describe('moderateQuestion', () => {
 		expect((await getQuestion(question.id)).status).toBe('pending');
 		expect(await getEnqueuedMails(question.id)).toHaveLength(0);
 	});
+
+	test('does not recreate the emailToken on an unsupported second approval', async () => {
+		const { question } = await createQuestionAndUsers();
+		const moderator = await createUser('Mo Moderator');
+
+		await moderation.moderateQuestion({
+			questionId: question.id,
+			moderatorId: moderator.id,
+			action: 'approved'
+		});
+		const emailToken = (await getQuestion(question.id)).emailToken;
+		expect(emailToken).not.toBeNull();
+
+		await moderation.moderateQuestion({
+			questionId: question.id,
+			moderatorId: moderator.id,
+			action: 'approved'
+		});
+		expect((await getQuestion(question.id)).emailToken).toBe(emailToken);
+	});
 });
