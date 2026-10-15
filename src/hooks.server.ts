@@ -105,7 +105,9 @@ const isModerationRoute = (routeId: string | null) => /^\/modereren(\/|$)/.test(
 const isAdminRoute = (routeId: string | null) => {
 	if (!routeId) return false;
 
-	if (['/politici/[slug]/bewerken', '/gebruikers'].includes(routeId)) return true;
+	if (['/politici/[slug]/bewerken'].includes(routeId)) return true;
+
+	if (/^\/beheer(\/|$)/.test(routeId ?? '')) return true;
 
 	return false;
 };

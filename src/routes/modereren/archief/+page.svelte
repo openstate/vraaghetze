@@ -1,19 +1,19 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
-	import { createColumnHelper, renderComponent, renderSnippet } from '@tanstack/svelte-table';
-	import DetailsDialog, { type Detail } from '$lib/components/details-dialog.svelte';
+	import { createColumnHelper, renderComponent } from '@tanstack/svelte-table';
+	import DetailsDialog from '$lib/components/details-dialog.svelte';
 	import DataTable, { features } from '$lib/components/data-table.svelte';
 	import DateTime from '$lib/components/date-time.svelte';
 	import StatusPill, { questionStatusPills } from '$lib/components/status-pill.svelte';
 	import Pagination from '$lib/components/pagination.svelte';
-	import { rejectionReasonTexts } from '$lib/moderation.js';
-	import { HTMLSafeString } from '$lib/general.js';
+	import { questionDetails, statusToText } from '$lib/questions.js';
+	import type { ListQuestionType } from '$lib/server/moderation.js';
+	import SnippetTitleLink from '$lib/components/snippet-title-link.svelte';
+	import SnippetPoliticianLink from '$lib/components/snippet-politician-link.svelte';
+	import SnippetAnsweredCell from '$lib/components/snippet-answered-cell.svelte';
 
 	let { data } = $props();
 
-	type Row = (typeof data.rows)[number];
-
-	const helper = createColumnHelper<typeof features, Row>();
+	const helper = createColumnHelper<typeof features, ListQuestionType>();
 
 	const columns = helper.columns([
 		helper.display({
@@ -22,13 +22,13 @@
 			meta: { class: 'w-14' },
 			cell: (cell) =>
 				renderComponent(DetailsDialog, {
-					title: dialogTitles[cell.row.original.status],
-					details: details(cell.row.original)
+					title: statusToText[cell.row.original.status],
+					details: questionDetails(cell.row.original)
 				})
 		}),
 		helper.accessor('title', {
 			header: 'Vraag',
-			cell: (cell) => renderSnippet(titleLink, cell.row.original)
+			cell: (cell) => renderComponent(SnippetTitleLink, cell.row.original)
 		}),
 		helper.accessor('authorName', {
 			header: 'Vraagsteller',
@@ -37,7 +37,7 @@
 		helper.accessor('politicianName', {
 			header: 'Kamerlid',
 			meta: { class: 'w-44' },
-			cell: (cell) => renderSnippet(politicianLink, cell.row.original)
+			cell: (cell) => renderComponent(SnippetPoliticianLink, cell.row.original)
 		}),
 		helper.accessor('status', {
 			header: 'Status',
@@ -56,80 +56,10 @@
 		helper.accessor('answeredAt', {
 			header: 'Beantwoord',
 			meta: { class: 'w-44' },
-			cell: (cell) => renderSnippet(answeredCell, cell.row.original)
+			cell: (cell) => renderComponent(SnippetAnsweredCell, cell.row.original)
 		})
 	]);
-
-	const dialogTitles = {
-		pending: 'Ongemodereerde vraag',
-		'pending-wrong-politician': 'Vraag wacht op input',
-		approved: 'Goedgekeurde vraag',
-		rejected: 'Afgewezen vraag',
-		answered: 'Beantwoorde vraag'
-	} satisfies Record<Row['status'], string>;
-
-	function details(row: Row) {
-		return [
-			['Vraag', row.title],
-			['Context', row.body || '—'],
-			['Vraagsteller', row.authorName],
-			['Kamerlid', row.politicianName],
-			['Aangemaakt op', row.createdAt],
-			['Moderatiestatus', questionStatusPills[row.status].label],
-			[
-				'Moderatiereden',
-				new HTMLSafeString(rejectionReasonTexts(row.rejectionReason).join('<br/>'))
-			],
-			['Moderatienotitie', row.note],
-			['Gemodereerd op', row.moderatedAt],
-			['Gemodereerd door', row.moderatorName],
-			['Beantwoord op', row.answerStatus === 'approved' ? row.answeredAt : null],
-			['Antwoordstatus', row.answerStatus && questionStatusPills[row.answerStatus].label]
-		] satisfies Detail[];
-	}
 </script>
-
-{#snippet titleLink(row: Row)}
-	{#if row.status === 'approved' || row.status === 'answered'}
-		<a
-			href={resolve('/vragen/[slug]', { slug: row.slug })}
-			title={row.title}
-			class="hover:underline"
-		>
-			{row.title}
-		</a>
-	{:else}
-		<span title={row.title}>{row.title}</span>
-	{/if}
-{/snippet}
-
-{#snippet answeredCell(row: Row)}
-	{#if row.answeredAt !== null && row.answerStatus === 'approved'}
-		<DateTime value={row.answeredAt} time />
-	{:else}
-		<span class="text-osf-canvas-400">
-			{#if row.answerStatus === 'pending'}
-				Wacht op moderatie
-			{:else if row.answerStatus === 'update-asker'}
-				Geïnformeerd
-			{:else if row.status === 'approved'}
-				Niet beantwoord
-			{:else}
-				&mdash;
-			{/if}
-		</span>
-	{/if}
-{/snippet}
-
-{#snippet politicianLink(row: Row)}
-	{#if row.politicianSlug === null}
-		{row.politicianName}
-	{:else}
-		<a href={resolve('/politici/[slug]', { slug: row.politicianSlug })} class="hover:underline">
-			{row.politicianName}
-		</a>
-	{/if}
-{/snippet}
 
 <DataTable {columns} rows={data.rows} />
 <Pagination count={data.total} page={data.page} perPage={data.perPage} />

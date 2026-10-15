@@ -68,7 +68,7 @@ export function authorizeAdmin(user: App.Locals['user']) {
 	if (!hasPermission(user, { user: ['create'] })) error(403, 'Geen toegang');
 }
 
-export type ListQuestionType = {
+export type ListQuestionQueueType = {
 	id: string;
 	slug: string;
 	title: string;
@@ -120,7 +120,7 @@ export async function listQuestionQueue() {
 	// If a question has multiple moderationActions there are multiple rows with the same question but different moderationAction.
 	// The rewrite to results keeps the ordering of both questions and moderationActions intact.
 	const results: {
-		question: ListQuestionType;
+		question: ListQuestionQueueType;
 		moderationActions: (typeof schema.moderationAction.$inferSelect)[];
 	}[] = [];
 	let questionId = '';
@@ -262,6 +262,25 @@ export function countQueues() {
 	});
 }
 
+export type ListQuestionType = {
+	id: string;
+	title: string;
+	body: string;
+	slug: string;
+	status: QuestionStatus;
+	authorName: string;
+	politicianName: string;
+	politicianSlug: string | null;
+	createdAt: Date;
+	answeredAt: Date | null;
+	answerStatus: AnswerStatus | null;
+	moderatorName: string | null;
+	moderatedAt: Date | null;
+	rejectionReason: string | null;
+	note: string | null;
+	verifiedAt: Date | null;
+}
+
 export function listQuestions({ page, perPage }: Pagination, statusSelect: QuestionStatus | null) {
 	const sq = db
 		.select({
@@ -277,7 +296,7 @@ export function listQuestions({ page, perPage }: Pagination, statusSelect: Quest
 		.as('sq');
 
 	return db.transaction(async (tx) => {
-		const rows = await tx
+		const rows: ListQuestionType[] = await tx
 			.select({
 				id: schema.question.id,
 				title: schema.question.title,

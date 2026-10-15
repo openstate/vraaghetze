@@ -33,7 +33,7 @@ const moderationRoutes = [
 	'/modereren/outbox'
 ];
 
-const adminRoutes = ['/politici/[slug]/bewerken', '/gebruikers'];
+const adminRoutes = ['/politici/[slug]/bewerken', '/beheer', '/beheer/gebruikers'];
 
 const visitorRoutes = ['/', '/vragen/[slug]', '/moderatie', '/profiel', null];
 

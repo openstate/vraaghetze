@@ -51,7 +51,7 @@
 
 				<div class="flex items-center justify-end">
 					{#if hasPermission(page.data.user, { user: ['create'] })}
-						<a href={resolve('/gebruikers')} title="Beheer" class="mr-2">
+						<a href={resolve('/beheer')} title="Beheer" class="mr-2">
 							<span class="iconify size-8 mdi--cog"></span>
 						</a>
 					{/if}
