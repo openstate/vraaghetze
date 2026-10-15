@@ -78,7 +78,8 @@ export const question = pgTable(
 			.generatedAlwaysAs(
 				sql`setweight(to_tsvector('dutch', "title"), 'A') || setweight(to_tsvector('dutch', "body"), 'C')`
 			)
-			.notNull()
+			.notNull(),
+		remindedAt: timestamp()
 	},
 	(table) => [
 		index('question_search_idx').using('gin', table.searchVector),
@@ -146,7 +147,8 @@ export const moderationAction = pgTable(
 		check(
 			'moderation_action_target',
 			sql`(${table.questionId} is null) != (${table.answerId} is null)`
-		)
+		),
+		index('moderation_action_created_at_idx').on(table.createdAt)
 	]
 );
 
