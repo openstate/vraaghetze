@@ -83,7 +83,10 @@ export const question = pgTable(
 	},
 	(table) => [
 		index('question_search_idx').using('gin', table.searchVector),
-		index('question_created_at_idx').on(table.createdAt)
+		index('question_created_at_idx').on(table.createdAt),
+		index('question_user_id_idx').on(table.userId),
+		index('question_assignee_id_idx').on(table.assigneeId),
+		index('question_assignee_fraction_id_idx').on(table.assigneeFractionId)
 	]
 );
 
@@ -102,7 +105,8 @@ export const answer = pgTable(
 	},
 	(table) => [
 		index('answer_search_idx').using('gin', table.searchVector),
-		index('answer_question_id_idx').on(table.questionId)
+		index('answer_question_id_idx').on(table.questionId),
+		index('answer_user_id_idx').on(table.userId)
 	]
 );
 
@@ -148,7 +152,10 @@ export const moderationAction = pgTable(
 			'moderation_action_target',
 			sql`(${table.questionId} is null) != (${table.answerId} is null)`
 		),
-		index('moderation_action_created_at_idx').on(table.createdAt)
+		index('moderation_action_created_at_idx').on(table.createdAt),
+		index('moderation_action_question_id_idx').on(table.questionId),
+		index('moderation_action_answer_id_idx').on(table.answerId),
+		index('moderation_action_moderator_id_idx').on(table.moderatorId)
 	]
 );
 
@@ -180,7 +187,10 @@ export const outbox = pgTable(
 		sentAt: timestamp(),
 		createdAt: timestamp().defaultNow().notNull()
 	},
-	(table) => [index('outbox_sweep_idx').on(table.status, table.nextAttemptAt)]
+	(table) => [
+		index('outbox_sweep_idx').on(table.status, table.nextAttemptAt),
+		index('outbox_question_id_idx').on(table.questionId)
+	]
 );
 
 const binary = customType<{
@@ -210,29 +220,36 @@ export const inbox = pgTable(
 		bodyBytes: binary()
 	},
 	(table) => [
-		index('inbox_token_idx').on(table.token)
+		index('inbox_token_idx').on(table.token),
+		index('inbox_answer_id_idx').on(table.answerId)
 	]
 );
 
-export const politician = pgTable('politician', {
-	id: text().primaryKey(),
-	slug: text().unique().notNull(),
-	userId: text()
-		.unique()
-		.references(() => user.id, { onDelete: 'cascade' })
-		.notNull(),
-	isActive: boolean().default(true).notNull(),
-	fractionId: text()
-		.references(() => fraction.id)
-		.notNull(),
-	fractionRole: text().$type<FractionRole>().notNull(),
-	createdAt: timestamp().defaultNow().notNull(),
-	updatedAt: timestamp()
-		.defaultNow()
-		.$onUpdate(() => new Date())
-		.notNull(),
-	acceptsQuestions: boolean().default(true).notNull()
-});
+export const politician = pgTable(
+	'politician',
+	{
+		id: text().primaryKey(),
+		slug: text().unique().notNull(),
+		userId: text()
+			.unique()
+			.references(() => user.id, { onDelete: 'cascade' })
+			.notNull(),
+		isActive: boolean().default(true).notNull(),
+		fractionId: text()
+			.references(() => fraction.id)
+			.notNull(),
+		fractionRole: text().$type<FractionRole>().notNull(),
+		createdAt: timestamp().defaultNow().notNull(),
+		updatedAt: timestamp()
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
+		acceptsQuestions: boolean().default(true).notNull()
+	},
+	(table) => [
+		index('politician_fraction_id_idx').on(table.fractionId)
+	]
+);
 
 export const fraction = pgTable('fraction', {
 	id: text().primaryKey(),
