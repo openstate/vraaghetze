@@ -4,37 +4,31 @@ import {
 	desc,
 	eq,
 	gt,
-	lt,
 	inArray,
 	isNull,
 	ne,
 	notExists,
 	or,
 	sql,
-	type SQL,
-	countDistinct,
-	isNotNull
+	type SQL
 } from 'drizzle-orm';
-import { alias, type PgSelect } from 'drizzle-orm/pg-core';
+import { alias } from 'drizzle-orm/pg-core';
 import { db, schema, type Transaction } from '$lib/server/db';
 import { sendConfirmationMail } from '$lib/server/email/templates';
 import { splitWords } from '$lib/server/search';
 import { slugify, slugifyUnique } from '$lib/server/utils/slug';
 import { hasPermission } from '$lib/permissions';
 import type { AnswerStatus, QuestionStatus } from '$lib/moderation';
-import { type ListQuestionType } from './moderation';
 
 export const politicianUser = alias(schema.user, 'politicianUser');
 export const newerAnswer = alias(schema.answer, 'newerAnswer');
 
-export const SEND_REMINDER_AFTER_DAYS = 14;
-export const SEND_REMINDER_AFTER = SEND_REMINDER_AFTER_DAYS * 24 * 60 * 60 * 1000;
-
 // approved rows for everyone, a signed-in user also sees their own regardless of status
-export const isVisibleTo = (
-	table: typeof schema.question,
-	viewerId: string | null
-) => or(inArray(table.status, ['approved', 'answered']), viewerId ? eq(table.userId, viewerId) : undefined);
+export const isVisibleTo = (table: typeof schema.question, viewerId: string | null) =>
+	or(
+		inArray(table.status, ['approved', 'answered']),
+		viewerId ? eq(table.userId, viewerId) : undefined
+	);
 
 export const answerIsVisibleTo = (
 	table: typeof schema.answer | typeof newerAnswer,
@@ -60,7 +54,7 @@ export const latestAnswer = (viewerId: string | null) =>
 				)
 		)
 	);
-const latestAnswer2 = and(
+export const latestAnswer2 = and(
 	eq(schema.answer.questionId, schema.question.id),
 	notExists(
 		db
@@ -118,7 +112,12 @@ export async function listForPolitician(slug: string, limit: number) {
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
 		.leftJoin(schema.answer, latestAnswer(null))
-		.where(and(eq(schema.politician.slug, slug), inArray(schema.question.status, ['approved', 'answered'])))
+		.where(
+			and(
+				eq(schema.politician.slug, slug),
+				inArray(schema.question.status, ['approved', 'answered'])
+			)
+		)
 		.orderBy(desc(schema.question.createdAt))
 		.limit(limit);
 
@@ -150,8 +149,14 @@ export type QuestionStat =
 	'questionsAsked' | 'questionsAnswered' | 'politicians' | 'averageAnswerTime';
 
 export const questionStats = async (): Promise<Record<QuestionStat, number>> => {
-	const questionsAsked = await db.$count(schema.question, inArray(schema.question.status, ['approved', 'answered']));
-	const questionsAnswered = await db.$count(schema.question, eq(schema.question.status, 'answered'));
+	const questionsAsked = await db.$count(
+		schema.question,
+		inArray(schema.question.status, ['approved', 'answered'])
+	);
+	const questionsAnswered = await db.$count(
+		schema.question,
+		eq(schema.question.status, 'answered')
+	);
 	const politicians = await db.$count(
 		schema.politician,
 		and(eq(schema.politician.isActive, true), eq(schema.politician.acceptsQuestions, true))
@@ -180,305 +185,6 @@ export const questionStats = async (): Promise<Record<QuestionStat, number>> => 
 		averageAnswerTime: averageAnswerTime[0].value
 	};
 };
-
-export type ReminderStats =
-	'nNotAnswered' | 'nOverdue' | 'nToRemind' | 'nOverdueNoReminder';
-
-export const reminderStats = async (): Promise<Record<ReminderStats, number>> => {
-	const reminderDate = new Date(Date.now() - SEND_REMINDER_AFTER);
-	const p = db
-		.select({ nTotal: count() })
-		.from(schema.question)
-		.$dynamic();
-
-	// Total not answered
-	const nNotAnswered = await reminderStatNotAnswered();
-
-	// Number of questions overdue
-	const nOverdue = await reminderStatOverdue(reminderDate);
-
-	const nToRemind = await reminderStatToRemind(reminderDate);
-
-	const nOverdueNoReminder = await reminderStatOverdueNoReminder(reminderDate, p);
-
-	return {
-		nNotAnswered,
-		nOverdue,
-		nToRemind,
-		nOverdueNoReminder
-	}
-};
-
-const questionStatFields = {
-	id: schema.question.id,
-	title: schema.question.title,
-	body: schema.question.body,
-	slug: schema.question.slug,
-	status: schema.question.status,
-	authorName: schema.user.name,
-	politicianName: politicianUser.name,
-	politicianSlug: schema.politician.slug,
-	createdAt: schema.question.createdAt,
-	answeredAt: schema.answer.createdAt,
-	answerStatus: schema.answer.status,
-	moderatorName: sql<null>`null`,
-	moderatedAt: sql<null>`null`,
-	rejectionReason: sql<null>`null`,
-	note: sql<null>`null`,
-	verifiedAt: schema.question.verifiedAt
-} as const;
-
-const remindersNotAnsweredFilter = async <T extends PgSelect>(q: T) => {
-	const result = await q
-		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
-		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
-		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
-		.leftJoin(schema.answer, latestAnswer2)
-		.where(
-			ne(schema.question.status, 'answered')
-		);
-
-	return result;
-};
-
-const reminderStatNotAnswered = async () => {
-	const [{ nTotal: nNotAnswered }] = await remindersNotAnsweredFilter(
-		db
-			.select({ nTotal: count() })
-			.from(schema.question)
-			.$dynamic()
-	);
-
-	return nNotAnswered;
-};
-
-export const remindersNotAnswered = async () => {
-	const questions: ListQuestionType[] = await remindersNotAnsweredFilter(
-		db
-			.select(questionStatFields)
-			.from(schema.question)
-			.orderBy(desc(schema.question.createdAt))
-			.$dynamic()
-	); 
-	
-	return questions;
-};
-
-const remindersOverdueFilter1 = async <T extends PgSelect>(q: T, reminderDate: Date) => {
-	const result = await q
-		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
-		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
-		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
-		.leftJoin(schema.answer, latestAnswer2)
-		.innerJoin(schema.moderationAction, eq(schema.question.id, schema.moderationAction.questionId))
-		.where(
-			and(
-				eq(schema.question.status, 'approved'),
-				eq(schema.moderationAction.action, 'approved'),
-				lt(schema.moderationAction.createdAt, reminderDate)
-			)
-		);
-
-	return result;
-};
-
-const remindersOverdueFilter2 = async <T extends PgSelect>(q: T, reminderDate: Date) => {
-	const result = await q
-		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
-		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
-		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
-		.leftJoin(schema.answer, latestAnswer2)
-		.where(
-			and(
-				inArray(schema.question.status, ['pending', 'pending-wrong-politician']),
-				lt(schema.question.createdAt, reminderDate)
-			)
-		);
-
-	return result;
-}
-
-const reminderStatOverdue = async (reminderDate: Date) => {
-	const [{ nTotal: nOverdue1 }] = await remindersOverdueFilter1(
-		db
-			.select({ nTotal: countDistinct(schema.question.id) })
-			.from(schema.question)
-			.$dynamic(),
-		reminderDate
-	);
-
-	const [{ nTotal: nOverdue2 }] = await remindersOverdueFilter2(
-		db
-			.select({ nTotal: countDistinct(schema.question.id) })
-			.from(schema.question)
-			.$dynamic(),
-		reminderDate
-	);
-
-	return nOverdue1 + nOverdue2;
-}
-
-export const remindersOverdue = async (reminderDate: Date) => {
-	const questions1: ListQuestionType[] = await remindersOverdueFilter1(
-		db
-			.select(questionStatFields)
-			.from(schema.question)
-			.orderBy(desc(schema.question.createdAt))
-			.$dynamic(),
-		reminderDate
-	); 
-
-	const questions2: ListQuestionType[] = await remindersOverdueFilter2(
-		db
-			.select(questionStatFields)
-			.from(schema.question)
-			.orderBy(desc(schema.question.createdAt))
-			.$dynamic(),
-		reminderDate
-	); 
-	
-	const questions = questions1.concat(questions2);
-	questions.sort((a, b) => a.createdAt > b.createdAt ? -1 : 1)
-
-	return questions;
-};
-
-const remindersToRemindFilter = async <T extends PgSelect>(q: T, reminderDate: Date) => {
-	// All approved and overdue questions, except:
-	// 	- with an non-rejected answer
-	//  - with an inbox entry with status ignored_different_sender
-	const result = await q
-		.innerJoin(schema.moderationAction, eq(schema.question.id, schema.moderationAction.questionId))
-		.leftJoin(schema.answer, eq(schema.answer.questionId, schema.question.id))
-		.leftJoin(schema.inbox, and(eq(schema.inbox.token, schema.question.emailToken), eq(schema.inbox.status, 'ignored_different_sender')))
-		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
-		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
-		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
-		.where(
-			and(
-				eq(schema.question.status, 'approved'),
-				isNull(schema.question.remindedAt),
-				eq(schema.moderationAction.action, 'approved'),
-				lt(schema.moderationAction.createdAt, reminderDate),
-				or(isNull(schema.answer.id), eq(schema.answer.status, 'rejected')),
-				isNull(schema.inbox.id)
-			)
-		);
-
-		return result;
-};
-
-const reminderStatToRemind = async (reminderDate: Date) => {
-	const [{ nTotal: nToRemind }] = await remindersToRemindFilter(
-		db
-			.select({ nTotal: countDistinct(schema.question.id) })
-			.from(schema.question)
-			.$dynamic(),
-		reminderDate
-	);
-
-	return nToRemind;
-};
-
-export const remindersToRemind = async (reminderDate: Date) => {
-	const questions: ListQuestionType[] = await remindersToRemindFilter(
-		db
-			.select(questionStatFields)
-			.from(schema.question)
-			.orderBy(desc(schema.question.createdAt))
-			.$dynamic(),
-		reminderDate
-	); 
-
-	return questions;
-};
-
-const remindersOverdueNoReminderFilter1 = async <T extends PgSelect>(q: T, reminderDate: Date) => {
-	// Approved questions with an answer with status pending or with an inbox entry with status ignored_different_sender
-	const result = await q
-		.innerJoin(schema.moderationAction, eq(schema.question.id, schema.moderationAction.questionId))
-		.leftJoin(schema.answer, and(eq(schema.answer.questionId, schema.question.id), eq(schema.answer.status, 'pending')))
-		.leftJoin(schema.inbox, and(eq(schema.inbox.token, schema.question.emailToken), eq(schema.inbox.status, 'ignored_different_sender')))
-		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
-		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
-		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
-		.where(
-			and(
-				eq(schema.question.status, 'approved'),
-				eq(schema.moderationAction.action, 'approved'),
-				lt(schema.moderationAction.createdAt, reminderDate),
-				or(
-					isNotNull(schema.answer.id),
-					isNotNull(schema.inbox.id),
-					isNotNull(schema.question.remindedAt)
-				)
-			)
-		);
-
-	return result;
-};
-
-const remindersOverdueNoReminderFilter2 = async <T extends PgSelect>(q: T, reminderDate: Date) => {
-	const result = await q
-		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
-		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
-		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
-		.leftJoin(schema.answer, latestAnswer2)
-		.where(
-			and(
-				inArray(schema.question.status, ['pending', 'pending-wrong-politician']),
-				lt(schema.question.createdAt, reminderDate)
-			)
-		);
-
-	return result;
-};
-
-const reminderStatOverdueNoReminder = async <T extends PgSelect>(reminderDate: Date, p: T) => {
-	const [{ nTotal: nOverdueNoReminder1 }] = await remindersOverdueNoReminderFilter1(
-		db
-			.select({ nTotal: countDistinct(schema.question.id) })
-			.from(schema.question)
-			.$dynamic(),
-		reminderDate
-	);
-
-	const [{ nTotal: nOverdueNoReminder2 }] = await remindersOverdueNoReminderFilter2(
-		db
-			.select({ nTotal: count() })
-			.from(schema.question)
-			.$dynamic(),
-		reminderDate
-	);
-
-	return nOverdueNoReminder1 + nOverdueNoReminder2;
-}
-
-export const remindersOverdueNoReminder = async (reminderDate: Date) => {
-	const questions1: ListQuestionType[] = await remindersOverdueNoReminderFilter1(
-		db
-			.select(questionStatFields)
-			.from(schema.question)
-			.orderBy(desc(schema.question.createdAt))
-			.$dynamic(),
-		reminderDate
-	);
-
-	const questions2: ListQuestionType[] = await remindersOverdueNoReminderFilter2(
-		db
-			.select(questionStatFields)
-			.from(schema.question)
-			.orderBy(desc(schema.question.createdAt))
-			.$dynamic(),
-		reminderDate
-	);
-
-	const questions = questions1.concat(questions2);
-	questions.sort((a, b) => a.createdAt > b.createdAt ? -1 : 1)
-
-	return questions;
-};
-
 
 // the similarity searching already excludes stopwords, but we should also exclude the following from matching
 const QUESTION_WORDS = new Set([
@@ -609,7 +315,12 @@ export async function statsForPolitician(slug: string) {
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		// no viewer, so this joins the newest approved answer and nothing else
 		.leftJoin(schema.answer, latestAnswer(null))
-		.where(and(eq(schema.politician.slug, slug), inArray(schema.question.status, ['approved', 'answered'])));
+		.where(
+			and(
+				eq(schema.politician.slug, slug),
+				inArray(schema.question.status, ['approved', 'answered'])
+			)
+		);
 
 	return stats;
 }
@@ -655,7 +366,7 @@ export type AnswerType = {
 	authorSlug: string;
 	fraction: string | null;
 	fractionName: string | null;
-}
+};
 
 export async function forSlugPage(slug: string, viewerId: string | null) {
 	const [question]: QuestionType[] = await db
@@ -700,13 +411,15 @@ export async function forSlugPage(slug: string, viewerId: string | null) {
 		.innerJoin(schema.user, eq(schema.answer.userId, schema.user.id))
 		.innerJoin(schema.politician, eq(schema.answer.userId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.politician.fractionId, schema.fraction.id))
-		.where(and(eq(schema.answer.questionId, question.id), answerIsVisibleTo(schema.answer, viewerId)))
+		.where(
+			and(eq(schema.answer.questionId, question.id), answerIsVisibleTo(schema.answer, viewerId))
+		)
 		// a follow-up reply supersedes the one before it
 		.orderBy(desc(schema.answer.createdAt))
 		.limit(1);
 
 	// The asker, and answer author, can see informative non-definitive answers
-	let	informativeAnswers: AnswerType[] = await db
+	let informativeAnswers: AnswerType[] = await db
 		.select({
 			id: schema.answer.id,
 			userId: schema.answer.userId,
@@ -726,7 +439,7 @@ export async function forSlugPage(slug: string, viewerId: string | null) {
 		.orderBy(desc(schema.answer.createdAt));
 
 	if (!question.isAsker) {
-		informativeAnswers = informativeAnswers.filter(a => a.userId === viewerId);
+		informativeAnswers = informativeAnswers.filter((a) => a.userId === viewerId);
 	}
 
 	return { question, answer: answer ?? null, informativeAnswers };

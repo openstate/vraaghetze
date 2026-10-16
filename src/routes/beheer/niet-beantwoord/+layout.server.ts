@@ -1,4 +1,5 @@
-import { reminderStats, SEND_REMINDER_AFTER } from '$lib/server/questions';
+import { SEND_REMINDER_AFTER } from '$lib/server/reminders';
+import { reminderStats } from '$lib/server/reminders';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async () => {

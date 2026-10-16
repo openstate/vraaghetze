@@ -2,8 +2,12 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as questions from './questions';
-import { createModerationAction, createPolitician, createUser, getQuestionBySlug } from '$lib/test-utils';
-import { createAnswer, createInboxRow, createQuestion, makeEmail } from '$e2e/test-utils';
+import {
+	createPolitician,
+	createUser,
+	getQuestionBySlug
+} from '$lib/test-utils';
+import { createQuestion } from '$e2e/test-utils';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -21,34 +25,8 @@ async function insertQuestion(
 	return createQuestion(asker, politician, { status: 'approved', ...overrides });
 }
 
-async function insertQuestionAndModerationAction(
-	asker: typeof schema.user.$inferInsert,
-	politician: typeof schema.user.$inferInsert,
-	moderator: typeof schema.user.$inferInsert,
-	overrides: Partial<typeof schema.question.$inferInsert> = {},
-	moderationActionOverrides: Partial<typeof schema.moderationAction.$inferInsert> = {}
-) {
-	const question = await createQuestion(asker, politician, { status: 'approved', ...overrides });
-	const moderationAction = await createModerationAction('approved', moderator, question, moderationActionOverrides);
-
-	return { question, moderationAction };
-}
-
 async function getMails(questionId: string) {
 	return db.select().from(schema.outbox).where(eq(schema.outbox.questionId, questionId));
-}
-
-const ONE_DAY = 24 * 60 * 60 * 1000;
-const between = (min: number, max: number) => min + Math.random() * (max - min);
-
-function createdAtRecent() {
-	const ms = between((questions.SEND_REMINDER_AFTER_DAYS - 10)*ONE_DAY, (questions.SEND_REMINDER_AFTER_DAYS - 5)*ONE_DAY);
-	return new Date(new Date().getTime() - ms);
-}
-
-function createdAtOverdue() {
-	const ms = between((questions.SEND_REMINDER_AFTER_DAYS + 1)*ONE_DAY, (questions.SEND_REMINDER_AFTER_DAYS + 10)*ONE_DAY);
-	return new Date(new Date().getTime() - ms);
 }
 
 beforeEach(async () => {
@@ -434,8 +412,12 @@ describe('visibility', () => {
 
 		expect(publicResult?.informativeAnswers).toStrictEqual([]);
 		expect(userResult?.informativeAnswers).toStrictEqual([]);
-		expect(askerResult?.informativeAnswers).toMatchObject([{ body: 'Mijn antwoord.', status: 'update-asker' }]);
-		expect(authorResult?.informativeAnswers).toMatchObject([{ body: 'Mijn antwoord.', status: 'update-asker' }]);
+		expect(askerResult?.informativeAnswers).toMatchObject([
+			{ body: 'Mijn antwoord.', status: 'update-asker' }
+		]);
+		expect(authorResult?.informativeAnswers).toMatchObject([
+			{ body: 'Mijn antwoord.', status: 'update-asker' }
+		]);
 	});
 });
 
@@ -494,140 +476,5 @@ describe('question ownership', () => {
 		await questions.disownQuestion(verified.slug, asker.id);
 		expect(await getQuestionBySlug(unverified.slug)).toBeUndefined();
 		expect(await getQuestionBySlug(verified.slug)).toBeDefined();
-	});
-});
-
-type CreateType = {
-	asker: typeof schema.user.$inferInsert;
-	politicianUser: typeof schema.user.$inferInsert;
-	moderator?: typeof schema.user.$inferInsert;
-	overdue: boolean;
-}
-
-const createQuestionPending = async ( options: CreateType) => {
-	const createdAt = options.overdue ? createdAtOverdue() : createdAtRecent();
-	await insertQuestion(
-		options.asker,
-		options.politicianUser,
-		{ status: 'pending', createdAt: createdAt }
-	);
-};
-
-const createQuestionPendingWrongPolitician = async ( options: CreateType) => {
-	const createdAt = options.overdue ? createdAtOverdue() : createdAtRecent();
-	await insertQuestionAndModerationAction(
-		options.asker,
-		options.politicianUser,
-		options.moderator!,
-		{ status: 'pending-wrong-politician', createdAt: createdAt },
-		{ action: 'pending-wrong-politician', createdAt: createdAt });
-};
-
-const createQuestionIgnoredDifferentSender = async ( options: CreateType) => {
-	const createdAt = options.overdue ? createdAtOverdue() : createdAtRecent();
-	const { question } = await insertQuestionAndModerationAction( // p.s. status=approved
-		options.asker,
-		options.politicianUser,
-		options.moderator!,
-		{ createdAt: createdAt },
-		{ createdAt: createdAt }
-	);
-	const email = makeEmail(options.politicianUser.email, question.emailToken);
-	await createInboxRow(email, 'ignored_different_sender');
-};
-
-const createQuestionAnswerPending = async ( options: CreateType) => {
-	const { question } = await createQuestionApproved(options);
-	await createAnswer(question); // createdAt of answer may be recent
-};
-
-const createQuestionAnswerRejected = async ( options: CreateType) => {
-	const { question } = await createQuestionApproved(options);
-	await createAnswer(question, { status: 'rejected' }); // createdAt of answer may be recent
-};
-
-const createQuestionAnswered = async ( options: CreateType) => {
-	const createdAt = options.overdue ? createdAtOverdue() : createdAtRecent();
-	await insertQuestionAndModerationAction(
-		options.asker,
-		options.politicianUser,
-		options.moderator!,
-		{ status: 'answered', createdAt: createdAt },
-		{ createdAt: createdAt }
-	);
-};
-
-const createQuestionApproved = async ( options: CreateType) => {
-	const createdAt = options.overdue ? createdAtOverdue() : createdAtRecent();
-	const result = await insertQuestionAndModerationAction(
-		options.asker,
-		options.politicianUser,
-		options.moderator!,
-		{ createdAt: createdAt },
-		{ createdAt: createdAt }
-	);
-
-	return result;
-};
-
-const createQuestionAlreadyReminded = async ( options: CreateType) => {
-	const { question } = await createQuestionApproved(options);
-	await db
-		.update(schema.question)
-		.set({ remindedAt: new Date()})
-		.where(eq(schema.question.id, question.id))
-};
-
-describe('reminder stats', () => {
-	test('return the correct numbers for reminders', async () => {
-		const { politicianUser } = await createPolitician();
-		const asker = await createUser('Vera Vraagsteller');
-		const moderator = await createUser('Mo Moderator');
-		// NA = counted in nNotAnswered
-		// O  = counted in nOverdue
-		// R  = counted in nToRemind
-		// NR = counted in nOverdueNoReminder
-
-		await createQuestionPending({ asker, politicianUser, overdue: false }); // NA
-		await createQuestionPending({ asker, politicianUser, overdue: true }); // NA, O, NR
-		await createQuestionPending({ asker, politicianUser, overdue: true }); // NA, O, NR
-
-		await createQuestionPendingWrongPolitician({ asker, politicianUser, moderator, overdue: false }); // NA
-		await createQuestionPendingWrongPolitician({ asker, politicianUser, moderator, overdue: true }); // NA, O, NR
-		await createQuestionPendingWrongPolitician({ asker, politicianUser, moderator, overdue: true }); // NA, O, NR
-
-		await createQuestionIgnoredDifferentSender({ asker, politicianUser, moderator, overdue: false }); // NA
-		await createQuestionIgnoredDifferentSender({ asker, politicianUser, moderator, overdue: true }); // NA, O, NR
-		await createQuestionIgnoredDifferentSender({ asker, politicianUser, moderator, overdue: true }); // NA, O, NR
-
-		await createQuestionAnswerPending({ asker, politicianUser, moderator, overdue: false }); // NA
-		await createQuestionAnswerPending({ asker, politicianUser, moderator, overdue: true }); // NA, O, NR
-		await createQuestionAnswerPending({ asker, politicianUser, moderator, overdue: true }); // NA, O, NR
-
-		await createQuestionAnswerRejected({ asker, politicianUser, moderator, overdue: false }); // NA
-		await createQuestionAnswerRejected({ asker, politicianUser, moderator, overdue: true }); // NA, O, R
-		await createQuestionAnswerRejected({ asker, politicianUser, moderator, overdue: true }); // NA, O, R
-
-		await createQuestionAnswered({ asker, politicianUser, moderator, overdue: false }); // -
-		await createQuestionAnswered({ asker, politicianUser, moderator, overdue: true }); // -
-		await createQuestionAnswered({ asker, politicianUser, moderator, overdue: true }); // -
-
-		await createQuestionApproved({ asker, politicianUser, moderator, overdue: false }); // NA
-		await createQuestionApproved({ asker, politicianUser, moderator, overdue: false }); // NA
-
-		await createQuestionApproved({ asker, politicianUser, moderator, overdue: true }); // NA, O, R
-		await createQuestionApproved({ asker, politicianUser, moderator, overdue: true }); // NA, O, R
-		await createQuestionApproved({ asker, politicianUser, moderator, overdue: true }); // NA, O, R
-		await createQuestionApproved({ asker, politicianUser, moderator, overdue: true }); // NA, O, R
-		await createQuestionApproved({ asker, politicianUser, moderator, overdue: true }); // NA, O, R
-
-		await createQuestionAlreadyReminded({ asker, politicianUser, moderator, overdue: true }); // NA, O, NR
-		await createQuestionAlreadyReminded({ asker, politicianUser, moderator, overdue: true }); // NA, O, NR
-
-		const stats = await questions.reminderStats();
-		expect(stats.nNotAnswered).toBe(24);
-		expect(stats.nOverdue).toBe(17);
-		expect(stats.nToRemind).toBe(7);
-		expect(stats.nOverdueNoReminder).toBe(10);
 	});
 });

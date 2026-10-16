@@ -59,6 +59,7 @@ function listFollows(questionId: string) {
 beforeEach(async () => {
 	await db.transaction(async (tx) => {
 		await tx.delete(schema.questionFollow);
+		await tx.delete(schema.moderationAction);
 		await tx.delete(schema.answer);
 		await tx.delete(schema.question);
 		await tx.delete(schema.user);
