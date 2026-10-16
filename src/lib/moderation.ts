@@ -110,7 +110,7 @@ export type ModerationSearchQuery = {
 
 const moderationSearchSchema = z.object({
 	inboxStatusSelect: z.enum(inboxStatuses).nullable().catch(null),
-	archiveStatusSelect: z.enum(questionStatusPillsKeys).nullable().catch(null)
+	archiveStatusSelect: z.enum([...questionStatuses, '']).nullable().catch(null)
 });
 
 export function parseModerationSearch(url: URL) {
