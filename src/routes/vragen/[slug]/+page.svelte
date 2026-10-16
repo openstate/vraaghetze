@@ -137,7 +137,7 @@
 					{:else if data.question.status === 'pending'}
 						Deze vraag aan {@render assignee()} wacht op moderatie en is nog niet openbaar
 					{:else if data.question.status === 'pending-wrong-politician'}
-						Deze vraag aan {@render assignee()} wacht op input en is nog niet openbaar
+						Voor deze vraag aan {@render assignee()} is een andere politicus voorgesteld en is nog niet openbaar
 					{:else if data.question.status === 'rejected'}
 						Deze vraag aan {@render assignee()} is afgewezen door de moderatoren en wordt niet beantwoord
 					{:else if data.answer}

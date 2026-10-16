@@ -6,7 +6,7 @@ import type { ListQuestionType } from "./server/moderation";
 
 export const statusToText = {
 		pending: 'Ongemodereerde vraag',
-		'pending-wrong-politician': 'Vraag wacht op input',
+		'pending-wrong-politician': 'Andere politicus voorgesteld',
 		approved: 'Goedgekeurde vraag',
 		rejected: 'Afgewezen vraag',
 		answered: 'Beantwoorde vraag'
@@ -25,6 +25,7 @@ export function questionDetails(row: ListQuestionType) {
       new HTMLSafeString(rejectionReasonTexts(row.rejectionReason).join('<br/>'))
     ],
     ['Moderatienotitie', row.note],
+    ['Moderatie info', metaToText(row.meta)],
     ['Gemodereerd op', row.moderatedAt],
     ['Gemodereerd door', row.moderatorName],
     ['Beantwoord op', row.answerStatus === 'approved' ? row.answeredAt : null],

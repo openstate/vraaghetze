@@ -10,7 +10,7 @@
 	export const questionStatusPills: Record<questionStatusPillsType, Pill> = {
 		unverified: { label: 'Ongeverifieerd', tone: 'neutral' },
 		pending: { label: 'In afwachting', tone: 'neutral' },
-		'pending-wrong-politician': { label: 'Wacht op input', tone: 'neutral' },
+		'pending-wrong-politician': { label: 'Andere politicus voorgesteld', tone: 'neutral' },
 		approved: { label: 'Goedgekeurd', tone: 'positive' },
 		rejected: { label: 'Afgewezen', tone: 'danger' },
 		'update-asker': { label: 'Informatief', tone: 'neutral' },
