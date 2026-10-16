@@ -1,4 +1,4 @@
-import { remindersOverdue } from '$lib/server/questions';
+import { remindersOverdue } from '$lib/server/reminders';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ parent }) => {
