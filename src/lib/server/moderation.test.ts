@@ -199,15 +199,15 @@ describe('moderateAnswer', () => {
 		const result = await moderation.moderateAnswer({
 			answerId: answer.id,
 			moderatorId: moderator.id,
-			action: 'updateAsker'
+			action: 'update-asker'
 		});
 
-		expect(result).toEqual({ action: 'updateAsker' });
-		expect((await getAnswer(answer.id)).status).toBe('updateAsker');
+		expect(result).toEqual({ action: 'update-asker' });
+		expect((await getAnswer(answer.id)).status).toBe('update-asker');
 		expect((await getQuestion(question.id)).status).toBe('approved');
 
 		expect(await getAnswerAudit(answer.id)).toMatchObject([
-			{ moderatorId: moderator.id, action: 'updateAsker', note: null, questionId: null }
+			{ moderatorId: moderator.id, action: 'update-asker', note: null, questionId: null }
 		]);
 
 		const mails = await getEnqueuedMails(question.id);

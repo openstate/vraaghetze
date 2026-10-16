@@ -61,7 +61,7 @@ const questionOnlyStatuses = ['pending-wrong-politician', 'answered'] as const;
 export const questionStatuses = [...commonStatuses, ...questionOnlyStatuses] as const;
 export type QuestionStatus = typeof questionStatuses[number];
 
-const answerOnlyStatuses = ['updateAsker'] as const;
+const answerOnlyStatuses = ['update-asker'] as const;
 export const answerStatuses = [...commonStatuses, ...answerOnlyStatuses] as const;
 export type AnswerStatus = typeof answerStatuses[number];
 

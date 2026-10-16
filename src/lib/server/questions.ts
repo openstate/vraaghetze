@@ -402,7 +402,7 @@ export async function forSlugPage(slug: string, viewerId: string | null) {
 		.innerJoin(schema.user, eq(schema.answer.userId, schema.user.id))
 		.innerJoin(schema.politician, eq(schema.answer.userId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.politician.fractionId, schema.fraction.id))
-		.where(and(eq(schema.answer.questionId, question.id), eq(schema.answer.status, 'updateAsker')))
+		.where(and(eq(schema.answer.questionId, question.id), eq(schema.answer.status, 'update-asker')))
 		.orderBy(desc(schema.answer.createdAt));
 
 	if (!question.isAsker) {

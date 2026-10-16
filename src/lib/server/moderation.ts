@@ -601,7 +601,7 @@ export function moderateAnswer({ answerId, moderatorId, action }: AnswerModerati
 			.where(eq(schema.question.id, answer.questionId))
 			.limit(1);
 
-		if (action === 'updateAsker') {
+		if (action === 'update-asker') {
 			// notify the asker that a question has been given a non-final answer
 			await enqueueUpdateAskerMail(tx, question);
 		}
@@ -652,7 +652,7 @@ export const answerModerationSchema = z.discriminatedUnion('action', [
 		answerId: z.string().min(1)
 	}),
 	z.object({
-		action: z.literal('updateAsker'),
+		action: z.literal('update-asker'),
 		answerId: z.string().min(1)
 	}),
 	z.object({
@@ -770,10 +770,10 @@ export const defaultAnswerModerationAction = async ({
 		? 'Je hebt het antwoord goedgekeurd'
 		: action == 'rejected'
 			? 'Je hebt het antwoord afgewezen'
-			: action == 'updateAsker'
+			: action == 'update-asker'
 				? 'Het antwoord kan door de vraagsteller ingezien worden'
 				: '';
-	const flashType = action == 'approved' || action == 'updateAsker' ? 'success' : 'neutral';
+	const flashType = action == 'approved' || action == 'update-asker' ? 'success' : 'neutral';
 
 	return {
 		...ret,

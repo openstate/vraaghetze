@@ -13,7 +13,7 @@
 		'pending-wrong-politician': { label: 'Wacht op input', tone: 'neutral' },
 		approved: { label: 'Goedgekeurd', tone: 'positive' },
 		rejected: { label: 'Afgewezen', tone: 'danger' },
-		updateAsker: { label: 'Informatief', tone: 'neutral' },
+		'update-asker': { label: 'Informatief', tone: 'neutral' },
 		answered: { label: 'Beantwoord', tone: 'positive' }
 	};
 

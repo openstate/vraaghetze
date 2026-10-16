@@ -414,7 +414,7 @@ describe('visibility', () => {
 			questionId: question.id,
 			userId: politicianUser.id,
 			body: 'Mijn antwoord.',
-			status: 'updateAsker'
+			status: 'update-asker'
 		});
 
 		const publicResult = await questions.forSlugPage(question.slug, null);
@@ -424,8 +424,8 @@ describe('visibility', () => {
 
 		expect(publicResult?.informativeAnswers).toStrictEqual([]);
 		expect(userResult?.informativeAnswers).toStrictEqual([]);
-		expect(askerResult?.informativeAnswers).toMatchObject([{ body: 'Mijn antwoord.', status: 'updateAsker' }]);
-		expect(authorResult?.informativeAnswers).toMatchObject([{ body: 'Mijn antwoord.', status: 'updateAsker' }]);
+		expect(askerResult?.informativeAnswers).toMatchObject([{ body: 'Mijn antwoord.', status: 'update-asker' }]);
+		expect(authorResult?.informativeAnswers).toMatchObject([{ body: 'Mijn antwoord.', status: 'update-asker' }]);
 	});
 });
 

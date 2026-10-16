@@ -27,7 +27,7 @@ export type ModerationAction =
 	| 'pending-wrong-politician'
 	| 'approved'
 	| 'rejected'
-	| 'updateAsker'
+	| 'update-asker'
 	| 'politician-changed'
 	| 'note-added'
 	| 'answer-redacted';
