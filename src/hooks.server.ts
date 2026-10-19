@@ -18,7 +18,7 @@ export const init: ServerInit = () => {
 		syncPoliticians().catch((error) => console.error('Politician sync failed:', error))
 	);
 
-	const deliveryJob = new Cron(`*/${env.ENV === 'development' ? '1' : '5'} * * * *`, () => {
+	const deliveryJob = new Cron(`*/${['development', 'staging'].includes(env.ENV) ? '1' : '5'} * * * *`, () => {
 		deliverOutbox().catch((error) => console.error('Outbox delivery failed:', error));
 	});
 
