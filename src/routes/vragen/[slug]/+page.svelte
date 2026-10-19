@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
-	import Avatar from '$lib/components/avatar.svelte';
 	import Button from '$lib/components/button.svelte';
 	import FollowButton from '$lib/components/follow-button.svelte';
 	import LinkCard from '$lib/components/link-card.svelte';

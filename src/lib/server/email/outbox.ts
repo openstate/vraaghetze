@@ -4,6 +4,9 @@ import { env } from '$env/dynamic/private';
 import { db, schema, type Transaction } from '../db';
 import type { OutboxKind } from '../db/app.schema';
 import { writeFileSync } from 'fs';
+import { remindersToRemind, SEND_REMINDER_AFTER, setRemindedAt } from '$lib/server/reminders';
+import { enqueueReminderMail } from './templates';
+import { formatDateTime } from '$lib/date-time';
 
 const MAX_ATTEMPTS = 8;
 const CLAIM_BATCH_SIZE = 10;
@@ -111,7 +114,7 @@ async function deliverBatch(filterMailIds: string[] = []) {
 				replyTo: mail.replyTo ?? undefined
 			};
 			// Politicians send answers to the email so the From should not contain `noreply`
-			if (mail.kind == 'question-notification' && options.replyTo) {
+			if (['question-notification', 'question-reminder'].includes(mail.kind) && options.replyTo) {
 				options.from = options.replyTo;
 			}
 
@@ -213,4 +216,21 @@ function writeMailForTest({ to, subject, text, replyTo, from }: EmailOptions) {
 	});
 
 	writeFileSync(`./test-results/mails/${filename}.json`, contents);
+}
+
+// Send a reminder after a couple of weeks
+export const sendReminders = async () => {
+	const reminderDate = new Date(Date.now() - SEND_REMINDER_AFTER);
+	const questions = await remindersToRemind(reminderDate);
+	if (questions.length == 0) return;
+	console.info(`${formatDateTime(new Date())} Sending ${questions.length} reminders`)
+
+	for (const question of questions) {
+		await db.transaction(async (tx) => {
+			const result = await enqueueReminderMail(tx, question);
+			if (result) {
+				await setRemindedAt(tx, question.id);
+			}
+		});
+	}
 }

@@ -172,6 +172,16 @@ export async function createModerationAction(
 	return created;
 }
 
+export async function updateQuestion(
+	questionId: string,
+	overrides: Partial<typeof schema.question.$inferInsert> = {}
+) {
+	await db
+		.update(schema.question)
+		.set(overrides)
+		.where(eq(schema.question.id, questionId));
+}
+
 export async function getUser(userId: string) {
 	const [user] = await db.select().from(schema.user).where(eq(schema.user.id, userId));
 	return user;

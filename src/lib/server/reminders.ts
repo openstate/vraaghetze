@@ -2,6 +2,7 @@ import {
 	count,
 	sql,
 	eq,
+	gt,
 	ne,
 	desc,
 	and,
@@ -14,20 +15,19 @@ import {
 	notExists
 } from 'drizzle-orm';
 import { alias, type PgSelect } from 'drizzle-orm/pg-core';
-import { db, schema } from './db';
+import { db, schema, type Transaction } from './db';
 import type { ListQuestionType } from './moderation';
-import { politicianUser, latestAnswerModeratorView } from './questions';
 
 export const SEND_REMINDER_AFTER_DAYS = 14;
 export const SEND_REMINDER_AFTER = SEND_REMINDER_AFTER_DAYS * 24 * 60 * 60 * 1000;
 
 export type ReminderStats = 'nNotAnswered' | 'nOverdue' | 'nToRemind' | 'nOverdueNoReminder';
 
+const politicianUser = alias(schema.user, 'politicianUser');
+const newerAnswer = alias(schema.answer, 'newerAnswer');
 const pendingAnswer = alias(schema.answer, 'pendingAnswer');
 
-export const reminderStats = async (): Promise<Record<ReminderStats, number>> => {
-	const reminderDate = new Date(Date.now() - SEND_REMINDER_AFTER);
-
+export const reminderStats = async (reminderDate: Date): Promise<Record<ReminderStats, number>> => {
 	// Total not answered
 	const nNotAnswered = await reminderStatNotAnswered();
 
@@ -45,6 +45,21 @@ export const reminderStats = async (): Promise<Record<ReminderStats, number>> =>
 		nOverdueNoReminder
 	};
 };
+
+const latestAnswerModeratorView = and(
+	eq(schema.answer.questionId, schema.question.id),
+	notExists(
+		db
+			.select({ newer: sql`1` })
+			.from(newerAnswer)
+			.where(
+				and(
+					eq(newerAnswer.questionId, schema.question.id),
+					gt(newerAnswer.createdAt, schema.answer.createdAt)
+				)
+			)
+	)
+);
 
 const questionStatFields = {
 	id: schema.question.id,
@@ -211,6 +226,7 @@ const remindersToRemindFilter = async <T extends PgSelect>(q: T, reminderDate: D
 
 	return result;
 };
+
 const reminderStatToRemind = async (reminderDate: Date) => {
 	const [{ nTotal: nToRemind }] = await remindersToRemindFilter(
 		db
@@ -226,7 +242,7 @@ const reminderStatToRemind = async (reminderDate: Date) => {
 export const remindersToRemind = async (reminderDate: Date) => {
 	const questions: ListQuestionType[] = await remindersToRemindFilter(
 		db
-			.selectDistinct(questionStatFields)
+			.selectDistinct(questionStatFields) // TODO: may select questions multiple times due to fields from other tables in questionStatFields
 			.from(schema.question)
 			.orderBy(desc(schema.question.createdAt))
 			.$dynamic(),
@@ -235,6 +251,7 @@ export const remindersToRemind = async (reminderDate: Date) => {
 
 	return questions;
 };
+
 const remindersOverdueNoReminderFilter1 = async <T extends PgSelect>(q: T, reminderDate: Date) => {
 	// Approved questions with an answer with status pending or with an inbox entry with status ignored_different_sender
 	const result = await q
@@ -323,4 +340,14 @@ export const remindersOverdueNoReminder = async (reminderDate: Date) => {
 	questions.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
 
 	return questions;
+};
+
+export const setRemindedAt = async (
+	tx: Transaction,
+	questionId: string
+) => {
+	await tx
+		.update(schema.question)
+		.set({ remindedAt: new Date() })
+		.where(eq(schema.question.id, questionId));
 };

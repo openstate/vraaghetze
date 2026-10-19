@@ -1,9 +1,9 @@
 <script lang="ts">
   type Props = {
-    followerName: string,
-    politicianName: string,
-    questionTitle: string,
-    questionUrl: string
+    followerName: string;
+    politicianName: string;
+    questionTitle: string;
+    questionUrl: string;
   };
 	let { followerName, politicianName, questionTitle, questionUrl }: Props = $props();
 </script>

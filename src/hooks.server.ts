@@ -7,7 +7,7 @@ import { env } from '$env/dynamic/private';
 import { timingSafeEqual } from 'node:crypto';
 import { Cron } from 'croner';
 import { syncPoliticians } from '$lib/server/sync';
-import { deliverOutbox } from '$lib/server/email/outbox';
+import { deliverOutbox, sendReminders } from '$lib/server/email/outbox';
 import { authorizeAdmin, authorizeModerator } from '$lib/server/moderation';
 import type { ENV_TYPE } from '$lib/general';
 
@@ -21,6 +21,10 @@ export const init: ServerInit = () => {
 	const deliveryJob = new Cron(`*/${env.ENV === 'development' ? '1' : '5'} * * * *`, () => {
 		deliverOutbox().catch((error) => console.error('Outbox delivery failed:', error));
 	});
+
+	new Cron('0 19 * * *', { timezone: 'Europe/Amsterdam' }, () =>
+		sendReminders().catch((error) => console.error('Sending reminders failed:', error))
+	);
 
 	syncJob.trigger();
 	deliveryJob.trigger();

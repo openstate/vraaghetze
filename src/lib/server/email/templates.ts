@@ -8,6 +8,7 @@ import MagicLinkLogin from './templates/magic-link-login.svelte';
 import MagicLinkCode from './templates/magic-link-code.svelte';
 import QuestionConfirmation from './templates/question-confirmation.svelte';
 import QuestionPolitician from './templates/question-politician.svelte';
+import QuestionReminder from './templates/question-reminder.svelte';
 import QuestionApproved from './templates/question-approved.svelte';
 import QuestionRejected from './templates/question-rejected.svelte';
 import QuestionProposedPolitician from './templates/question-proposed-politician.svelte';
@@ -19,6 +20,9 @@ import { rejectionReasonTexts } from '$lib/moderation';
 import { MAGIC_LINK_EXPIRY_DAYS } from '../auth';
 import { getBasicUserInfoById } from '../auth';
 import type { PoliticianType } from '../politicians';
+import type { ListQuestionType } from '../moderation';
+import { getQuestion } from '../questions';
+import { formatDate } from '$lib/date-time';
 
 // pre-launch safety: when DIVERSION_EMAIL is set, all politician-facing mail goes to
 // that address and replies from it are accepted as if from the assigned politician
@@ -299,6 +303,37 @@ export async function enqueueProposedPoliticianMail(
 		questionId: question.id,
 		recipient: asker.email,
 		subject: 'Voorgestelde wijziging Kamerlid voor jouw vraag',
+		body: stripComments(result.body),
+		transaction: tx
+	});
+}
+
+// enqueues a reminder to the politician
+export async function enqueueReminderMail(
+	tx: Transaction,
+	question: ListQuestionType
+) {
+	const fullQuestion = await getQuestion(question.id); // emailToken and assigneeId not in question
+	const politician = await getBasicUserInfoById(fullQuestion.assigneeId, tx);
+	if (fullQuestion.remindedAt) return;
+
+	const result = render(QuestionReminder, {
+		props: {
+			askerName: question.authorName,
+			politicianName: question.politicianName,
+			questionTitle: fullQuestion.title,
+			questionBody: fullQuestion.body,
+			questionUrl: `${env.ORIGIN}/vragen/${fullQuestion.slug}`,
+			questionDate: formatDate(fullQuestion.createdAt)
+		}
+	});
+
+	return enqueueMail({
+		kind: 'question-reminder',
+		questionId: question.id,
+		recipient: resolveMailAddress(politician.email),
+		replyTo: `antwoord+${fullQuestion.emailToken}@${env.EMAIL_DOMAIN}`,
+		subject: `Herinnering: de vraag van ${question.authorName} op VraagHetZe is nog onbeantwoord`,
 		body: stripComments(result.body),
 		transaction: tx
 	});

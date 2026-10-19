@@ -15,6 +15,7 @@
 	const outboxKindLabels: Record<OutboxKind, string> = {
 		'question-confirmation': 'Vraagbevestiging',
 		'question-notification': 'Vraagmelding',
+		'question-reminder': 'Herinnering',
 		'moderation-notification': 'Moderatiemelding',
 		'answer-notification': 'Antwoordmelding',
 		'follow-notification': 'Volgmelding',

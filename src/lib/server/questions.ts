@@ -54,20 +54,6 @@ export const latestAnswer = (viewerId: string | null) =>
 				)
 		)
 	);
-export const latestAnswerModeratorView = and(
-	eq(schema.answer.questionId, schema.question.id),
-	notExists(
-		db
-			.select({ newer: sql`1` })
-			.from(newerAnswer)
-			.where(
-				and(
-					eq(newerAnswer.questionId, schema.question.id),
-					gt(newerAnswer.createdAt, schema.answer.createdAt)
-				)
-			)
-	)
-);
 
 export const answerColumns = {
 	answerBody: schema.answer.body,
@@ -553,6 +539,15 @@ export async function getStatus(questionId: string) {
 		.where(eq(schema.question.id, questionId));
 
 	return result[0].status;
+}
+
+export async function getQuestion(questionId: string) {
+	const result = await db
+		.select()
+		.from(schema.question)
+		.where(eq(schema.question.id, questionId));
+
+	return result[0];
 }
 
 export async function updatePolitician(

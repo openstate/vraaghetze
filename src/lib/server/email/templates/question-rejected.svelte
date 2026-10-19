@@ -1,11 +1,11 @@
 <script lang="ts">
   type Props = {
-    askerName: string,
-    politicianName: string,
-    questionTitle: string,
-    questionBody: string,
-    moderationUrl: string,
-    rejectionReasons: string[]
+    askerName: string;
+    politicianName: string;
+    questionTitle: string;
+    questionBody: string;
+    moderationUrl: string;
+    rejectionReasons: string[];
   };
 	let { askerName, politicianName, questionTitle, questionBody, moderationUrl, rejectionReasons }: Props = $props();
 </script>

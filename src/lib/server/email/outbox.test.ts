@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq, inArray } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
-import { deliverOutbox, enqueueMail, sendMail } from './outbox';
+import { deliverOutbox, enqueueMail, sendMail, sendReminders } from './outbox';
+import { createQuestionApproved } from '../reminders.test';
+import { createPolitician, createUser, getQuestion, updateQuestion } from '$lib/test-utils';
+import { env } from '$env/dynamic/private';
 
 vi.mock('$app/environment', () => ({ dev: false }));
 
@@ -89,12 +92,45 @@ describe('sendMail', () => {
 		const payload = JSON.parse(request.body);
 		expect(payload.personalizations).toEqual([{ to: [{ email: mail.recipient }] }]);
 		expect(payload.reply_to).toEqual({ email: mail.replyTo });
+		expect(payload.from).toEqual({ name: 'VraagHetZe', email: `noreply@${env.EMAIL_DOMAIN}` });
 		expect(payload.subject).toBe(mail.subject);
 		expect(payload.content).toEqual([{ type: 'text/plain', value: mail.body }]);
 	});
 
+	test('sets a replyable From address when sending a notification to politician', async () => {
+		const mail = makeMail({ replyTo: 'antwoord+3f2a@test.example', kind: 'question-notification' });
+
+		const sent = await sendMail(mail);
+
+		expect(sent).toBe(true);
+
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const [ url, request] = fetchMock.mock.calls[0];
+
+		const payload = JSON.parse(request.body);
+		expect(payload.personalizations).toEqual([{ to: [{ email: mail.recipient }] }]);
+		expect(payload.reply_to).toEqual({ email: mail.replyTo });
+		expect(payload.from).toEqual({ name: 'VraagHetZe', email: mail.replyTo });
+	});
+
+	test('sets a replyable From address when sending a reminder to politician', async () => {
+		const mail = makeMail({ replyTo: 'antwoord+3f2a@test.example', kind: 'question-reminder' });
+
+		const sent = await sendMail(mail);
+
+		expect(sent).toBe(true);
+
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const [ url, request] = fetchMock.mock.calls[0];
+
+		const payload = JSON.parse(request.body);
+		expect(payload.personalizations).toEqual([{ to: [{ email: mail.recipient }] }]);
+		expect(payload.reply_to).toEqual({ email: mail.replyTo });
+		expect(payload.from).toEqual({ name: 'VraagHetZe', email: mail.replyTo });
+	});
+
 	test('requeues a rejected mail with backoff and error and reports it unsent', async () => {
-		fetchMock.mockResolvedValue(new Response('kapot', { status: 500 }));
+		fetchMock.mockResolvedValueOnce(new Response('kapot', { status: 500 }));
 		const mail = makeMail();
 
 		const sent = await sendMail(mail);
@@ -166,5 +202,69 @@ describe('deliverOutbox', () => {
 		expect(row).toMatchObject({ status: 'sent' });
 		const failed = await db.select().from(schema.outbox).where(eq(schema.outbox.status, 'failed'));
 		expect(failed).toHaveLength(10);
+	});
+});
+
+describe('sendReminders', () => {
+	test('queues reminders for questions in outbox', async () => {
+		const moderator = await createUser('Mo Moderator');
+
+		const recipients = [];
+		const questions = [];
+		for (let index = 0; index < 4; index++) {
+			const { politicianUser } = await createPolitician();
+			const asker = await createUser('Vera Vraagsteller');
+			const { question } = await createQuestionApproved({ asker, politicianUser, moderator, overdue: true });
+			questions.push(question);
+			recipients.push(politicianUser.email);
+		}
+
+		await sendReminders();
+
+		const rows = await db
+			.select()
+			.from(schema.outbox)
+			.where(inArray(schema.outbox.recipient, recipients));
+		expect(rows).toHaveLength(4);
+		expect(rows.filter((row) => row.status === 'queued' && row.attempts === 0)).toHaveLength(4);
+		for (const question of questions) {
+			expect((await getQuestion(question.id)).remindedAt).not.toBeNull();
+		}
+	});
+
+	test('set the right properties', async () => {
+		const { politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const moderator = await createUser('Mo Moderator');
+
+		const { question } = await createQuestionApproved({ asker, politicianUser, moderator, overdue: true });
+
+		await sendReminders();
+
+		const reminder = (await db
+			.select()
+			.from(schema.outbox)
+			.where(eq(schema.outbox.recipient, politicianUser.email)))[0];
+		expect(reminder.kind).toBe('question-reminder');
+		expect(reminder.questionId).toBe(question.id);
+		expect(reminder.recipient).toBe(`${politicianUser.id}@test.example`);
+		expect(reminder.replyTo).toBe(`antwoord+${question.emailToken}@test.example`);
+		expect(reminder.subject).toBe(`Herinnering: de vraag van ${asker.name} op VraagHetZe is nog onbeantwoord`);
+	});
+
+	test('does not send reminders if reminded_at already set', async () => {
+		const { politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const moderator = await createUser('Mo Moderator');
+
+		const { question } = await createQuestionApproved({ asker, politicianUser, moderator, overdue: true });
+		await updateQuestion(question.id, { remindedAt: new Date() });
+
+		await sendReminders();
+
+		const rows = await db
+			.select()
+			.from(schema.outbox);
+		expect(rows).toHaveLength(0);
 	});
 });
