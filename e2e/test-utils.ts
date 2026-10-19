@@ -4,6 +4,7 @@ import { desc, eq } from 'drizzle-orm';
 import type { Page } from '@playwright/test';
 import { dedupKey, extractAddress, extractToken, isSenderVerified, type InboundEmail } from '$lib/server/email/parse-inbound';
 import type { InboxStatus } from '$lib/moderation';
+import { randomUUID } from 'crypto';
 
 export const testBeforeEach = async (page: Page) => {
 	await db.delete(schema.moderationAction);
@@ -20,6 +21,7 @@ export async function createQuestion(
 	overrides: Partial<typeof schema.question.$inferInsert> = {}
 ) {
 	const id = crypto.randomUUID();
+	const emailToken = overrides.status === 'approved' ? randomUUID() : null
 
 	const [question] = await db
 		.insert(schema.question)
@@ -31,12 +33,14 @@ export async function createQuestion(
 			body: 'Graag een toelichting.',
 			slug: `testvraag-${id}`,
 			verifiedAt: new Date(),
+			emailToken: emailToken,
 			...overrides
 		})
 		.returning();
 
 	return question;
 }
+
 export async function createAnswer(
 	question: { id: string; assigneeId: string },
 	overrides: Partial<typeof schema.answer.$inferInsert> = {}

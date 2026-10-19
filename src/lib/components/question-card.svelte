@@ -24,7 +24,7 @@
 		question.status === 'pending'
 			? 'Wacht op moderatie, gesteld aan'
 			: question.status === 'pending-wrong-politician'
-				? 'Wacht op input, gesteld aan'
+				? 'Andere politicus voorgesteld, gesteld aan'
 				:question.status === 'rejected'
 					? 'Afgewezen, was gesteld aan'
 					: question.answer

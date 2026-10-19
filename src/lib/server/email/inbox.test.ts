@@ -36,6 +36,7 @@ async function getInboxRow(sender: string) {
 beforeEach(async () => {
 	await db.transaction(async (tx) => {
 		await tx.delete(schema.inbox);
+		await tx.delete(schema.moderationAction);
 		await tx.delete(schema.question);
 		await tx.delete(schema.user);
 	});

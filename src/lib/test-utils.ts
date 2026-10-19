@@ -138,13 +138,14 @@ export async function createModerationAction(
 	question: typeof schema.question.$inferInsert,
 	overrides: Partial<typeof schema.moderationAction.$inferInsert> = {}
 ) {
+	const useAction = overrides.action ?? action;
 	const [created] = await db
 		.insert(schema.moderationAction)
 		.values({
 			id: crypto.randomUUID(),
 			questionId: question.id,
 			moderatorId: moderator.id,
-			action: action,
+			action: useAction,
 			createdAt: new Date(),
 			...overrides
 		})
@@ -152,11 +153,11 @@ export async function createModerationAction(
 
 	// Mimic partly what is done in moderateQuestion
 	const currentStatus = await getStatus(question.id);
-	const questionStatus = actionToStatus(action, currentStatus);
+	const questionStatus = actionToStatus(useAction, currentStatus);
 	await db
 		.update(schema.question)
 		.set(
-			action === 'approved'
+			useAction === 'approved'
 				? { status: questionStatus, emailToken: crypto.randomUUID() }
 				: { status: questionStatus }
 		)

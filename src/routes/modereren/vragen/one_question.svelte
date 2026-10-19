@@ -11,6 +11,7 @@
 	import type { CommissionsType, PoliticiansType } from '$lib/politicians';
 	import type { schema } from '$lib/server/db';
 
+	// TODO: This is just ListQuestionQueueType
 	type Question = {
 		id: string;
 		title: string;

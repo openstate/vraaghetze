@@ -24,10 +24,11 @@ export const politicianUser = alias(schema.user, 'politicianUser');
 export const newerAnswer = alias(schema.answer, 'newerAnswer');
 
 // approved rows for everyone, a signed-in user also sees their own regardless of status
-export const isVisibleTo = (
-	table: typeof schema.question,
-	viewerId: string | null
-) => or(inArray(table.status, ['approved', 'answered']), viewerId ? eq(table.userId, viewerId) : undefined);
+export const isVisibleTo = (table: typeof schema.question, viewerId: string | null) =>
+	or(
+		inArray(table.status, ['approved', 'answered']),
+		viewerId ? eq(table.userId, viewerId) : undefined
+	);
 
 export const answerIsVisibleTo = (
 	table: typeof schema.answer | typeof newerAnswer,
@@ -53,6 +54,20 @@ export const latestAnswer = (viewerId: string | null) =>
 				)
 		)
 	);
+export const latestAnswer2 = and(
+	eq(schema.answer.questionId, schema.question.id),
+	notExists(
+		db
+			.select({ newer: sql`1` })
+			.from(newerAnswer)
+			.where(
+				and(
+					eq(newerAnswer.questionId, schema.question.id),
+					gt(newerAnswer.createdAt, schema.answer.createdAt)
+				)
+			)
+	)
+);
 
 export const answerColumns = {
 	answerBody: schema.answer.body,
@@ -97,7 +112,12 @@ export async function listForPolitician(slug: string, limit: number) {
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
 		.leftJoin(schema.answer, latestAnswer(null))
-		.where(and(eq(schema.politician.slug, slug), inArray(schema.question.status, ['approved', 'answered'])))
+		.where(
+			and(
+				eq(schema.politician.slug, slug),
+				inArray(schema.question.status, ['approved', 'answered'])
+			)
+		)
 		.orderBy(desc(schema.question.createdAt))
 		.limit(limit);
 
@@ -129,8 +149,14 @@ export type QuestionStat =
 	'questionsAsked' | 'questionsAnswered' | 'politicians' | 'averageAnswerTime';
 
 export const questionStats = async (): Promise<Record<QuestionStat, number>> => {
-	const questionsAsked = await db.$count(schema.question, inArray(schema.question.status, ['approved', 'answered']));
-	const questionsAnswered = await db.$count(schema.question, eq(schema.question.status, 'answered'));
+	const questionsAsked = await db.$count(
+		schema.question,
+		inArray(schema.question.status, ['approved', 'answered'])
+	);
+	const questionsAnswered = await db.$count(
+		schema.question,
+		eq(schema.question.status, 'answered')
+	);
 	const politicians = await db.$count(
 		schema.politician,
 		and(eq(schema.politician.isActive, true), eq(schema.politician.acceptsQuestions, true))
@@ -289,7 +315,12 @@ export async function statsForPolitician(slug: string) {
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		// no viewer, so this joins the newest approved answer and nothing else
 		.leftJoin(schema.answer, latestAnswer(null))
-		.where(and(eq(schema.politician.slug, slug), inArray(schema.question.status, ['approved', 'answered'])));
+		.where(
+			and(
+				eq(schema.politician.slug, slug),
+				inArray(schema.question.status, ['approved', 'answered'])
+			)
+		);
 
 	return stats;
 }
@@ -335,7 +366,7 @@ export type AnswerType = {
 	authorSlug: string;
 	fraction: string | null;
 	fractionName: string | null;
-}
+};
 
 export async function forSlugPage(slug: string, viewerId: string | null) {
 	const [question]: QuestionType[] = await db
@@ -380,13 +411,15 @@ export async function forSlugPage(slug: string, viewerId: string | null) {
 		.innerJoin(schema.user, eq(schema.answer.userId, schema.user.id))
 		.innerJoin(schema.politician, eq(schema.answer.userId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.politician.fractionId, schema.fraction.id))
-		.where(and(eq(schema.answer.questionId, question.id), answerIsVisibleTo(schema.answer, viewerId)))
+		.where(
+			and(eq(schema.answer.questionId, question.id), answerIsVisibleTo(schema.answer, viewerId))
+		)
 		// a follow-up reply supersedes the one before it
 		.orderBy(desc(schema.answer.createdAt))
 		.limit(1);
 
 	// The asker, and answer author, can see informative non-definitive answers
-	let	informativeAnswers: AnswerType[] = await db
+	let informativeAnswers: AnswerType[] = await db
 		.select({
 			id: schema.answer.id,
 			userId: schema.answer.userId,
@@ -406,7 +439,7 @@ export async function forSlugPage(slug: string, viewerId: string | null) {
 		.orderBy(desc(schema.answer.createdAt));
 
 	if (!question.isAsker) {
-		informativeAnswers = informativeAnswers.filter(a => a.userId === viewerId);
+		informativeAnswers = informativeAnswers.filter((a) => a.userId === viewerId);
 	}
 
 	return { question, answer: answer ?? null, informativeAnswers };
