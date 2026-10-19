@@ -54,7 +54,7 @@ export const latestAnswer = (viewerId: string | null) =>
 				)
 		)
 	);
-export const latestAnswer2 = and(
+export const latestAnswerModeratorView = and(
 	eq(schema.answer.questionId, schema.question.id),
 	notExists(
 		db

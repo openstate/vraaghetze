@@ -16,7 +16,7 @@ import {
 import { alias, type PgSelect } from 'drizzle-orm/pg-core';
 import { db, schema } from './db';
 import type { ListQuestionType } from './moderation';
-import { politicianUser, latestAnswer2 } from './questions';
+import { politicianUser, latestAnswerModeratorView } from './questions';
 
 export const SEND_REMINDER_AFTER_DAYS = 14;
 export const SEND_REMINDER_AFTER = SEND_REMINDER_AFTER_DAYS * 24 * 60 * 60 * 1000;
@@ -70,7 +70,7 @@ const remindersNotAnsweredFilter = async <T extends PgSelect>(q: T) => {
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
-		.leftJoin(schema.answer, latestAnswer2)
+		.leftJoin(schema.answer, latestAnswerModeratorView)
 		.where(ne(schema.question.status, 'answered'));
 
 	return result;
@@ -100,7 +100,7 @@ const remindersOverdueFilter1 = async <T extends PgSelect>(q: T, reminderDate: D
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
-		.leftJoin(schema.answer, latestAnswer2)
+		.leftJoin(schema.answer, latestAnswerModeratorView)
 		.innerJoin(schema.moderationAction, eq(schema.question.id, schema.moderationAction.questionId))
 		.where(
 			and(
@@ -117,7 +117,7 @@ const remindersOverdueFilter2 = async <T extends PgSelect>(q: T, reminderDate: D
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
-		.leftJoin(schema.answer, latestAnswer2)
+		.leftJoin(schema.answer, latestAnswerModeratorView)
 		.where(
 			and(
 				inArray(schema.question.status, ['pending', 'pending-wrong-politician']),
@@ -273,7 +273,7 @@ const remindersOverdueNoReminderFilter2 = async <T extends PgSelect>(q: T, remin
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
-		.leftJoin(schema.answer, latestAnswer2)
+		.leftJoin(schema.answer, latestAnswerModeratorView)
 		.where(
 			and(
 				inArray(schema.question.status, ['pending', 'pending-wrong-politician']),
