@@ -61,7 +61,8 @@ const createQuestionPending = async (options: CreateType) => {
 	const createdAt = options.overdue ? createdAtOverdue() : createdAtRecent();
 	await insertQuestion(options.asker, options.politicianUser, {
 		status: 'pending',
-		createdAt: createdAt
+		createdAt: createdAt,
+		referenceDate: createdAt
 	});
 };
 
@@ -71,7 +72,7 @@ const createQuestionPendingWrongPolitician = async (options: CreateType) => {
 		options.asker,
 		options.politicianUser,
 		options.moderator!,
-		{ status: 'pending-wrong-politician', createdAt: createdAt },
+		{ status: 'pending-wrong-politician', createdAt: createdAt, referenceDate: createdAt },
 		{ action: 'pending-wrong-politician', createdAt: createdAt }
 	);
 };
@@ -83,7 +84,7 @@ const createQuestionIgnoredDifferentSender = async (options: CreateType) => {
 		options.asker,
 		options.politicianUser,
 		options.moderator!,
-		{ createdAt: createdAt },
+		{ createdAt: createdAt, referenceDate: createdAt },
 		{ createdAt: createdAt }
 	);
 	const email = makeEmail(options.politicianUser.email, question.emailToken);
@@ -123,7 +124,7 @@ const createQuestionAnswered = async (options: CreateType) => {
 		options.asker,
 		options.politicianUser,
 		options.moderator!,
-		{ status: 'answered', createdAt: createdAt },
+		{ status: 'answered', createdAt: createdAt, referenceDate: createdAt },
 		{ createdAt: createdAt }
 	);
 };
@@ -134,7 +135,7 @@ export const createQuestionApproved = async (options: CreateType) => {
 		options.asker,
 		options.politicianUser,
 		options.moderator!,
-		{ createdAt: createdAt },
+		{ createdAt: createdAt, referenceDate: createdAt },
 		{ createdAt: createdAt }
 	);
 

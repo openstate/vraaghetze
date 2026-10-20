@@ -111,23 +111,23 @@ export const remindersNotAnswered = async () => {
 
 	return questions;
 };
+
 const remindersOverdueFilter1 = async <T extends PgSelect>(q: T, reminderDate: Date) => {
 	const result = await q
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
 		.leftJoin(schema.answer, latestAnswerModeratorView)
-		.innerJoin(schema.moderationAction, eq(schema.question.id, schema.moderationAction.questionId))
 		.where(
 			and(
 				eq(schema.question.status, 'approved'),
-				eq(schema.moderationAction.action, 'approved'),
-				lt(schema.moderationAction.createdAt, reminderDate)
+				lt(schema.question.referenceDate, reminderDate)
 			)
 		);
 
 	return result;
 };
+
 const remindersOverdueFilter2 = async <T extends PgSelect>(q: T, reminderDate: Date) => {
 	const result = await q
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
@@ -137,12 +137,13 @@ const remindersOverdueFilter2 = async <T extends PgSelect>(q: T, reminderDate: D
 		.where(
 			and(
 				inArray(schema.question.status, ['pending', 'pending-wrong-politician']),
-				lt(schema.question.createdAt, reminderDate)
+				lt(schema.question.referenceDate, reminderDate)
 			)
 		);
 
 	return result;
 };
+
 const reminderStatOverdue = async (reminderDate: Date) => {
 	const [{ nTotal: nOverdue1 }] = await remindersOverdueFilter1(
 		db
@@ -187,6 +188,7 @@ export const remindersOverdue = async (reminderDate: Date) => {
 
 	return questions;
 };
+
 const remindersToRemindFilter = async <T extends PgSelect>(q: T, reminderDate: Date) => {
 	// All approved and overdue questions, except:
 	// 	- with an non-rejected answer
@@ -202,7 +204,6 @@ const remindersToRemindFilter = async <T extends PgSelect>(q: T, reminderDate: D
 		);
 
 	const result = await q
-		.innerJoin(schema.moderationAction, eq(schema.question.id, schema.moderationAction.questionId))
 		.leftJoin(schema.answer, eq(schema.answer.questionId, schema.question.id))
 		.leftJoin(
 			schema.inbox,
@@ -218,8 +219,7 @@ const remindersToRemindFilter = async <T extends PgSelect>(q: T, reminderDate: D
 			and(
 				eq(schema.question.status, 'approved'),
 				isNull(schema.question.remindedAt),
-				eq(schema.moderationAction.action, 'approved'),
-				lt(schema.moderationAction.createdAt, reminderDate),
+				lt(schema.question.referenceDate, reminderDate),
 				notExists(pendingAnswerQuery),
 				isNull(schema.inbox.id)
 			)
@@ -256,7 +256,6 @@ export const remindersToRemind = async (reminderDate: Date) => {
 const remindersOverdueNoReminderFilter1 = async <T extends PgSelect>(q: T, reminderDate: Date) => {
 	// Approved questions with an answer with status pending or with an inbox entry with status ignored_different_sender
 	const result = await q
-		.innerJoin(schema.moderationAction, eq(schema.question.id, schema.moderationAction.questionId))
 		.leftJoin(
 			schema.answer,
 			and(eq(schema.answer.questionId, schema.question.id), eq(schema.answer.status, 'pending'))
@@ -274,8 +273,7 @@ const remindersOverdueNoReminderFilter1 = async <T extends PgSelect>(q: T, remin
 		.where(
 			and(
 				eq(schema.question.status, 'approved'),
-				eq(schema.moderationAction.action, 'approved'),
-				lt(schema.moderationAction.createdAt, reminderDate),
+				lt(schema.question.referenceDate, reminderDate),
 				or(
 					isNotNull(schema.answer.id),
 					isNotNull(schema.inbox.id),
@@ -295,7 +293,7 @@ const remindersOverdueNoReminderFilter2 = async <T extends PgSelect>(q: T, remin
 		.where(
 			and(
 				inArray(schema.question.status, ['pending', 'pending-wrong-politician']),
-				lt(schema.question.createdAt, reminderDate)
+				lt(schema.question.referenceDate, reminderDate)
 			)
 		);
 
