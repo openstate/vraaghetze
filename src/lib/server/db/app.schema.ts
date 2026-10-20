@@ -79,11 +79,13 @@ export const question = pgTable(
 				sql`setweight(to_tsvector('dutch', "title"), 'A') || setweight(to_tsvector('dutch', "body"), 'C')`
 			)
 			.notNull(),
-		remindedAt: timestamp()
+		remindedAt: timestamp(),
+		referenceDate: timestamp().defaultNow().notNull()
 	},
 	(table) => [
 		index('question_search_idx').using('gin', table.searchVector),
 		index('question_created_at_idx').on(table.createdAt),
+		index('question_reference_date_idx').on(table.referenceDate),
 		index('question_user_id_idx').on(table.userId),
 		index('question_assignee_id_idx').on(table.assigneeId),
 		index('question_assignee_fraction_id_idx').on(table.assigneeFractionId)
