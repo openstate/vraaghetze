@@ -22,6 +22,7 @@ import {
 import { rejectionReasons, type InboxStatus, type QuestionStatus } from '$lib/moderation';
 import { MAGIC_LINK_EXPIRY } from '../auth';
 import type { ModerationAction } from './app.schema';
+import { DAY_MS } from '$lib/general';
 
 const ADMINS = [{ name: 'Open State Developers', email: 'developers@openstate.eu' }];
 
@@ -66,8 +67,7 @@ const EMAIL_DOMAIN = process.env.EMAIL_DOMAIN || 'vraaghetze.nu';
 const DIVERSION_EMAIL = process.env.DIVERSION_EMAIL || '';
 
 const NOW = new Date();
-const DAY = 24 * 60 * 60 * 1000;
-const START = new Date(NOW.getTime() - SPAN_DAYS * DAY);
+const START = new Date(NOW.getTime() - SPAN_DAYS * DAY_MS);
 
 const pick = <T>(items: readonly T[]) => items[Math.floor(Math.random() * items.length)];
 
@@ -97,13 +97,13 @@ function weightedIndex(weights: number[]) {
 }
 
 const timestampInSpan = (fromDay = 0, untilDay = SPAN_DAYS) =>
-	new Date(START.getTime() + between(fromDay, untilDay) * DAY);
+	new Date(START.getTime() + between(fromDay, untilDay) * DAY_MS);
 
 // most delays are short and a few drag on: cubing the draw keeps the tail thin
 const addDelay = (date: Date, minHours: number, maxHours: number) =>
 	new Date(date.getTime() + (minHours + (maxHours - minHours) * Math.random() ** 3) * 3600 * 1000);
 
-const daysSince = (date: Date) => (NOW.getTime() - date.getTime()) / DAY;
+const daysSince = (date: Date) => (NOW.getTime() - date.getTime()) / DAY_MS;
 
 const politicians = await db
 	.select({
@@ -139,8 +139,8 @@ const admins = ADMINS.map((admin) => ({
 	name: admin.name,
 	email: admin.email,
 	emailVerified: true,
-	createdAt: new Date(START.getTime() - DAY),
-	updatedAt: new Date(START.getTime() - DAY),
+	createdAt: new Date(START.getTime() - DAY_MS),
+	updatedAt: new Date(START.getTime() - DAY_MS),
 	role: 'admin'
 }));
 
@@ -369,7 +369,7 @@ for (const [index, draft] of drafts.entries()) {
 
 		if (draft.alwaysAnswered || chance(probability)) {
 			// 2 to 21 days, weighted towards the short end
-			const candidate = new Date(moderatedAt.getTime() + (2 + 19 * Math.random() ** 2) * DAY);
+			const candidate = new Date(moderatedAt.getTime() + (2 + 19 * Math.random() ** 2) * DAY_MS);
 			if (candidate < NOW){
 				answeredAt = candidate;
 				questionStatus = 'answered';
@@ -699,7 +699,7 @@ for (const [index, stray] of [...strays, ...strays.filter(() => chance(0.6))].en
 
 	const unsettled = stray.status === 'received';
 	const receivedAt = new Date(
-		NOW.getTime() - (unsettled ? between(0.01, 0.1) : between(0.5, SPAN_DAYS * 0.8)) * DAY
+		NOW.getTime() - (unsettled ? between(0.01, 0.1) : between(0.5, SPAN_DAYS * 0.8)) * DAY_MS
 	);
 
 	const payload = inboundPayload(from, to, subject, stray.text, dkim, stray.headers);

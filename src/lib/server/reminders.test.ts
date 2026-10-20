@@ -4,22 +4,22 @@ import { db, schema } from '$lib/server/db';
 import * as reminders from './reminders';
 import { createModerationAction, createPolitician, createUser } from '$lib/test-utils';
 import { createAnswer, createInboxRow, createQuestion, makeEmail } from '$e2e/test-utils';
+import { DAY_MS } from '$lib/general';
 
-const ONE_DAY = 24 * 60 * 60 * 1000;
 const between = (min: number, max: number) => min + Math.random() * (max - min);
 
 function createdAtRecent() {
 	const ms = between(
-		(reminders.SEND_REMINDER_AFTER_DAYS - 10) * ONE_DAY,
-		(reminders.SEND_REMINDER_AFTER_DAYS - 5) * ONE_DAY
+		(reminders.SEND_REMINDER_AFTER_DAYS - 10) * DAY_MS,
+		(reminders.SEND_REMINDER_AFTER_DAYS - 5) * DAY_MS
 	);
 	return new Date(new Date().getTime() - ms);
 }
 
 function createdAtOverdue() {
 	const ms = between(
-		(reminders.SEND_REMINDER_AFTER_DAYS + 1) * ONE_DAY,
-		(reminders.SEND_REMINDER_AFTER_DAYS + 10) * ONE_DAY
+		(reminders.SEND_REMINDER_AFTER_DAYS + 1) * DAY_MS,
+		(reminders.SEND_REMINDER_AFTER_DAYS + 10) * DAY_MS
 	);
 	return new Date(new Date().getTime() - ms);
 }

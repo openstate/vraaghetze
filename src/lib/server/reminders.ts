@@ -17,9 +17,10 @@ import {
 import { alias, type PgSelect } from 'drizzle-orm/pg-core';
 import { db, schema, type Transaction } from './db';
 import type { ListQuestionType } from './moderation';
+import { DAY_MS } from '$lib/general';
 
 export const SEND_REMINDER_AFTER_DAYS = 14;
-export const SEND_REMINDER_AFTER = SEND_REMINDER_AFTER_DAYS * 24 * 60 * 60 * 1000;
+export const SEND_REMINDER_AFTER = SEND_REMINDER_AFTER_DAYS * DAY_MS;
 
 export type ReminderStats = 'nNotAnswered' | 'nOverdue' | 'nToRemind' | 'nOverdueNoReminder';
 

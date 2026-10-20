@@ -3,6 +3,7 @@ import { invalidateAll } from '$app/navigation';
 import type { ActionResult } from '@sveltejs/kit';
 
 export type ENV_TYPE = 'development' | 'production' | 'staging' | 'testing';
+export const DAY_MS = 24 * 60 * 60 * 1000;
 
 export class HTMLSafeString {
 	public value: string;
