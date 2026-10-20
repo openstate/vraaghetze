@@ -446,7 +446,7 @@ async function moderateQuestionImplementation({
 		.update(schema.question)
 		.set(
 			action === 'approved'
-				? { status: questionStatus, emailToken: crypto.randomUUID() }
+				? { status: questionStatus, emailToken: crypto.randomUUID(), referenceDate: new Date() }
 				: { status: questionStatus }
 		)
 		.where(

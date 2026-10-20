@@ -63,6 +63,10 @@ export async function createAnswer(
 	return answer;
 }
 
+export const timeDiff = (date1: Date, date2: Date) => {
+	return Math.abs(date1.valueOf() - date2.valueOf());
+};
+
 export function makeEmail(
 	sender: string,
 	token: string | null,

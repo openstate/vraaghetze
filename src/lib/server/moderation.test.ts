@@ -9,7 +9,8 @@ import {
 	getAnswerAudit,
 	getQuestion
 } from '$lib/test-utils';
-import { createAnswer } from '$e2e/test-utils';
+import { createAnswer, timeDiff } from '$e2e/test-utils';
+import { DAY_MS } from '$lib/general';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -355,5 +356,23 @@ describe('moderateQuestion', () => {
 			action: 'approved'
 		});
 		expect((await getQuestion(question.id)).emailToken).toBe(emailToken);
+	});
+
+	test('updates the referenceDate', async () => {
+		const start = new Date((new Date()).getTime() - 20 * DAY_MS);
+		const { question } = await createQuestionAndUsers({ referenceDate: start, createdAt: start});
+		const moderator = await createUser('Mo Moderator');
+
+		expect(timeDiff(question.referenceDate, start)).toBeLessThan(100);
+
+		await moderation.moderateQuestion({
+			questionId: question.id,
+			moderatorId: moderator.id,
+			action: 'approved',
+			note: 'prima vraag'
+		});
+
+		const stored = await getQuestion(question.id);
+		expect(timeDiff(stored.referenceDate, new Date())).toBeLessThan(100);
 	});
 });

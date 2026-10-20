@@ -2,12 +2,15 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as questions from './questions';
+import { moderateQuestion } from './moderation';
 import {
 	createPolitician,
+	createQuestionAndUsers,
 	createUser,
 	getQuestionBySlug
 } from '$lib/test-utils';
-import { createQuestion } from '$e2e/test-utils';
+import { createQuestion, timeDiff } from '$e2e/test-utils';
+import { DAY_MS } from '$lib/general';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -193,6 +196,21 @@ describe('create', () => {
 		});
 
 		expect(result).toEqual({ slug: 'stellen-2' });
+	});
+});
+
+describe('updating', () => {
+	test('updates the referenceDate', async () => {
+		const start = new Date((new Date()).getTime() - 20 * DAY_MS);
+		const { question } = await createQuestionAndUsers({ referenceDate: start, createdAt: start});
+		const { politician, politicianUser } = await createPolitician();
+
+		expect(timeDiff(question.referenceDate, start)).toBeLessThan(100);
+
+		await questions.updatePolitician(question.id, politicianUser.id, politician.fractionId)
+
+		const stored = await questions.getQuestion(question.id);
+		expect(timeDiff(stored.referenceDate, new Date())).toBeLessThan(100);
 	});
 });
 

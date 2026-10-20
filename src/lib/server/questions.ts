@@ -558,7 +558,7 @@ export async function updatePolitician(
 ) {
 	await (tx ?? db)
 		.update(schema.question)
-		.set({ assigneeId: userId, assigneeFractionId: fractionId })
+		.set({ assigneeId: userId, assigneeFractionId: fractionId, referenceDate: new Date() })
 		.where(eq(schema.question.id, questionId));
 }
 

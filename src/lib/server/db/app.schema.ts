@@ -80,6 +80,8 @@ export const question = pgTable(
 			)
 			.notNull(),
 		remindedAt: timestamp(),
+		// the date used to decide when sending reminders. Updated when question is approved (the moment the email is sent)
+		// or when the politician is changed
 		referenceDate: timestamp().defaultNow().notNull()
 	},
 	(table) => [
