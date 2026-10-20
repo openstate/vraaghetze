@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
 	await testBeforeEach(page);
 });
 
-test('a moderator can propose a different politician', async ({ context, page }) => {
+test('a moderator can propose a different politician before approval', async ({ context, page }) => {
 	const title = 'Wat doet u tegen de wooncrisis?';
 	const body = 'In mijn gemeente staan mensen jaren op de wachtlijst voor een sociale huurwoning.';
 	const question = await createQuestion(testAsker, testPoliticianUser, { title, body });

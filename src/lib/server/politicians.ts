@@ -77,27 +77,41 @@ export function activeCommissions() {
 		.orderBy(asc(schema.commission.shortName));
 }
 
+const politicianFields = {
+	id: schema.politician.id,
+	slug: schema.politician.slug,
+	userId: schema.politician.userId,
+	isActive: schema.politician.isActive,
+	acceptsQuestions: schema.politician.acceptsQuestions,
+	name: schema.user.name,
+	email: schema.user.email,
+	fractionRole: schema.politician.fractionRole,
+	fractionId: schema.fraction.id,
+	fraction: schema.fraction.abbreviation,
+	fractionName: schema.fraction.name,
+	fractionSlug: schema.fraction.slug
+};
+
 export type PoliticianType = Awaited<ReturnType<typeof bySlug>>;
 export async function bySlug(slug: string) {
 	const [politician] = await db
-		.select({
-			id: schema.politician.id,
-			slug: schema.politician.slug,
-			userId: schema.politician.userId,
-			isActive: schema.politician.isActive,
-			acceptsQuestions: schema.politician.acceptsQuestions,
-			name: schema.user.name,
-			email: schema.user.email,
-			fractionRole: schema.politician.fractionRole,
-			fractionId: schema.fraction.id,
-			fraction: schema.fraction.abbreviation,
-			fractionName: schema.fraction.name,
-			fractionSlug: schema.fraction.slug
-		})
+		.select(politicianFields)
 		.from(schema.politician)
 		.innerJoin(schema.user, eq(schema.politician.userId, schema.user.id))
 		.innerJoin(schema.fraction, eq(schema.politician.fractionId, schema.fraction.id))
 		.where(eq(schema.politician.slug, slug))
+		.limit(1);
+
+	return politician;
+}
+
+export async function getPolitician(id: string) {
+	const [politician] = await db
+		.select(politicianFields)
+		.from(schema.politician)
+		.innerJoin(schema.user, eq(schema.politician.userId, schema.user.id))
+		.innerJoin(schema.fraction, eq(schema.politician.fractionId, schema.fraction.id))
+		.where(eq(schema.user.id, id))
 		.limit(1);
 
 	return politician;

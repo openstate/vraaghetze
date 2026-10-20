@@ -1,6 +1,4 @@
 <script module lang="ts">
-	import { enhance } from '$app/forms';
-
 	export type Detail = [
 		label: string,
 		value: string | Date | null | HTMLSafeString | boolean,
@@ -12,17 +10,17 @@
 	import { Dialog } from 'bits-ui';
 	import { formatDateTime } from '$lib/date-time';
 	import { HTMLSafeString } from '$lib/general';
-	import Button from './button.svelte';
-	import { inboxStatusPills } from './status-pill.svelte';
+	import DetailsDialogDifferentSender from './details-dialog-different-sender.svelte';
+	import DetailsDialogChangePolitician from './details-dialog-change-politician.svelte';
 
-	type Props = { title: string; details: Detail[] };
+	type Props = { title: string; details: Detail[], data?: unknown };
 
-	let { title, details }: Props = $props();
+	let { title, details, data }: Props = $props();
 
-	const actionable = $derived(details.find((c) => c[0] == 'Actionable')?.[1]);
-	const detailId = $derived((actionable && details.find((c) => c[0] == 'Id')?.[1]) || '');
+	const actionableDifferentSender = $derived(details.find((c) => c[0] == 'ActionableDifferentSender')?.[1]);
+	const actionableChangePolitician = $derived(details.find((c) => c[0] == 'ActionableChangePolitician')?.[1]);
+	const detailId = $derived(((actionableDifferentSender || actionableChangePolitician)  && details.find((c) => c[0] == 'Id')?.[1]) as string || '');
 
-	let disabled = $state(false);
 	let isOpen = $state(false);
 
 	const cellClass = 'border-osf-canvas-200';
@@ -72,61 +70,11 @@
 					</dd>
 				{/each}
 			</dl>
-			{#if actionable}
-				<div class="grid p-6 pt-0 text-sm">
-					<h2 class="font-serif text-xl">Acties</h2>
-					<p>
-						Dit antwoord is genegeerd omdat de afzender niet het Kamerlid is.
-					</p>
-					<ul class="text-body mb-3 list-inside list-disc space-y-1 text-sm">
-						<li>
-							Kies <strong>Toch verwerken</strong> om van deze mail een antwoord te maken dat vervolgens gemodereerd
-							moet worden. Het antwoord zal afkomstig lijken van het oorspronkelijke Kamerlid waaraan de vraag gesteld was.
-						</li>
-						<li>
-							Kies <strong>Negeren</strong> om deze mail te negeren. De status
-							<strong>{inboxStatusPills['ignored_different_sender'].label}</strong> zal aangepast
-							worden naar <strong>{inboxStatusPills['ignored'].label}</strong>.
-						</li>
-					</ul>
-					<form
-						method="POST"
-						use:enhance={() => {
-							disabled = true;
-
-							return async ({ update }) => {
-								await update();
-								disabled = false;
-								isOpen = false;
-							};
-						}}
-					>
-						<input type="hidden" name="inboxId" value={detailId} />
-						<input type="hidden" name="returnTo" value={encodeURIComponent(window.location.href)} />
-						<div class="flex gap-4">
-							<Button
-								type="submit"
-								variant="primary"
-								name="action"
-								value="process_anyway"
-								{disabled}
-								class={disabled ? 'disabled:opacity-40' : ''}
-							>
-								Toch verwerken
-							</Button>
-							<Button
-								type="submit"
-								variant="secondary"
-								name="action"
-								value="ignore"
-								{disabled}
-								class={disabled ? 'disabled:opacity-40' : ''}
-							>
-								Negeren
-							</Button>
-						</div>
-					</form>
-				</div>
+			{#if actionableDifferentSender}
+				<DetailsDialogDifferentSender bind:isOpen inboxId={detailId} />
+			{/if}
+			{#if actionableChangePolitician}
+				<DetailsDialogChangePolitician bind:isOpen data={data} />
 			{/if}
 		</Dialog.Content>
 	</Dialog.Portal>

@@ -23,7 +23,12 @@
 			cell: (cell) =>
 				renderComponent(DetailsDialog, {
 					title: statusToText[cell.row.original.status],
-					details: questionDetails(cell.row.original)
+					details: questionDetails(cell.row.original),
+					data: {
+						question: cell.row.original,
+			 			politicians: data.politicians,
+			 			commissions: data.commissions
+					}
 				})
 		}),
 		helper.accessor('title', {

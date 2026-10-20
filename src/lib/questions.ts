@@ -14,6 +14,7 @@ export const statusToText = {
 
 export function questionDetails(row: ListQuestionType) {
   return [
+		['Id', row.id, true],
     ['Vraag', row.title],
     ['Context', row.body || '—'],
     ['Vraagsteller', row.authorName],
@@ -28,6 +29,8 @@ export function questionDetails(row: ListQuestionType) {
     ['Gemodereerd op', row.moderatedAt],
     ['Gemodereerd door', row.moderatorName],
     ['Beantwoord op', row.answerStatus === 'approved' ? row.answeredAt : null],
-    ['Antwoordstatus', row.answerStatus && questionStatusPills[row.answerStatus].label]
+    ['Antwoordstatus', row.answerStatus && questionStatusPills[row.answerStatus].label],
+		['ActionableChangePolitician', row.status == 'approved', true]
+
   ] satisfies Detail[];
 }

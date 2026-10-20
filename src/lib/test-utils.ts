@@ -7,6 +7,7 @@ import type { ModerationAction } from './server/db/app.schema';
 import { getStatus } from './server/questions';
 import { actionToStatus } from './server/moderation';
 import { createAnswer, createQuestion } from '$e2e/test-utils';
+import { getPolitician, type PoliticianType } from './server/politicians';
 
 export async function createUser(
 	name: string,
@@ -55,7 +56,9 @@ export async function createQuestionAndUsers(
 	createPolitician: boolean = true
 ) {
 	const asker = await createUser('Vera Vraagsteller');
-	const politician = await createUser('Jan Jansen');
+	const politicianUser = await createUser('Jan Jansen');
+	let politician: typeof schema.politician.$inferSelect | undefined = undefined;
+	let useOverrides = {...overrides};
 
 	if (createPolitician) {
 		const fractionId = crypto.randomUUID();
@@ -67,18 +70,20 @@ export async function createQuestionAndUsers(
 		});
 
 		const politicianId = crypto.randomUUID();
-		await db.insert(schema.politician).values({
+		[politician] = await db.insert(schema.politician).values({
 			id: politicianId,
 			slug: `jan-jansen-${politicianId}`,
-			userId: politician.id,
+			userId: politicianUser.id,
 			fractionId,
 			fractionRole: 'member'
-		});
+		}).returning();
+
+		useOverrides = {...useOverrides, assigneeFractionId: fractionId};
 	}
 
-	const question = await createQuestion(asker, politician, overrides);
+	const question = await createQuestion(asker, politicianUser, useOverrides);
 
-	return { question, asker, politician };
+	return { question, asker, politician, politicianUser };
 }
 
 export async function createAnswerAndQuestion(
@@ -176,10 +181,7 @@ export async function updateQuestion(
 	questionId: string,
 	overrides: Partial<typeof schema.question.$inferInsert> = {}
 ) {
-	await db
-		.update(schema.question)
-		.set(overrides)
-		.where(eq(schema.question.id, questionId));
+	await db.update(schema.question).set(overrides).where(eq(schema.question.id, questionId));
 }
 
 export async function getUser(userId: string) {

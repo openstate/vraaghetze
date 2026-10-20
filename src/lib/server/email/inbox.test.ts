@@ -48,11 +48,11 @@ afterEach(() => {
 
 describe('receiveInboundEmail', () => {
 	test('stores the answer for moderation without notifying anyone', async () => {
-		const { question, politician } = await myCreateQuestionAndUsers();
+		const { question, politicianUser } = await myCreateQuestionAndUsers();
 
-		await receiveInboundEmail(makeEmail(politician.email, question.emailToken), new Uint8Array());
+		await receiveInboundEmail(makeEmail(politicianUser.email, question.emailToken), new Uint8Array());
 
-		const stored = await getInboxRow(politician.email);
+		const stored = await getInboxRow(politicianUser.email);
 		expect(stored.status).toBe('processed');
 		expect(stored.reason).toBeNull();
 		expect(stored.processedAt).not.toBeNull();
@@ -64,7 +64,7 @@ describe('receiveInboundEmail', () => {
 			.where(eq(schema.answer.questionId, question.id));
 
 		expect(answer).toMatchObject({
-			userId: politician.id,
+			userId: politicianUser.id,
 			body: 'Mijn antwoord op uw vraag.',
 			status: 'pending'
 		});
@@ -79,11 +79,11 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('stores a second reply as long as nothing has been published', async () => {
-		const { question, politician } = await myCreateQuestionAndUsers();
+		const { question, politicianUser } = await myCreateQuestionAndUsers();
 
-		await receiveInboundEmail(makeEmail(politician.email, question.emailToken), new Uint8Array());
+		await receiveInboundEmail(makeEmail(politicianUser.email, question.emailToken), new Uint8Array());
 		await receiveInboundEmail(
-			makeEmail(politician.email, question.emailToken, { text: 'Nu mijn echte antwoord.' }),
+			makeEmail(politicianUser.email, question.emailToken, { text: 'Nu mijn echte antwoord.' }),
 			new Uint8Array()
 		);
 
@@ -97,8 +97,8 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('ignores a duplicate delivery of the same mail', async () => {
-		const { question, politician } = await myCreateQuestionAndUsers();
-		const email = makeEmail(politician.email, question.emailToken);
+		const { question, politicianUser } = await myCreateQuestionAndUsers();
+		const email = makeEmail(politicianUser.email, question.emailToken);
 
 		await receiveInboundEmail(email, new Uint8Array());
 		await receiveInboundEmail(email, new Uint8Array());
@@ -106,7 +106,7 @@ describe('receiveInboundEmail', () => {
 		const inboxRows = await db
 			.select()
 			.from(schema.inbox)
-			.where(eq(schema.inbox.fromAddress, politician.email));
+			.where(eq(schema.inbox.fromAddress, politicianUser.email));
 
 		expect(inboxRows).toHaveLength(1);
 		expect(inboxRows[0].token).toBe(question.emailToken);
@@ -120,52 +120,52 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('ignores mail without an answer token', async () => {
-		const { politician } = await myCreateQuestionAndUsers();
+		const { politicianUser } = await myCreateQuestionAndUsers();
 
-		await receiveInboundEmail(makeEmail(politician.email, null), new Uint8Array());
+		await receiveInboundEmail(makeEmail(politicianUser.email, null), new Uint8Array());
 
-		const stored = await getInboxRow(politician.email);
+		const stored = await getInboxRow(politicianUser.email);
 		expect(stored.status).toBe('ignored');
 		expect(stored.answerId).toBeNull();
 		expect(stored.token).toBeNull();
 	});
 
 	test('ignores auto-replies', async () => {
-		const { question, politician } = await myCreateQuestionAndUsers();
-		const email = makeEmail(politician.email, question.emailToken, {
+		const { question, politicianUser } = await myCreateQuestionAndUsers();
+		const email = makeEmail(politicianUser.email, question.emailToken, {
 			headers: 'Precedence: bulk'
 		});
 
 		await receiveInboundEmail(email, new Uint8Array());
 
-		const stored = await getInboxRow(politician.email);
+		const stored = await getInboxRow(politicianUser.email);
 		expect(stored.status).toBe('ignored');
 		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).toBeNull();
 	});
 
 	test('ignores bounces with an empty envelope sender', async () => {
-		const { question, politician } = await myCreateQuestionAndUsers();
-		const email = makeEmail(politician.email, question.emailToken);
+		const { question, politicianUser } = await myCreateQuestionAndUsers();
+		const email = makeEmail(politicianUser.email, question.emailToken);
 		email.envelope = { ...email.envelope, from: '' };
 
 		await receiveInboundEmail(email, new Uint8Array());
 
-		const stored = await getInboxRow(politician.email);
+		const stored = await getInboxRow(politicianUser.email);
 		expect(stored.status).toBe('ignored');
 		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).toBeNull();
 	});
 
 	test('ignores mail from an unverified sender', async () => {
-		const { question, politician } = await myCreateQuestionAndUsers();
-		const email = makeEmail(politician.email, question.emailToken, {
+		const { question, politicianUser } = await myCreateQuestionAndUsers();
+		const email = makeEmail(politicianUser.email, question.emailToken, {
 			dkim: '{@test.example : fail}'
 		});
 
 		await receiveInboundEmail(email, new Uint8Array());
 
-		const stored = await getInboxRow(politician.email);
+		const stored = await getInboxRow(politicianUser.email);
 		expect(stored.status).toBe('ignored_dkim_failure');
 		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).toBeNull();
@@ -184,29 +184,31 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('ignores replies to a question that is not approved', async () => {
-		const { question, politician } = await myCreateQuestionAndUsers({ status: 'pending' });
+		const { question, politicianUser } = await myCreateQuestionAndUsers({
+			status: 'pending'
+		});
 
-		await receiveInboundEmail(makeEmail(politician.email, question.emailToken), new Uint8Array());
+		await receiveInboundEmail(makeEmail(politicianUser.email, question.emailToken), new Uint8Array());
 
-		const stored = await getInboxRow(politician.email);
+		const stored = await getInboxRow(politicianUser.email);
 		expect(stored.status).toBe('ignored_question_not_approved');
 		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).toBeNull();
 	});
 
 	test('ignores replies to an already answered question', async () => {
-		const { question, politician } = await myCreateQuestionAndUsers();
+		const { question, politicianUser } = await myCreateQuestionAndUsers();
 		await db.insert(schema.answer).values({
 			id: crypto.randomUUID(),
 			questionId: question.id,
-			userId: politician.id,
+			userId: politicianUser.id,
 			body: 'Eerder antwoord.',
 			status: 'approved'
 		});
 
-		await receiveInboundEmail(makeEmail(politician.email, question.emailToken), new Uint8Array());
+		await receiveInboundEmail(makeEmail(politicianUser.email, question.emailToken), new Uint8Array());
 
-		const stored = await getInboxRow(politician.email);
+		const stored = await getInboxRow(politicianUser.email);
 		expect(stored.status).toBe('ignored_question_already_answered');
 		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).toBeNull();
@@ -225,12 +227,12 @@ describe('receiveInboundEmail', () => {
 	});
 
 	test('ignores mail with an empty reply text', async () => {
-		const { question, politician } = await myCreateQuestionAndUsers();
-		const email = makeEmail(politician.email, question.emailToken, { text: '' });
+		const { question, politicianUser } = await myCreateQuestionAndUsers();
+		const email = makeEmail(politicianUser.email, question.emailToken, { text: '' });
 
 		await receiveInboundEmail(email, new Uint8Array());
 
-		const stored = await getInboxRow(politician.email);
+		const stored = await getInboxRow(politicianUser.email);
 		expect(stored.status).toBe('ignored');
 		expect(stored.token).toBe(question.emailToken);
 		expect(stored.answerId).toBeNull();

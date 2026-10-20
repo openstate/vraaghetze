@@ -67,7 +67,7 @@
 			</div>
 		{:else}
 			<p>LET OP! Sommige onderstaande acties worden direct doorgevoerd zonder verdere bevestiging!</p>
-			<ul class="text-body mb-3 list-inside list-disc space-y-1 text-sm mb-4">
+			<ul class="text-body list-inside list-disc space-y-1 text-sm mb-4">
 			<li><strong>Keur goed</strong> Het antwoord wordt gepubliceerd en de vraagsteller en volgers krijgen een e-mail.</li>
 			<li><strong>Informeer vraagsteller</strong> Het antwoord wordt niet gepubliceerd maar de vraagsteller kan het antwoord zien (en krijgt een e-mail).</li>
 			<li><strong>Negeer</strong> Het antwoord wordt genegeerd.</li>

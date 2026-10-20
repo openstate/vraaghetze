@@ -53,7 +53,7 @@ function myMakeActionEvent(
 	user: typeof schema.user.$inferSelect | null,
 	fields: Record<string, string> = {}
 ) {
-	return makeActionEvent<typeof page.actions.default>(`http://localhost/modereren`, user, fields);
+	return makeActionEvent<typeof page.actions.default>(`http://localhost/modereren/vragen`, user, fields);
 }
 
 beforeEach(async () => {

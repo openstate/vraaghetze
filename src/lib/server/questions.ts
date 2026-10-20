@@ -556,10 +556,13 @@ export async function updatePolitician(
 	fractionId: string,
 	tx?: Transaction
 ) {
-	await (tx ?? db)
+	const [question] =  await (tx ?? db)
 		.update(schema.question)
 		.set({ assigneeId: userId, assigneeFractionId: fractionId, referenceDate: new Date() })
-		.where(eq(schema.question.id, questionId));
+		.where(eq(schema.question.id, questionId))
+		.returning();
+
+	return question;
 }
 
 export async function pendingConfirmation(slug: string, userId: string) {

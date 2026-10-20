@@ -59,7 +59,7 @@
 			['Reden', row.reason],
 			['Ontvangen op', row.receivedAt],
 			['Afgehandeld op', row.processedAt],
-			['Actionable', row.status == 'ignored_different_sender', true]
+			['ActionableDifferentSender', row.status == 'ignored_different_sender', true]
 		] satisfies Detail[];
 	}
 </script>

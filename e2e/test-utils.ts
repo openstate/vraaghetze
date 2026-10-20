@@ -17,7 +17,7 @@ export const testBeforeEach = async (page: Page) => {
 
 export async function createQuestion(
 	asker: typeof schema.user.$inferInsert,
-	politician: typeof schema.user.$inferInsert,
+	politicianUser: typeof schema.user.$inferInsert,
 	overrides: Partial<typeof schema.question.$inferInsert> = {}
 ) {
 	const id = crypto.randomUUID();
@@ -28,7 +28,7 @@ export async function createQuestion(
 		.values({
 			id,
 			userId: asker.id,
-			assigneeId: politician.id,
+			assigneeId: politicianUser.id,
 			title: 'Wat vindt u van de toeslagen?',
 			body: 'Graag een toelichting.',
 			slug: `testvraag-${id}`,

@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as moderation from './moderation';
 import {
+	createPolitician,
 	createQuestionAndUsers,
 	createUser,
 	getAnswer,
@@ -11,6 +12,7 @@ import {
 } from '$lib/test-utils';
 import { createAnswer, timeDiff } from '$e2e/test-utils';
 import { DAY_MS } from '$lib/general';
+import { bySlug } from './politicians';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -63,14 +65,16 @@ describe('listAnswerQueue', () => {
 		const queue = await moderation.listAnswerQueue();
 
 		expect(queue.map((row) => row.answer.id)).toEqual([older.id, newer.id]);
-		expect(queue[0]).toMatchObject({ answer: {
-			body: 'Mijn antwoord op uw vraag.',
-			questionTitle: question.title,
-			questionBody: question.body,
-			questionSlug: question.slug,
-			authorName: asker.name,
-			politicianName: 'Jan Jansen'
-		}});
+		expect(queue[0]).toMatchObject({
+			answer: {
+				body: 'Mijn antwoord op uw vraag.',
+				questionTitle: question.title,
+				questionBody: question.body,
+				questionSlug: question.slug,
+				authorName: asker.name,
+				politicianName: 'Jan Jansen'
+			}
+		});
 	});
 });
 
@@ -91,7 +95,11 @@ describe('countQueues', () => {
 
 describe('moderateAnswer', () => {
 	test('approves an answer and notifies the asker and the followers', async () => {
-		const { question, asker, politician } = await createQuestionAndUsers({ status: 'approved' });
+		const {
+			question,
+			asker,
+			politicianUser
+		} = await createQuestionAndUsers({ status: 'approved' });
 		const answer = await createAnswer(question);
 		const moderator = await createUser('Mo Moderator');
 		const follower = await createUser('Fatima Volger');
@@ -117,8 +125,11 @@ describe('moderateAnswer', () => {
 		const mails = await getEnqueuedMails(question.id);
 		expect(mails).toHaveLength(2);
 		const askerMail = mails.find((mail) => mail.kind === 'answer-notification');
-		expect(askerMail).toMatchObject({ recipient: asker.email, subject: 'Je vraag op VraagHetZe is beantwoord' });
-		expect(askerMail?.body).toContain(politician.name);
+		expect(askerMail).toMatchObject({
+			recipient: asker.email,
+			subject: 'Je vraag op VraagHetZe is beantwoord'
+		});
+		expect(askerMail?.body).toContain(politicianUser.name);
 		expect(mails.find((mail) => mail.kind === 'follow-notification')).toMatchObject({
 			recipient: follower.email,
 			subject: 'Een vraag die je volgt is beantwoord'
@@ -188,7 +199,11 @@ describe('moderateAnswer', () => {
 	});
 
 	test('accepts an informative answer and notifies the asker', async () => {
-		const { question, asker, politician } = await createQuestionAndUsers({ status: 'approved' });
+		const {
+			question,
+			asker,
+			politicianUser
+		} = await createQuestionAndUsers({ status: 'approved' });
 		const answer = await createAnswer(question);
 		const moderator = await createUser('Mo Moderator');
 		const follower = await createUser('Fatima Volger');
@@ -214,8 +229,11 @@ describe('moderateAnswer', () => {
 		const mails = await getEnqueuedMails(question.id);
 		expect(mails).toHaveLength(1);
 		const askerMail = mails.find((mail) => mail.kind === 'answer-notification');
-		expect(askerMail).toMatchObject({ recipient: asker.email, subject: 'Je vraag op VraagHetZe heeft een update' });
-		expect(askerMail?.body).toContain(politician.name);
+		expect(askerMail).toMatchObject({
+			recipient: asker.email,
+			subject: 'Je vraag op VraagHetZe heeft een update'
+		});
+		expect(askerMail?.body).toContain(politicianUser.name);
 		const followerMail = mails.find((mail) => mail.kind === 'follow-notification');
 		expect(followerMail).toBeUndefined();
 	});
@@ -223,7 +241,7 @@ describe('moderateAnswer', () => {
 
 describe('moderateQuestion', () => {
 	test('approves a question, mints a reply token and mails both parties', async () => {
-		const { question, asker, politician } = await createQuestionAndUsers();
+		const { question, asker, politicianUser } = await createQuestionAndUsers();
 		const moderator = await createUser('Mo Moderator');
 
 		const result = await moderation.moderateQuestion({
@@ -252,7 +270,7 @@ describe('moderateQuestion', () => {
 		expect(mails).toHaveLength(2);
 		const politicianMail = mails.find((mail) => mail.kind === 'question-notification');
 		expect(politicianMail).toMatchObject({
-			recipient: politician.email,
+			recipient: politicianUser.email,
 			replyTo: `antwoord+${stored.emailToken}@test.example`
 		});
 		expect(politicianMail?.body).toContain(question.title);
@@ -359,8 +377,8 @@ describe('moderateQuestion', () => {
 	});
 
 	test('updates the referenceDate', async () => {
-		const start = new Date((new Date()).getTime() - 20 * DAY_MS);
-		const { question } = await createQuestionAndUsers({ referenceDate: start, createdAt: start});
+		const start = new Date(new Date().getTime() - 20 * DAY_MS);
+		const { question } = await createQuestionAndUsers({ referenceDate: start, createdAt: start });
 		const moderator = await createUser('Mo Moderator');
 
 		expect(timeDiff(question.referenceDate, start)).toBeLessThan(100);
@@ -371,6 +389,26 @@ describe('moderateQuestion', () => {
 			action: 'approved',
 			note: 'prima vraag'
 		});
+
+		const stored = await getQuestion(question.id);
+		expect(timeDiff(stored.referenceDate, new Date())).toBeLessThan(100);
+	});
+});
+
+describe('moderatedPoliticianChange', () => {
+	test('updates the referenceDate', async () => {
+		const start = new Date(new Date().getTime() - 20 * DAY_MS);
+		const { question } = await createQuestionAndUsers({ referenceDate: start, createdAt: start, status: 'approved' });
+		const moderator = await createUser('Mo Moderator');
+		const selectedPolitician = (await createPolitician('Other Politician')).politician;
+
+		expect(timeDiff(question.referenceDate, start)).toBeLessThan(100);
+
+		await moderation.moderatedPoliticianChange({
+			questionId: question.id,
+			moderatorId: moderator.id,
+			selectedPolitician: await bySlug(selectedPolitician.slug)
+		})
 
 		const stored = await getQuestion(question.id);
 		expect(timeDiff(stored.referenceDate, new Date())).toBeLessThan(100);

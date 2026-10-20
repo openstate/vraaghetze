@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => {
   await testBeforeEach(page);
 });
 
-test('receiving an email with all UTF-8 encoding', async ({ context, page }) => {
+test('receiving an email with all UTF-8 encoding', async () => {
   const question = await createQuestion(testAsker, testPoliticianUser, { status: 'approved', emailToken: randomUUID() });
 
   const utf8Text = 'A normal UTF-8 encoded text';
@@ -30,7 +30,7 @@ test('receiving an email with all UTF-8 encoding', async ({ context, page }) => 
   expect(mail.payload.text).toBe(utf8Text)
 });
 
-test('receiving an email with 1 field in windows-1252 encoding', async ({ context, page }) => {
+test('receiving an email with 1 field in windows-1252 encoding', async () => {
   const question = await createQuestion(testAsker, testPoliticianUser, { status: 'approved', emailToken: randomUUID() });
 
   const filename = 'one_windows_1252';
@@ -60,7 +60,7 @@ test('receiving an email with 1 field in windows-1252 encoding', async ({ contex
   expect(mail.payload.text).toBe(utf8Text)
 });
 
-test('receiving an email with 2 fields in windows-1252 encoding', async ({ context, page }) => {
+test('receiving an email with 2 fields in windows-1252 encoding', async () => {
   const question = await createQuestion(testAsker, testPoliticianUser, { status: 'approved', emailToken: randomUUID() });
 
   const filenameText = 'text_windows_1252';

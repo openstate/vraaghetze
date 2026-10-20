@@ -23,15 +23,16 @@ import {
 	enqueueFollowerMails,
 	enqueueUpdateAskerMail,
 	enqueueProposedPoliticianMail,
-	enqueueRejectionMail
+	enqueueRejectionMail,
+	enqueueQuestionNotificationMail
 } from '$lib/server/email/templates';
-import { getStatus, newerAnswer, updatePolitician, type QuestionType } from '$lib/server/questions';
+import { getQuestion, getStatus, newerAnswer, updatePolitician, type QuestionType } from '$lib/server/questions';
 import { hasPermission } from '$lib/permissions';
 import type { Pagination } from '$lib/pagination';
 import type { MetaType, ModerationAction } from './db/app.schema';
-import type { PoliticianType } from './politicians';
+import { getPolitician, type PoliticianType } from './politicians';
 import { validateForm } from './utils/forms';
-import type { UserType } from './auth';
+import { getBasicUserInfoById, type UserType } from './auth';
 import { jsonCodec } from './utils/zod';
 import type { AnswerStatus, InboxStatus, QuestionStatus } from '$lib/moderation';
 
@@ -490,7 +491,7 @@ async function moderateQuestionImplementation({
 		}
 	}
 
-	// When creating multiple derationAction's in a single transaction they will receive the same createdAt and ordering will be undecided.
+	// When creating multiple moderationAction's in a single transaction they will receive the same createdAt and ordering will be undecided.
 	// This offset is an ugly solution to keep ordering functional.
 	const createdAt = createdAtOffset ? new Date(Date.now() + 1000) : new Date();
 	await tx.insert(schema.moderationAction).values({
@@ -521,6 +522,7 @@ type AutomatedPoliticianChangeType = {
 	proposedPolitician: PoliticianType;
 };
 
+// Runs when asker accepts or rejects the proposed politician
 export async function automatedPoliticianChange({
 	accepted,
 	question,
@@ -565,6 +567,58 @@ export async function automatedPoliticianChange({
 			meta: { currentSlug: currentPolitician.slug, newSlug: proposedPolitician.slug }
 		});
 	}
+}
+
+type ModeratedPoliticianChangeType = {
+	questionId: string;
+	moderatorId: string;
+	selectedPolitician: PoliticianType;
+	sendEmail?: boolean;
+};
+
+type ModeratedPoliticianChangeResultType = {
+	error?: string;
+}
+
+// Runs when moderator selects a different politician for an approved question
+export async function moderatedPoliticianChange({
+	questionId,
+	moderatorId,
+	selectedPolitician,
+	sendEmail
+}: ModeratedPoliticianChangeType): Promise<ModeratedPoliticianChangeResultType> {
+	return await db.transaction(async (tx) => {
+		let question = await getQuestion(questionId);
+		if (question.status != 'approved') {
+			return { error: 'Vraag heeft niet de juiste status.' };
+		}
+
+		const currentPolitician = await getPolitician(question.assigneeId);
+
+		const updatedQuestion = await updatePolitician(
+			questionId,
+			selectedPolitician.userId,
+			selectedPolitician.fractionId,
+			tx
+		);
+
+		await tx.insert(schema.moderationAction).values({
+			id: crypto.randomUUID(),
+			moderatorId,
+			questionId,
+			action: 'politician-changed',
+			note: `Kamerlid door moderator aangepast van ${currentPolitician?.slug} naar ${selectedPolitician.slug}.`,
+			meta: { currentSlug: currentPolitician?.slug, newSlug: selectedPolitician.slug },
+		});
+
+		if (sendEmail) {
+			const asker = await getBasicUserInfoById(updatedQuestion.userId, tx);
+			const politician = await getBasicUserInfoById(updatedQuestion.assigneeId, tx);
+			await enqueueQuestionNotificationMail(tx, updatedQuestion, asker.name, politician.name, politician.email);
+		}
+
+		return {};
+	});
 }
 
 export async function getProposedPoliticianModerationAction(question: QuestionType) {

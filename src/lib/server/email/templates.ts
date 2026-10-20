@@ -74,6 +74,10 @@ export function sendMagicLinkMail({
 	return sendMail({ kind: 'magic-link', recipient, subject, body, expiresAt });
 }
 
+export const replyToForToken = (emailToken: string) => {
+	return `antwoord+${emailToken}@${env.EMAIL_DOMAIN}`;
+};
+
 type VerifiedQuestion = {
 	id: string;
 	title: string;
@@ -124,28 +128,7 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 
 	const politician = await getBasicUserInfoById(question.assigneeId, tx);
 
-	const replyTo = `antwoord+${question.emailToken}@${env.EMAIL_DOMAIN}`;
-
-	const resultPolitician = render(QuestionPolitician, {
-		props: {
-			askerName: asker.name,
-			politicianName: politician.name,
-			questionTitle: question.title,
-			questionBody: question.body,
-			questionUrl: `${env.ORIGIN}/vragen/${question.slug}`,
-			replyTo: replyTo
-		}
-	});
-
-	await enqueueMail({
-		kind: 'question-notification',
-		questionId: question.id,
-		recipient: resolveMailAddress(politician.email),
-		replyTo: replyTo,
-		subject: `Nieuwe vraag via VraagHetZe van ${asker.name}`,
-		body: stripComments(resultPolitician.body),
-		transaction: tx
-	});
+	await enqueueQuestionNotificationMail(tx, question, asker.name, politician.name, politician.email);
 
 	const resultAsker = render(QuestionApproved, {
 		props: {
@@ -162,6 +145,34 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 		recipient: asker.email,
 		subject: 'Je vraag op VraagHetZe is goedgekeurd',
 		body: stripComments(resultAsker.body),
+		transaction: tx
+	});
+}
+
+export async function enqueueQuestionNotificationMail(
+	tx: Transaction,
+	question: ModeratedQuestion,
+	askerName: string,
+	politicianName: string,
+	politicianEmail: string) {
+	const resultPolitician = render(QuestionPolitician, {
+		props: {
+			askerName: askerName,
+			politicianName: politicianName,
+			questionTitle: question.title,
+			questionBody: question.body,
+			questionUrl: `${env.ORIGIN}/vragen/${question.slug}`,
+			replyTo: replyToForToken(question.emailToken!)
+		}
+	});
+
+	await enqueueMail({
+		kind: 'question-notification',
+		questionId: question.id,
+		recipient: resolveMailAddress(politicianEmail),
+		replyTo: replyToForToken(question.emailToken!),
+		subject: `Nieuwe vraag via VraagHetZe van ${askerName}`,
+		body: stripComments(resultPolitician.body),
 		transaction: tx
 	});
 }
@@ -320,8 +331,6 @@ export async function enqueueReminderMail(
 	const politician = await getBasicUserInfoById(fullQuestion.assigneeId, tx);
 	if (fullQuestion.remindedAt) return;
 
-	const replyTo = `antwoord+${fullQuestion.emailToken}@${env.EMAIL_DOMAIN}`;
-
 	const result = render(QuestionReminder, {
 		props: {
 			askerName: question.authorName,
@@ -330,7 +339,7 @@ export async function enqueueReminderMail(
 			questionBody: fullQuestion.body,
 			questionUrl: `${env.ORIGIN}/vragen/${fullQuestion.slug}`,
 			questionDate: formatDate(fullQuestion.createdAt),
-			replyTo: replyTo
+			replyTo: replyToForToken(fullQuestion.emailToken!)
 		}
 	});
 
@@ -338,7 +347,7 @@ export async function enqueueReminderMail(
 		kind: 'question-reminder',
 		questionId: question.id,
 		recipient: resolveMailAddress(politician.email),
-		replyTo: replyTo,
+		replyTo: replyToForToken(fullQuestion.emailToken!),
 		subject: `Herinnering: de vraag van ${question.authorName} op VraagHetZe is nog onbeantwoord`,
 		body: stripComments(result.body),
 		transaction: tx

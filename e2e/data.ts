@@ -15,6 +15,17 @@ export const testPoliticianUser = {
 	email: 'jan.jansen@example.com',
 };
 
+export const testOtherPolitician = {
+	id: 'e2e-other-politician',
+	slug: 'kees-jansma'
+};
+
+export const testOtherPoliticianUser = {
+	id: 'e2e-other-politician-user',
+	name: 'Kees Jansma',
+	email: 'kees.jansma@example.com',
+};
+
 export const testModerator = {
 	id: 'e2e-moderator',
 	name: 'Mo Moderator',
@@ -26,4 +37,11 @@ export const testFraction = {
 	name: 'Testfractie',
 	abbreviation: 'TF',
 	slug: 'testfractie'
+};
+
+export const testOtherFraction = {
+	id: 'e2e-other-fraction',
+	name: 'TestAnderefractie',
+	abbreviation: 'TAF',
+	slug: 'testanderefractie'
 };
