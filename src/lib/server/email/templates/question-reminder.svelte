@@ -1,7 +1,4 @@
 <script lang="ts">
-	import { formatDate } from "$lib/date-time";
-	import { question } from "$lib/server/db/app.schema";
-
   type Props = {
     askerName: string;
     politicianName: string;
@@ -9,8 +6,9 @@
     questionBody: string;
     questionUrl: string;
     questionDate: string;
+    replyTo: string;
   };
-	let { askerName, politicianName, questionTitle, questionBody, questionUrl, questionDate }: Props = $props();
+	let { askerName, politicianName, questionTitle, questionBody, questionUrl, questionDate, replyTo }: Props = $props();
 </script>
 Beste {politicianName},
 
@@ -21,7 +19,9 @@ Onderwerp: {questionTitle}
 {questionBody}
 ----------
 
-U kunt antwoorden door simpelweg deze e-mail te beantwoorden. Uw antwoord wordt eerst door onze moderatoren gecontroleerd en verschijnt daarna openbaar bij de vraag op VraagHetZe ({@html questionUrl}).
+U kunt antwoorden door simpelweg deze e-mail te beantwoorden of door uw antwoord te sturen naar ${replyTo}
+
+Uw antwoord wordt eerst door onze moderatoren gecontroleerd en verschijnt daarna openbaar bij de vraag op VraagHetZe ({@html questionUrl}).
 
 Met vriendelijke groet,
 

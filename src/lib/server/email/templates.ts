@@ -124,13 +124,16 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 
 	const politician = await getBasicUserInfoById(question.assigneeId, tx);
 
+	const replyTo = `antwoord+${question.emailToken}@${env.EMAIL_DOMAIN}`;
+
 	const resultPolitician = render(QuestionPolitician, {
 		props: {
 			askerName: asker.name,
 			politicianName: politician.name,
 			questionTitle: question.title,
 			questionBody: question.body,
-			questionUrl: `${env.ORIGIN}/vragen/${question.slug}`
+			questionUrl: `${env.ORIGIN}/vragen/${question.slug}`,
+			replyTo: replyTo
 		}
 	});
 
@@ -138,7 +141,7 @@ export async function enqueueApprovalMails(tx: Transaction, question: ModeratedQ
 		kind: 'question-notification',
 		questionId: question.id,
 		recipient: resolveMailAddress(politician.email),
-		replyTo: `antwoord+${question.emailToken}@${env.EMAIL_DOMAIN}`,
+		replyTo: replyTo,
 		subject: `Nieuwe vraag via VraagHetZe van ${asker.name}`,
 		body: stripComments(resultPolitician.body),
 		transaction: tx
@@ -317,6 +320,8 @@ export async function enqueueReminderMail(
 	const politician = await getBasicUserInfoById(fullQuestion.assigneeId, tx);
 	if (fullQuestion.remindedAt) return;
 
+	const replyTo = `antwoord+${fullQuestion.emailToken}@${env.EMAIL_DOMAIN}`;
+
 	const result = render(QuestionReminder, {
 		props: {
 			askerName: question.authorName,
@@ -324,7 +329,8 @@ export async function enqueueReminderMail(
 			questionTitle: fullQuestion.title,
 			questionBody: fullQuestion.body,
 			questionUrl: `${env.ORIGIN}/vragen/${fullQuestion.slug}`,
-			questionDate: formatDate(fullQuestion.createdAt)
+			questionDate: formatDate(fullQuestion.createdAt),
+			replyTo: replyTo
 		}
 	});
 
@@ -332,7 +338,7 @@ export async function enqueueReminderMail(
 		kind: 'question-reminder',
 		questionId: question.id,
 		recipient: resolveMailAddress(politician.email),
-		replyTo: `antwoord+${fullQuestion.emailToken}@${env.EMAIL_DOMAIN}`,
+		replyTo: replyTo,
 		subject: `Herinnering: de vraag van ${question.authorName} op VraagHetZe is nog onbeantwoord`,
 		body: stripComments(result.body),
 		transaction: tx
