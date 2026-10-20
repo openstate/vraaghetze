@@ -18,7 +18,7 @@ Onderwerp: {questionTitle}
 {questionBody}
 ----------
 
-U kunt antwoorden door simpelweg deze e-mail te beantwoorden of door uw antwoord te sturen naar ${replyTo}
+U kunt antwoorden door simpelweg deze e-mail te beantwoorden of door uw antwoord te sturen naar {replyTo}
 
 Uw antwoord wordt eerst door onze moderatoren gecontroleerd en verschijnt daarna openbaar bij de vraag op VraagHetZe ({@html questionUrl}).
 
