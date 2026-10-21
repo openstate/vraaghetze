@@ -32,8 +32,12 @@
 			value: 'al-gestuurd',
 			label: `Al gestuurd (${data.stats.nAlreadyReminded})`,
 			href: resolve('/beheer/niet-beantwoord/al-gestuurd')
+		},
+		{
+			value: 'ongeverifieerd',
+			label: `Ongeverifieerd (${data.stats.nUnverified})`,
+			href: resolve('/beheer/niet-beantwoord/ongeverifieerd')
 		}
-
 	]);
 
 	const currentTab = $derived(page.url.pathname.split('/')[3] ?? 'herinneringsmail');

@@ -22,7 +22,7 @@ import { DAY_MS } from '$lib/general';
 export const SEND_REMINDER_AFTER_DAYS = 14;
 export const SEND_REMINDER_AFTER = SEND_REMINDER_AFTER_DAYS * DAY_MS;
 
-export type ReminderStats = 'nNotAnswered' | 'nOverdue' | 'nToRemind' | 'nOverdueNoReminder' | 'nAlreadyReminded';
+export type ReminderStats = 'nNotAnswered' | 'nOverdue' | 'nToRemind' | 'nOverdueNoReminder' | 'nAlreadyReminded' | 'nUnverified';
 
 const politicianUser = alias(schema.user, 'politicianUser');
 const newerAnswer = alias(schema.answer, 'newerAnswer');
@@ -39,14 +39,17 @@ export const reminderStats = async (reminderDate: Date): Promise<Record<Reminder
 
 	const nOverdueNoReminder = await reminderStatOverdueNoReminder(reminderDate);
 
-	const nAlreadyReminded = await reminderStatAlreadyReminded();
+	const nAlreadyReminded = await reminderStatAlreadyReminded(reminderDate);
+
+	const nUnverified = await reminderStatUnverified(reminderDate);
 
 	return {
 		nNotAnswered,
 		nOverdue,
 		nToRemind,
 		nOverdueNoReminder,
-		nAlreadyReminded
+		nAlreadyReminded,
+		nUnverified
 	};
 };
 
@@ -207,7 +210,7 @@ const remindersToRemindFilter = async <T extends PgSelect>(q: T, reminderDate: D
 		);
 
 	const result = await q
-		.leftJoin(schema.answer, eq(schema.answer.questionId, schema.question.id))
+		.leftJoin(schema.answer, latestAnswerModeratorView)
 		.leftJoin(
 			schema.inbox,
 			and(
@@ -298,6 +301,7 @@ const remindersOverdueNoReminderFilter2 = async <T extends PgSelect>(q: T, remin
 			and(
 				inArray(schema.question.status, ['pending', 'pending-wrong-politician']),
 				isNull(schema.question.remindedAt),
+				isNotNull(schema.question.verifiedAt),
 				lt(schema.question.referenceDate, reminderDate)
 			)
 		);
@@ -346,10 +350,10 @@ export const remindersOverdueNoReminder = async (reminderDate: Date) => {
 	return questions;
 };
 
-const remindersAlreadyRemindedFilter = async <T extends PgSelect>(q: T) => {
+const remindersAlreadyRemindedFilter = async <T extends PgSelect>(q: T, reminderDate: Date) => {
 	// All questions for which a reminder has been sent
 	const result = await q
-		.leftJoin(schema.answer, eq(schema.answer.questionId, schema.question.id))
+		.leftJoin(schema.answer, latestAnswerModeratorView)
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
 		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
@@ -357,35 +361,80 @@ const remindersAlreadyRemindedFilter = async <T extends PgSelect>(q: T) => {
 			and(
 				eq(schema.question.status, 'approved'),
 				isNotNull(schema.question.remindedAt),
+				lt(schema.question.referenceDate, reminderDate)
 			)
 		);
 
 	return result;
 };
 
-const reminderStatAlreadyReminded = async () => {
+const reminderStatAlreadyReminded = async (reminderDate: Date) => {
 	const [{ nTotal: nAlreadyReminded }] = await remindersAlreadyRemindedFilter(
 		db
 			.select({ nTotal: countDistinct(schema.question.id) })
 			.from(schema.question)
-			.$dynamic()
+			.$dynamic(),
+		reminderDate
 	);
 
 	return nAlreadyReminded;
-
 };
 
-export const remindersAlreadyReminded = async () => {
+export const remindersAlreadyReminded = async (reminderDate: Date) => {
 	const questions: ListQuestionType[] = await remindersAlreadyRemindedFilter(
 		db
 			.selectDistinct(questionStatFields)
 			.from(schema.question)
 			.orderBy(desc(schema.question.createdAt))
-			.$dynamic()
+			.$dynamic(),
+		reminderDate
 	);
 
 	return questions;
 };
+
+const remindersUnverifiedFilter = async <T extends PgSelect>(q: T, reminderDate: Date) => {
+	// All questions for which a reminder has been sent
+	const result = await q
+		.leftJoin(schema.answer, latestAnswerModeratorView)
+		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
+		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
+		.where(
+			and(
+				isNull(schema.question.verifiedAt),
+				isNull(schema.question.remindedAt),
+				lt(schema.question.referenceDate, reminderDate)
+			)
+		);
+
+	return result;
+};
+
+const reminderStatUnverified = async (reminderDate: Date) => {
+	const [{ nTotal: nUnverified }] = await remindersUnverifiedFilter(
+		db
+			.select({ nTotal: countDistinct(schema.question.id) })
+			.from(schema.question)
+			.$dynamic(),
+		reminderDate
+	);
+
+	return nUnverified;
+};
+
+export const remindersUnverified = async (reminderDate: Date) => {
+	const questions: ListQuestionType[] = await remindersUnverifiedFilter(
+		db
+			.selectDistinct(questionStatFields)
+			.from(schema.question)
+			.orderBy(desc(schema.question.createdAt))
+			.$dynamic(),
+		reminderDate
+	);
+
+	return questions;
+}
 
 export const setRemindedAt = async (
 	tx: Transaction,
