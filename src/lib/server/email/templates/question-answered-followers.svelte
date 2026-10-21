@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* eslint-disable svelte/no-at-html-tags */
   type Props = {
     followerName: string;
     politicianName: string;
