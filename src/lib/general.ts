@@ -1,14 +1,24 @@
 import { applyAction, deserialize } from '$app/forms';
 import { invalidateAll } from '$app/navigation';
 import type { ActionResult } from '@sveltejs/kit';
+import type { schema } from './server/db';
+import type { ModerationActionDetailsType } from './server/moderation';
 
 export type ENV_TYPE = 'development' | 'production' | 'staging' | 'testing';
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
-export class HTMLSafeString {
-	public value: string;
+export class HTMLModerationActions {
+	public value: ModerationActionDetailsType[];
 
-	constructor(value: string) {
+	constructor(value: ModerationActionDetailsType[]) {
+		this.value = value;
+	}
+}
+
+export class HTMLAnswers {
+	public value: typeof schema.answer.$inferSelect[];
+
+	constructor(value: typeof schema.answer.$inferSelect[]) {
 		this.value = value;
 	}
 }

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import DateTime from "$lib/components/date-time.svelte";
-	import { redactionInfo } from "$lib/moderation";
-	import type { schema } from "$lib/server/db";
+	import { redactionInfo, rejectionReasonTexts } from "$lib/moderation";
+	import type { ModerationActionDetailsType } from "$lib/server/moderation";
 
 	type Props = {
-		moderationAction: typeof schema.moderationAction.$inferSelect,
+		moderationAction: ModerationActionDetailsType
 	};
 
   const { moderationAction }: Props = $props();
@@ -21,6 +21,9 @@
     <DateTime value={moderationAction.createdAt} time={true} />
   </td>
   <td>
+    {moderationAction.moderatorName}
+  </td>
+  <td>
     {moderationAction.action}
   </td>
   <td>
@@ -30,6 +33,10 @@
       van {moderationAction.meta?.currentSlug} naar {moderationAction.meta?.newSlug}
     {:else if moderationAction.action === 'answer-redacted'}
       {redactionInfo(moderationAction.meta?.searchTexts ?? [], moderationAction.meta?.replaceTexts ?? [])}
+    {:else if moderationAction.action === 'rejected'}
+      {#each rejectionReasonTexts(moderationAction.rejectionReason) as reason (reason) }
+        {reason}<br/>
+      {/each}
     {/if}
     {moderationAction.note}
   </td>

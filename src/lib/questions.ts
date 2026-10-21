@@ -1,36 +1,49 @@
-import type { Detail } from "./components/details-dialog.svelte";
-import { questionStatusPills } from "./components/status-pill.svelte";
-import { HTMLSafeString } from "./general";
-import { rejectionReasonTexts, type QuestionStatus } from "./moderation";
-import type { ListQuestionType } from "./server/moderation";
+import { questionStatusPills } from './components/status-pill.svelte';
+import { HTMLModerationActions, HTMLAnswers } from './general';
+import { type QuestionStatus } from './moderation';
+import type { QuestionDetailsType } from './server/moderation';
 
 export const statusToText = {
-		pending: 'Ongemodereerde vraag',
-		'pending-wrong-politician': 'Andere politicus voorgesteld',
-		approved: 'Goedgekeurde vraag',
-		rejected: 'Afgewezen vraag',
-		answered: 'Beantwoorde vraag'
+	pending: 'Ongemodereerde vraag',
+	'pending-wrong-politician': 'Andere politicus voorgesteld',
+	approved: 'Goedgekeurde vraag',
+	rejected: 'Afgewezen vraag',
+	answered: 'Beantwoorde vraag'
 } satisfies Record<QuestionStatus, string>;
 
-export function questionDetails(row: ListQuestionType) {
-  return [
-		['Id', row.id, true],
-    ['Vraag', row.title],
-    ['Context', row.body || '—'],
-    ['Vraagsteller', row.authorName],
-    ['Kamerlid', row.politicianName],
-    ['Aangemaakt op', row.createdAt],
-    ['Moderatiestatus', questionStatusPills[row.status].label],
-    [
-      'Moderatiereden',
-      new HTMLSafeString(rejectionReasonTexts(row.rejectionReason).join('<br/>'))
-    ],
-    ['Moderatienotitie', row.note],
-    ['Gemodereerd op', row.moderatedAt],
-    ['Gemodereerd door', row.moderatorName],
-    ['Beantwoord op', row.answerStatus === 'approved' ? row.answeredAt : null],
-    ['Antwoordstatus', row.answerStatus && questionStatusPills[row.answerStatus].label],
-		['ActionableChangePolitician', row.status == 'approved', true]
+export type Detail = [
+	label: string,
+	value: string | Date | null | HTMLModerationActions | HTMLAnswers | boolean,
+	hidden?: boolean
+];
 
-  ] satisfies Detail[];
+export function question2Details(row: QuestionDetailsType) {
+	const details1 = [
+		['Id', row.id, true],
+		['Vraag', row.title],
+		['Context', row.body || '—'],
+		['Vraagsteller', row.authorName],
+		['Kamerlid', row.politicianName],
+		['Aangemaakt op', row.createdAt],
+		['Status', questionStatusPills[row.verifiedAt ? row.status : 'unverified'].label]
+	] satisfies Detail[];
+
+	let extra: Detail[] = [];
+	if (row.status === 'answered') {
+		const moderationAction = row.moderationActions.filter(
+			(a) => a.answerId && a.action === 'approved'
+		)[0];
+		if (moderationAction) {
+			extra = [...extra, ['Beantwoord op', moderationAction.createdAt]];
+		}
+	}
+
+	const details2 = [
+		['Moderatie geschiedenis', new HTMLModerationActions(row.moderationActions)],
+		['Antwoorden', new HTMLAnswers(row.answers)],
+		['ActionableChangePolitician', row.status == 'approved', true]
+	] satisfies Detail[];
+
+	const details = [...details1, ...extra, ...details2] satisfies Detail[];
+	return details;
 }

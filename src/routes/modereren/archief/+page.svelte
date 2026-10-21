@@ -5,7 +5,7 @@
 	import DateTime from '$lib/components/date-time.svelte';
 	import StatusPill, { questionStatusPills } from '$lib/components/status-pill.svelte';
 	import Pagination from '$lib/components/pagination.svelte';
-	import { questionDetails, statusToText } from '$lib/questions.js';
+	import { question2Details, statusToText } from '$lib/questions.js';
 	import type { ListQuestionType } from '$lib/server/moderation.js';
 	import SnippetTitleLink from '$lib/components/snippet-title-link.svelte';
 	import SnippetPoliticianLink from '$lib/components/snippet-politician-link.svelte';
@@ -23,7 +23,8 @@
 			cell: (cell) =>
 				renderComponent(DetailsDialog, {
 					title: statusToText[cell.row.original.status],
-					details: questionDetails(cell.row.original),
+					detailId: cell.row.original.id,
+					questionDetails: question2Details,
 					data: {
 						question: cell.row.original,
 			 			politicians: data.politicians,

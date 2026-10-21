@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { createColumnHelper, renderComponent } from '@tanstack/svelte-table';
-	import DetailsDialog, { type Detail } from '$lib/components/details-dialog.svelte';
+	import DetailsDialog from '$lib/components/details-dialog.svelte';
 	import DataTable, { features } from '$lib/components/data-table.svelte';
 	import DateTime from '$lib/components/date-time.svelte';
 	import StatusPill, { inboxStatusPills } from '$lib/components/status-pill.svelte';
 	import Pagination from '$lib/components/pagination.svelte';
 	import { inboxStatusTitles } from '$lib/moderation.js';
+	import type { ListInboxType } from '$lib/server/moderation.js';
+	import type { Detail } from '$lib/questions.js';
 
 	let { data } = $props();
 
@@ -23,7 +25,7 @@
 			cell: (cell) =>
 				renderComponent(DetailsDialog, {
 					title: titles[cell.row.original.status],
-					details: details(cell.row.original)
+					questionDetails: details(cell.row.original)
 				})
 		}),
 		helper.accessor('fromAddress', {
@@ -49,7 +51,7 @@
 		})
 	]);
 
-	function details(row: Row) {
+	function details(row: ListInboxType) {
 		return [
 			['Id', row.id, true],
 			['Afzender', row.fromAddress],

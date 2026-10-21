@@ -61,7 +61,7 @@
 	);
 
   // every Kamerlid is here already, so a page turn only slices them, never reloads them
-	const currentPage = $derived(parsePagination(page.url).page);
+	const currentPage = $derived(politiciansPerPage >= politicians.length ? 1 : parsePagination(page.url).page);
 
 	const shownPoliticians = $derived(
 		matchingPoliticians.slice(

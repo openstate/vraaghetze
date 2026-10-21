@@ -12,7 +12,8 @@ import {
 	notExists,
 	sql,
 	inArray,
-	SQL
+	SQL,
+	getTableColumns
 } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { error } from '@sveltejs/kit';
@@ -29,7 +30,7 @@ import {
 import { getQuestion, getStatus, newerAnswer, updatePolitician, type QuestionType } from '$lib/server/questions';
 import { hasPermission } from '$lib/permissions';
 import type { Pagination } from '$lib/pagination';
-import type { MetaType, ModerationAction } from './db/app.schema';
+import type { MetaType, ModerationAction, OutboxKind, OutboxStatus } from './db/app.schema';
 import { getPolitician, type PoliticianType } from './politicians';
 import { validateForm } from './utils/forms';
 import { getBasicUserInfoById, type UserType } from './auth';
@@ -338,9 +339,84 @@ export function listQuestions({ page, perPage }: Pagination, statusSelect: Quest
 	});
 }
 
+export type ModerationActionDetailsType = (typeof schema.moderationAction.$inferSelect & {
+	moderatorName: string | null;
+});
+
+export type QuestionDetailsType = {
+	id: string;
+	title: string;
+	body: string;
+	slug: string;
+	status: QuestionStatus;
+	authorName: string;
+	politicianName: string;
+	politicianSlug: string | null;
+	createdAt: Date;
+	answers: typeof schema.answer.$inferSelect[];
+	moderationActions: ModerationActionDetailsType[];
+	verifiedAt: Date | null;
+	answeredAt: Date | null;
+	answerStatus: AnswerStatus | null;
+}
+
+export const getQuestionDetails = async (questionId: string) => {
+	const [question] = await db
+		.select({
+			id: schema.question.id,
+			title: schema.question.title,
+			body: schema.question.body,
+			slug: schema.question.slug,
+			status: schema.question.status,
+			authorName: schema.user.name,
+			politicianName: politicianUser.name,
+			politicianSlug: schema.politician.slug,
+			createdAt: schema.question.createdAt,
+			verifiedAt: schema.question.verifiedAt,
+			answeredAt: schema.answer.createdAt,
+			answerStatus: schema.answer.status
+		})
+		.from(schema.question)
+		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
+		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
+		.leftJoin(schema.answer, latestAnswer)
+		.where(eq(schema.question.id, questionId));
+
+	const moderationActions = await db
+		.select({
+			...getTableColumns(schema.moderationAction),
+			moderatorName: schema.user.name
+		})
+		.from(schema.moderationAction)
+		.leftJoin(schema.user, eq(schema.moderationAction.moderatorId, schema.user.id))
+		.where(eq(schema.moderationAction.questionId, questionId))
+		.orderBy(desc(schema.moderationAction.createdAt));
+
+	const answers = await db
+		.select()
+		.from(schema.answer)
+		.where(eq(schema.answer.questionId, questionId))
+		.orderBy(desc(schema.answer.createdAt));
+
+	const questionWithDetails = { ...question, moderationActions, answers } as QuestionDetailsType;
+	return questionWithDetails;
+}
+
+export type ListInboxType = {
+	id: string;
+	fromAddress: string;
+	subject: string | null;
+	body: string | null;
+	status: InboxStatus;
+	reason: string | null;
+	receivedAt: Date;
+	processedAt: Date | null;
+};
+
 export function listInbox({ page, perPage }: Pagination, statusSelect: InboxStatus | null) {
 	return db.transaction(async (tx) => {
-		const rows = await tx
+		const rows: ListInboxType[] = await tx
 			.select({
 				id: schema.inbox.id,
 				fromAddress: schema.inbox.fromAddress,
@@ -368,9 +444,23 @@ export async function getInboxMail(id: string) {
 	return mail;
 }
 
+export type ListOutboxType = {
+	id: string;
+	kind: OutboxKind;
+	recipient: string;
+	replyTo: string | null;
+	subject: string;
+	body: string;
+	status: OutboxStatus;
+	attempts: number
+	lastError: string | null;
+	sentAt: Date | null;
+	createdAt: Date;
+};
+
 export function listOutbox({ page, perPage }: Pagination) {
 	return db.transaction(async (tx) => {
-		const rows = await tx
+		const rows: ListOutboxType[] = await tx
 			.select({
 				id: schema.outbox.id,
 				kind: schema.outbox.kind,
@@ -756,6 +846,7 @@ export const answerModerationSchema = z.discriminatedUnion('action', [
 	})
 ]);
 export type AnswerModerationType = z.infer<typeof answerModerationSchema>['action'];
+
 type RedactModerationType = Pick<
 	Extract<z.infer<typeof answerModerationSchema>, { action: 'redact' }>,
 	'answerId' | 'searchTexts' | 'replaceTexts'

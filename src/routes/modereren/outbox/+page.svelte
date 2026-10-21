@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { createColumnHelper, renderComponent } from '@tanstack/svelte-table';
-	import DetailsDialog, { type Detail } from '$lib/components/details-dialog.svelte';
+	import DetailsDialog from '$lib/components/details-dialog.svelte';
 	import DataTable, { features } from '$lib/components/data-table.svelte';
 	import DateTime from '$lib/components/date-time.svelte';
 	import StatusPill, { outboxStatusPills } from '$lib/components/status-pill.svelte';
 	import Pagination from '$lib/components/pagination.svelte';
 
 	import type { OutboxKind } from '$lib/server/db/app.schema';
+	import type { ListOutboxType } from '$lib/server/moderation.js';
+	import type { Detail } from '$lib/questions.js';
 
 	let { data } = $props();
 
@@ -32,7 +34,7 @@
 			cell: (cell) =>
 				renderComponent(DetailsDialog, {
 					title: cell.row.original.status === 'sent' ? 'Verzonden e-mail' : 'Niet-verzonden e-mail',
-					details: details(cell.row.original)
+					questionDetails: details(cell.row.original)
 				})
 		}),
 		helper.accessor('recipient', {
@@ -54,7 +56,7 @@
 		})
 	]);
 
-	function details(row: Row) {
+	function details(row: ListOutboxType) {
 		const tries = `na ${row.attempts} poging${row.attempts === 1 ? '' : 'en'}`;
 		return [
 			['Ontvanger', row.recipient],

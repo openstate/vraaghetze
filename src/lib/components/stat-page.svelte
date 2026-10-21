@@ -3,7 +3,7 @@
 	import { createColumnHelper, renderComponent } from '@tanstack/svelte-table';
 	import DataTable, { features } from '$lib/components/data-table.svelte';
 	import DateTime from '$lib/components/date-time.svelte';
-	import { questionDetails, statusToText } from '$lib/questions.js';
+	import { question2Details, statusToText } from '$lib/questions.js';
 	import StatusPill, { questionStatusPills } from '$lib/components/status-pill.svelte';
 	import type { ListQuestionType } from '$lib/server/moderation.js';
 	import SnippetTitleLink from '$lib/components/snippet-title-link.svelte';
@@ -22,11 +22,13 @@
 			id: 'details',
 			header: '',
 			meta: { class: 'w-14' },
-			cell: (cell) =>
-				renderComponent(DetailsDialog, {
+			cell: (cell) => {
+				return renderComponent(DetailsDialog, {
 					title: statusToText[cell.row.original.status],
-					details: questionDetails(cell.row.original)
-				})
+					detailId: cell.row.original.id,
+					questionDetails: question2Details
+				});
+			}
 		}),
 		helper.accessor('title', {
 			header: 'Vraag',
