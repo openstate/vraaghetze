@@ -102,7 +102,11 @@ export async function listQuestionQueue() {
 				fraction: schema.fraction.abbreviation,
 				fractionName: schema.fraction.name
 			},
-			moderationAction: schema.moderationAction
+			moderationAction: {
+				...schema.moderationAction,
+				moderatorName: moderatorUser.name
+
+			}
 		})
 		.from(schema.question)
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
@@ -110,6 +114,7 @@ export async function listQuestionQueue() {
 		.innerJoin(schema.politician, eq(schema.question.assigneeId, schema.politician.userId))
 		.leftJoin(schema.fraction, eq(schema.question.assigneeFractionId, schema.fraction.id))
 		.leftJoin(schema.moderationAction, eq(schema.question.id, schema.moderationAction.questionId))
+		.leftJoin(moderatorUser, eq(schema.moderationAction.moderatorId, moderatorUser.id))
 		.where(
 			and(
 				inArray(schema.question.status, ['pending', 'pending-wrong-politician']),
@@ -126,7 +131,7 @@ export async function listQuestionQueue() {
 	//  - make moderationActions an Array property on question
 	const results: {
 		question: ListQuestionQueueType;
-		moderationActions: (typeof schema.moderationAction.$inferSelect)[];
+		moderationActions: ModerationActionDetailsType[];
 	}[] = [];
 	let questionId = '';
 	let index = -1;

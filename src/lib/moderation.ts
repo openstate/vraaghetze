@@ -10,9 +10,11 @@ export const rejectionKeys = [
 	'offensive',
 	'victimizing',
 	'professional_secrecy',
+	'not_relevant',
 	'privacy_others',
 	'personal_data',
-	'no_author'
+	'no_author',
+	'invitation'
 ] as const;
 
 export type rejectionKeyType = (typeof rejectionKeys)[number];
@@ -27,9 +29,11 @@ export const rejectionReasons: rejectionReasonsType = {
 	offensive: 'Je vraag bevat elementen van haat, onderdrukking of discriminatie.',
 	victimizing: 'Je vraag bevat negatieve bejegening van slachtoffers van ernstig leed.',
 	professional_secrecy: 'Je vraag bevat vertrouwelijke informatie en schendt het beroepsgeheim.',
+	not_relevant: 'Je vraag heeft geen betrekking op het Kamerlidmaatschap.',
 	privacy_others: 'Je vraag bevat details over het privéleven van anderen.',
 	personal_data: 'Je vraag bevat gevoelige persoons- of contactgegevens.',
-	no_author: 'De vraag is niet vanuit een persoonlijk account gesteld.'
+	no_author: 'De vraag is niet vanuit een persoonlijk account gesteld.',
+	invitation: 'De vraag is een uitnodiging voor een gesprek, bezoek of bijeenkomst.'
 };
 
 export const hiddenRejectionKeys = ['politician_change_rejected'] as const;
@@ -65,8 +69,7 @@ const answerOnlyStatuses = ['update-asker'] as const;
 export const answerStatuses = [...commonStatuses, ...answerOnlyStatuses] as const;
 export type AnswerStatus = typeof answerStatuses[number];
 
-const questionStatusPillsKeys = [...commonStatuses, ...questionOnlyStatuses, ...answerOnlyStatuses, 'unverified'] as const;
-export type questionStatusPillsType = typeof questionStatusPillsKeys[number];
+export type questionStatusPillsType = typeof commonStatuses[number] | typeof questionOnlyStatuses[number] | typeof answerOnlyStatuses[number] | 'unverified';
 
 export const redactionInfo = (searchTexts: string[], replaceTexts: string[]) => {
 	const info = [];

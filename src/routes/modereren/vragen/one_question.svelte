@@ -9,7 +9,7 @@
 	import Button from '$lib/components/button.svelte';
 	import SelectPolitician from '$lib/components/select-politician.svelte';
 	import type { CommissionsType, PoliticiansType } from '$lib/politicians';
-	import type { schema } from '$lib/server/db';
+	import type { ModerationActionDetailsType } from '$lib/server/moderation';
 
 	// TODO: This is just ListQuestionQueueType
 	type Question = {
@@ -27,7 +27,7 @@
 
 	type Props = {
 		question: Question;
-		moderationActions: typeof schema.moderationAction.$inferSelect[],
+		moderationActions: ModerationActionDetailsType[],
     politicians: PoliticiansType[];
     commissions: CommissionsType[];
 	};
@@ -141,10 +141,10 @@
 						actionValue="rejected"
 						buttonDisabled={selectedRejections.length == 0}
 					>
-						{#each Object.entries(rejectionReasons) as [key, title] (key)}
+						{#each Object.entries(rejectionReasons) as [key, title], index (key)}
 							<label>
 								<input type="checkbox" name="reasons" value={key} bind:group={selectedRejections} />
-								<span class="min-w-0 flex-1" {title}>{title}</span>
+								<span class="min-w-0 flex-1 ml-2" {title}>{index + 1}. {title}</span>
 							</label>
 						{/each}
 					</ModerationDialog>
