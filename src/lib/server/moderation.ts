@@ -684,7 +684,7 @@ export async function moderatedPoliticianChange({
 	sendEmail
 }: ModeratedPoliticianChangeType): Promise<ModeratedPoliticianChangeResultType> {
 	return await db.transaction(async (tx) => {
-		let question = await getQuestion(questionId);
+		const question = await getQuestion(questionId);
 		if (question.status != 'approved') {
 			return { error: 'Vraag heeft niet de juiste status.' };
 		}

@@ -38,7 +38,7 @@ test('a signed-in user can submit a question for moderation', async ({ context, 
 	await expect(page.getByText('wacht op moderatie')).toBeVisible();
 });
 
-test('a new user can submit a question by registering', async ({ context, page }) => {
+test('a new user can submit a question by registering', async ({ page }) => {
 	const title = 'Wat doet u tegen de wooncrisis?';
 	const body = 'In mijn gemeente staan mensen jaren op de wachtlijst voor een sociale huurwoning.';
 	const name = 'Joris de Vries';
@@ -106,7 +106,7 @@ test('a new user can submit a question by registering', async ({ context, page }
 	await expect(page.getByText('Je vraag is bevestigd en wacht nu op moderatie.')).toBeVisible();
 });
 
-test('a new user can submit a question by logging in', async ({ context, page }) => {
+test('a new user can submit a question by logging in', async ({ page }) => {
 	const title = 'Wat doet u tegen de wooncrisis?';
 	const body = 'In mijn gemeente staan mensen jaren op de wachtlijst voor een sociale huurwoning.';
 

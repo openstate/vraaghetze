@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '$lib/server/db';
 import * as questions from './questions';
-import { moderateQuestion } from './moderation';
 import {
 	createPolitician,
 	createQuestionAndUsers,
