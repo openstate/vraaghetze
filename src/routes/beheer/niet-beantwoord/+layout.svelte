@@ -27,7 +27,13 @@
 			value: 'wachten',
 			label: `Wachten (${data.stats.nOverdueNoReminder})`,
 			href: resolve('/beheer/niet-beantwoord/wachten')
+		},
+		{
+			value: 'al-gestuurd',
+			label: `Al gestuurd (${data.stats.nAlreadyReminded})`,
+			href: resolve('/beheer/niet-beantwoord/al-gestuurd')
 		}
+
 	]);
 
 	const currentTab = $derived(page.url.pathname.split('/')[3] ?? 'herinneringsmail');

@@ -108,7 +108,7 @@ export const inboxStatusTitles = (extended?: boolean) => {
 
 export type ModerationSearchQuery = {
 	inboxStatusSelect?: InboxStatus | null;
-	archiveStatusSelect?: questionStatusPillsType | null;
+	archiveStatusSelect?: questionStatusPillsType | null | '';
 };
 
 const moderationSearchSchema = z.object({

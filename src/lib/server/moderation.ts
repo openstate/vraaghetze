@@ -103,9 +103,8 @@ export async function listQuestionQueue() {
 				fractionName: schema.fraction.name
 			},
 			moderationAction: {
-				...schema.moderationAction,
+				...getTableColumns(schema.moderationAction),
 				moderatorName: moderatorUser.name
-
 			}
 		})
 		.from(schema.question)
@@ -143,7 +142,7 @@ export async function listQuestionQueue() {
 			results.push({ question, moderationActions: [] });
 		}
 		if (moderationAction) {
-			results[index].moderationActions.push(moderationAction);
+			results[index].moderationActions.push(moderationAction as ModerationActionDetailsType);
 		}
 	}
 
@@ -291,7 +290,7 @@ export type ListQuestionType = {
 	verifiedAt: Date | null;
 }
 
-export function listQuestions({ page, perPage }: Pagination, statusSelect: QuestionStatus | null) {
+export function listQuestions({ page, perPage }: Pagination, statusSelect: QuestionStatus | null | '') {
 	// TODO this sq does not work
 	const sq = db
 		.select({
@@ -361,6 +360,7 @@ export type QuestionDetailsType = {
 	answers: typeof schema.answer.$inferSelect[];
 	moderationActions: ModerationActionDetailsType[];
 	verifiedAt: Date | null;
+	remindedAt: Date | null;
 	answeredAt: Date | null;
 	answerStatus: AnswerStatus | null;
 }
@@ -378,6 +378,7 @@ export const getQuestionDetails = async (questionId: string) => {
 			politicianSlug: schema.politician.slug,
 			createdAt: schema.question.createdAt,
 			verifiedAt: schema.question.verifiedAt,
+			remindedAt: schema.question.remindedAt,
 			answeredAt: schema.answer.createdAt,
 			answerStatus: schema.answer.status
 		})

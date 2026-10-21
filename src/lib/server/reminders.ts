@@ -22,7 +22,7 @@ import { DAY_MS } from '$lib/general';
 export const SEND_REMINDER_AFTER_DAYS = 14;
 export const SEND_REMINDER_AFTER = SEND_REMINDER_AFTER_DAYS * DAY_MS;
 
-export type ReminderStats = 'nNotAnswered' | 'nOverdue' | 'nToRemind' | 'nOverdueNoReminder';
+export type ReminderStats = 'nNotAnswered' | 'nOverdue' | 'nToRemind' | 'nOverdueNoReminder' | 'nAlreadyReminded';
 
 const politicianUser = alias(schema.user, 'politicianUser');
 const newerAnswer = alias(schema.answer, 'newerAnswer');
@@ -39,11 +39,14 @@ export const reminderStats = async (reminderDate: Date): Promise<Record<Reminder
 
 	const nOverdueNoReminder = await reminderStatOverdueNoReminder(reminderDate);
 
+	const nAlreadyReminded = await reminderStatAlreadyReminded();
+
 	return {
 		nNotAnswered,
 		nOverdue,
 		nToRemind,
-		nOverdueNoReminder
+		nOverdueNoReminder,
+		nAlreadyReminded
 	};
 };
 
@@ -273,6 +276,7 @@ const remindersOverdueNoReminderFilter1 = async <T extends PgSelect>(q: T, remin
 		.where(
 			and(
 				eq(schema.question.status, 'approved'),
+				isNull(schema.question.remindedAt),
 				lt(schema.question.referenceDate, reminderDate),
 				or(
 					isNotNull(schema.answer.id),
@@ -293,6 +297,7 @@ const remindersOverdueNoReminderFilter2 = async <T extends PgSelect>(q: T, remin
 		.where(
 			and(
 				inArray(schema.question.status, ['pending', 'pending-wrong-politician']),
+				isNull(schema.question.remindedAt),
 				lt(schema.question.referenceDate, reminderDate)
 			)
 		);
@@ -337,6 +342,47 @@ export const remindersOverdueNoReminder = async (reminderDate: Date) => {
 
 	const questions = questions1.concat(questions2);
 	questions.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+
+	return questions;
+};
+
+const remindersAlreadyRemindedFilter = async <T extends PgSelect>(q: T) => {
+	// All questions for which a reminder has been sent
+	const result = await q
+		.leftJoin(schema.answer, eq(schema.answer.questionId, schema.question.id))
+		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
+		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))
+		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
+		.where(
+			and(
+				eq(schema.question.status, 'approved'),
+				isNotNull(schema.question.remindedAt),
+			)
+		);
+
+	return result;
+};
+
+const reminderStatAlreadyReminded = async () => {
+	const [{ nTotal: nAlreadyReminded }] = await remindersAlreadyRemindedFilter(
+		db
+			.select({ nTotal: countDistinct(schema.question.id) })
+			.from(schema.question)
+			.$dynamic()
+	);
+
+	return nAlreadyReminded;
+
+};
+
+export const remindersAlreadyReminded = async () => {
+	const questions: ListQuestionType[] = await remindersAlreadyRemindedFilter(
+		db
+			.selectDistinct(questionStatFields)
+			.from(schema.question)
+			.orderBy(desc(schema.question.createdAt))
+			.$dynamic()
+	);
 
 	return questions;
 };

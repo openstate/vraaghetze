@@ -155,7 +155,8 @@ describe('reminder stats', () => {
 		const EXPECTED_N_NOT_ANSWERED = 33;
 		const EXPECTED_N_OVERDUE = 23;
 		const EXPECTED_N_TO_REMIND = 9;
-		const EXPECTED_N_NO_REMINDER = 14;
+		const EXPECTED_N_NO_REMINDER = 12;
+		const EXPECTED_N_ALREADY_REMINDED = 2;
 		const reminderDate = new Date(Date.now() - reminders.SEND_REMINDER_AFTER);
 
 		const { politicianUser } = await createPolitician();
@@ -165,6 +166,7 @@ describe('reminder stats', () => {
 		// O  = counted in nOverdue
 		// R  = counted in nToRemind
 		// NR = counted in nOverdueNoReminder
+		// AR = counted in nAlreadyReminded
 
 		await createQuestionPending({ asker, politicianUser, overdue: false }); // NA
 		await createQuestionPending({ asker, politicianUser, overdue: true }); // NA, O, NR
@@ -251,20 +253,24 @@ describe('reminder stats', () => {
 		await createQuestionApproved({ asker, politicianUser, moderator, overdue: true }); // NA, O, R
 		await createQuestionApproved({ asker, politicianUser, moderator, overdue: true }); // NA, O, R
 
-		await createQuestionAlreadyReminded({ asker, politicianUser, moderator, overdue: true }); // NA, O, NR
-		await createQuestionAlreadyReminded({ asker, politicianUser, moderator, overdue: true }); // NA, O, NR
+		await createQuestionAlreadyReminded({ asker, politicianUser, moderator, overdue: true }); // NA, O, AR
+		await createQuestionAlreadyReminded({ asker, politicianUser, moderator, overdue: true }); // NA, O, AR
 
 		const stats = await reminders.reminderStats(reminderDate);
 		expect(stats.nNotAnswered).toBe(EXPECTED_N_NOT_ANSWERED);
 		expect(stats.nOverdue).toBe(EXPECTED_N_OVERDUE);
 		expect(stats.nToRemind).toBe(EXPECTED_N_TO_REMIND);
 		expect(stats.nOverdueNoReminder).toBe(EXPECTED_N_NO_REMINDER);
+		expect(stats.nAlreadyReminded).toBe(EXPECTED_N_ALREADY_REMINDED);
 
 		expect((await reminders.remindersNotAnswered()).length).toBe(EXPECTED_N_NOT_ANSWERED);
 		expect((await reminders.remindersOverdue(reminderDate)).length).toBe(EXPECTED_N_OVERDUE);
 		expect((await reminders.remindersToRemind(reminderDate)).length).toBe(EXPECTED_N_TO_REMIND);
 		expect((await reminders.remindersOverdueNoReminder(reminderDate)).length).toBe(
 			EXPECTED_N_NO_REMINDER
+		);
+		expect((await reminders.remindersAlreadyReminded()).length).toBe(
+			EXPECTED_N_ALREADY_REMINDED
 		);
 	});
 });

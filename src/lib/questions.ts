@@ -29,6 +29,7 @@ export function question2Details(row: QuestionDetailsType) {
 	] satisfies Detail[];
 
 	let extra: Detail[] = [];
+
 	if (row.status === 'answered') {
 		const moderationAction = row.moderationActions.filter(
 			(a) => a.answerId && a.action === 'approved'
@@ -36,6 +37,10 @@ export function question2Details(row: QuestionDetailsType) {
 		if (moderationAction) {
 			extra = [...extra, ['Beantwoord op', moderationAction.createdAt]];
 		}
+	}
+
+	if (row.remindedAt) {
+			extra = [...extra, ['Herinnering gestuurd', row.remindedAt]];
 	}
 
 	const details2 = [
