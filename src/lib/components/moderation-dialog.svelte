@@ -11,18 +11,32 @@
 		buttonDisabled?: boolean;
 		hideActionButton?: boolean;
 		closeAfterSubmit?: boolean;
+		wide?: boolean;
+		isOpen?: boolean;
 		children: Snippet;
 	};
 
-	let isOpen = $state(false);
+	let {
+		title,
+		triggerTitle,
+		triggerVariant,
+		actionValue,
+		buttonDisabled,
+		hideActionButton,
+		closeAfterSubmit,
+		children,
+		wide,
+		isOpen = $bindable(false)
+	}: Props = $props();
 
-	let { title, triggerTitle, triggerVariant, actionValue, buttonDisabled, hideActionButton, closeAfterSubmit, children }: Props =
-		$props();
+	const widthClass = $derived(
+		wide ? 'w-[min(64rem,calc(100vw-3rem))]' : 'w-[min(44rem,calc(100vw-3rem))]'
+	);
 
 	const clickHandler = () => {
 		if (!closeAfterSubmit) return;
 		isOpen = false;
-	}
+	};
 </script>
 
 <Dialog.Root bind:open={isOpen}>
@@ -45,7 +59,7 @@
 		<Dialog.Overlay class="fixed inset-0 z-40 bg-osf-violet-900/40" />
 		<Dialog.Content
 			aria-describedby={undefined}
-			class="fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-[min(44rem,calc(100vw-3rem))] -translate-x-1/2 -translate-y-1/2 flex-col rounded border border-osf-canvas-200 bg-osf-neutral-50"
+			class="fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] {widthClass} -translate-x-1/2 -translate-y-1/2 flex-col rounded border border-osf-canvas-200 bg-osf-neutral-50"
 		>
 			<div class="flex items-center justify-between gap-4 p-6 pb-4">
 				<Dialog.Title class="font-medium">{title}</Dialog.Title>
