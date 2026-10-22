@@ -26,7 +26,8 @@
 				return renderComponent(DetailsDialog, {
 					title: statusToText[cell.row.original.status],
 					detailId: cell.row.original.id,
-					questionDetails: question2Details
+					questionDetails: question2Details,
+					allowActionable: false
 				});
 			}
 		}),

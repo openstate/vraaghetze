@@ -19,17 +19,18 @@
 			| ((row: ListOutboxType) => Detail[])
 			| Detail[];
 		data?: unknown;
+		allowActionable?: boolean;
 	};
 
-	let { title, detailId, questionDetails, data }: Props = $props();
+	let { title, detailId, questionDetails, data, allowActionable = true }: Props = $props();
 	// svelte-ignore state_referenced_locally
 	let details: Detail[] = $state(typeof questionDetails === 'object' ? questionDetails : []);
 
 	const actionableDifferentSender = $derived(
-		details.find((c) => c[0] == 'ActionableDifferentSender')?.[1]
+		allowActionable && details.find((c) => c[0] == 'ActionableDifferentSender')?.[1]
 	);
 	const actionableChangePolitician = $derived(
-		details.find((c) => c[0] == 'ActionableChangePolitician')?.[1]
+		allowActionable && details.find((c) => c[0] == 'ActionableChangePolitician')?.[1]
 	);
 
 	let isOpen = $state(false);
