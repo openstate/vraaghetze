@@ -4,22 +4,22 @@ import { db, schema } from '$lib/server/db';
 import * as reminders from './reminders';
 import { createModerationAction, createPolitician, createUser } from '$lib/test-utils';
 import { createAnswer, createInboxRow, createQuestion, makeEmail } from '$e2e/test-utils';
-import { DAY_MS } from '$lib/general';
+import { SEND_REMINDER_AFTER_DAYS, DAY_MS, SEND_REMINDER_AFTER } from '$lib/general';
 
 const between = (min: number, max: number) => min + Math.random() * (max - min);
 
 function createdAtRecent() {
 	const ms = between(
-		(reminders.SEND_REMINDER_AFTER_DAYS - 10) * DAY_MS,
-		(reminders.SEND_REMINDER_AFTER_DAYS - 5) * DAY_MS
+		(SEND_REMINDER_AFTER_DAYS - 10) * DAY_MS,
+		(SEND_REMINDER_AFTER_DAYS - 5) * DAY_MS
 	);
 	return new Date(new Date().getTime() - ms);
 }
 
 function createdAtOverdue() {
 	const ms = between(
-		(reminders.SEND_REMINDER_AFTER_DAYS + 1) * DAY_MS,
-		(reminders.SEND_REMINDER_AFTER_DAYS + 10) * DAY_MS
+		(SEND_REMINDER_AFTER_DAYS + 1) * DAY_MS,
+		(SEND_REMINDER_AFTER_DAYS + 10) * DAY_MS
 	);
 	return new Date(new Date().getTime() - ms);
 }
@@ -168,7 +168,7 @@ describe('reminder stats', () => {
 		const EXPECTED_N_NO_REMINDER = 12;
 		const EXPECTED_N_ALREADY_REMINDED = 2;
 		const EXPECTED_N_UNVERIFIED = 2;
-		const reminderDate = new Date(Date.now() - reminders.SEND_REMINDER_AFTER);
+		const reminderDate = new Date(Date.now() - SEND_REMINDER_AFTER);
 
 		const { politicianUser } = await createPolitician();
 		const asker = await createUser('Vera Vraagsteller');
@@ -289,8 +289,6 @@ describe('reminder stats', () => {
 		expect((await reminders.remindersAlreadyReminded(reminderDate)).length).toBe(
 			EXPECTED_N_ALREADY_REMINDED
 		);
-		expect((await reminders.remindersUnverified(reminderDate)).length).toBe(
-			EXPECTED_N_UNVERIFIED
-		);
+		expect((await reminders.remindersUnverified(reminderDate)).length).toBe(EXPECTED_N_UNVERIFIED);
 	});
 });

@@ -1,5 +1,5 @@
 import { questionStatusPills } from './components/status-pill.svelte';
-import { HTMLModerationActions, HTMLAnswers } from './general';
+import { HTMLModerationActions, HTMLAnswers, HTMLInboxRows } from './general';
 import { type QuestionStatus } from './moderation';
 import type { QuestionDetailsType } from './server/moderation';
 
@@ -13,7 +13,7 @@ export const statusToText = {
 
 export type Detail = [
 	label: string,
-	value: string | Date | null | HTMLModerationActions | HTMLAnswers | boolean,
+	value: string | Date | null | HTMLModerationActions | HTMLAnswers | HTMLInboxRows | boolean,
 	hidden?: boolean
 ];
 
@@ -46,6 +46,7 @@ export function question2Details(row: QuestionDetailsType) {
 	const details2 = [
 		['Moderatie geschiedenis', new HTMLModerationActions(row.moderationActions)],
 		['Antwoorden', new HTMLAnswers(row.answers)],
+		['Nog in Inbox', new HTMLInboxRows(row.inboxRows)],
 		['ActionableChangePolitician', row.status == 'approved', true]
 	] satisfies Detail[];
 

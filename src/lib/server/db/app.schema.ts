@@ -14,6 +14,7 @@ import {
 import { account, session, user } from './auth.schema';
 import type { InboundEmail } from '../email/parse-inbound';
 import type { AnswerStatus, InboxStatus, QuestionStatus } from '$lib/moderation';
+import type { schema } from '.';
 
 // --- TABLES ---
 
@@ -43,6 +44,10 @@ export type MetaType = {
 	replaceTexts?: string[];
 	original?: string;
 	redacted?: string;
+};
+
+export type ModerationActionDetailsType = typeof schema.moderationAction.$inferSelect & {
+	moderatorName: string | null;
 };
 
 const postColumns = {
@@ -98,8 +103,8 @@ export const answer = pgTable(
 	'answer',
 	{
 		...postColumns,
-			status: text().$type<AnswerStatus>().default('pending').notNull(),
-			questionId: text()
+		status: text().$type<AnswerStatus>().default('pending').notNull(),
+		questionId: text()
 			.references(() => question.id, { onDelete: 'cascade' })
 			.notNull(),
 		// weighted vector for searching and finding related answers (A/B/C is for weighting)
@@ -251,9 +256,7 @@ export const politician = pgTable(
 			.notNull(),
 		acceptsQuestions: boolean().default(true).notNull()
 	},
-	(table) => [
-		index('politician_fraction_id_idx').on(table.fractionId)
-	]
+	(table) => [index('politician_fraction_id_idx').on(table.fractionId)]
 );
 
 export const fraction = pgTable('fraction', {

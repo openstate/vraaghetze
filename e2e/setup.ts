@@ -5,7 +5,7 @@ import {
 	recreateTestDatabase,
 	testDatabaseUrl
 } from '../test-database.setup.js';
-import { testAsker, testOtherFraction, testFraction, testModerator, testOtherPolitician, testOtherPoliticianUser, testPolitician, testPoliticianUser } from './data';
+import { testAsker, testOtherFraction, testFraction, testModerator, testOtherPolitician, testOtherPoliticianUser, testPolitician, testPoliticianUser, testAdmin } from './data';
 
 const baseDatabaseUrl = process.env.TEST_DATABASE_BASE_URL ?? process.env.DATABASE_URL;
 if (!baseDatabaseUrl) throw new Error('DATABASE_URL is not set');
@@ -29,6 +29,10 @@ try {
 		{
 			...testModerator,
 			role: 'moderator'
+		},
+		{
+			...testAdmin,
+			role: 'admin'
 		},
 		{
 			...testPoliticianUser,

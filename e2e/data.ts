@@ -32,6 +32,12 @@ export const testModerator = {
 	email: 'mo.moderator@example.com'
 };
 
+export const testAdmin = {
+	id: 'e2e-admin',
+	name: 'Ad Admin',
+	email: 'ad.admin@example.com'
+};
+
 export const testFraction = {
 	id: 'e2e-fraction',
 	name: 'Testfractie',

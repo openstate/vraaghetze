@@ -17,12 +17,14 @@ import {
 import { alias, type PgSelect } from 'drizzle-orm/pg-core';
 import { db, schema, type Transaction } from './db';
 import type { ListQuestionType } from './moderation';
-import { DAY_MS } from '$lib/general';
 
-export const SEND_REMINDER_AFTER_DAYS = 14;
-export const SEND_REMINDER_AFTER = SEND_REMINDER_AFTER_DAYS * DAY_MS;
-
-export type ReminderStats = 'nNotAnswered' | 'nOverdue' | 'nToRemind' | 'nOverdueNoReminder' | 'nAlreadyReminded' | 'nUnverified';
+export type ReminderStats =
+	| 'nNotAnswered'
+	| 'nOverdue'
+	| 'nToRemind'
+	| 'nOverdueNoReminder'
+	| 'nAlreadyReminded'
+	| 'nUnverified';
 
 const politicianUser = alias(schema.user, 'politicianUser');
 const newerAnswer = alias(schema.answer, 'newerAnswer');
@@ -125,10 +127,7 @@ const remindersOverdueFilter1 = async <T extends PgSelect>(q: T, reminderDate: D
 		.leftJoin(schema.politician, eq(schema.politician.userId, schema.question.assigneeId))
 		.leftJoin(schema.answer, latestAnswerModeratorView)
 		.where(
-			and(
-				eq(schema.question.status, 'approved'),
-				lt(schema.question.referenceDate, reminderDate)
-			)
+			and(eq(schema.question.status, 'approved'), lt(schema.question.referenceDate, reminderDate))
 		);
 
 	return result;
@@ -434,12 +433,9 @@ export const remindersUnverified = async (reminderDate: Date) => {
 	);
 
 	return questions;
-}
+};
 
-export const setRemindedAt = async (
-	tx: Transaction,
-	questionId: string
-) => {
+export const setRemindedAt = async (tx: Transaction, questionId: string) => {
 	await tx
 		.update(schema.question)
 		.set({ remindedAt: new Date() })

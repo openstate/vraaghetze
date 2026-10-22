@@ -4,7 +4,8 @@ import { env } from '$env/dynamic/private';
 import { db, schema, type Transaction } from '../db';
 import type { OutboxKind } from '../db/app.schema';
 import { writeFileSync } from 'fs';
-import { remindersToRemind, SEND_REMINDER_AFTER, setRemindedAt } from '$lib/server/reminders';
+import { remindersToRemind, setRemindedAt } from '$lib/server/reminders';
+import { SEND_REMINDER_AFTER } from '$lib/general';
 import { enqueueReminderMail } from './templates';
 import { formatDateTime } from '$lib/date-time';
 
@@ -28,7 +29,12 @@ export async function enqueueMail({ transaction, ...mail }: OutgoingMailOptions)
 	await (transaction ?? db).insert(schema.outbox).values({ id, ...mail });
 
 	if (process.env.ENV == 'testing') {
-		writeMailForTest({ to: mail.recipient, subject: mail.subject, text: mail.body, replyTo: mail.replyTo });
+		writeMailForTest({
+			to: mail.recipient,
+			subject: mail.subject,
+			text: mail.body,
+			replyTo: mail.replyTo
+		});
 	}
 
 	return id;
@@ -223,7 +229,7 @@ export const sendReminders = async () => {
 	const reminderDate = new Date(Date.now() - SEND_REMINDER_AFTER);
 	const questions = await remindersToRemind(reminderDate);
 	if (questions.length == 0) return;
-	console.info(`${formatDateTime(new Date())} Sending ${questions.length} reminders`)
+	console.info(`${formatDateTime(new Date())} Sending ${questions.length} reminders`);
 
 	for (const question of questions) {
 		await db.transaction(async (tx) => {
@@ -233,4 +239,4 @@ export const sendReminders = async () => {
 			}
 		});
 	}
-}
+};

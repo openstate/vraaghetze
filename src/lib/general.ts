@@ -1,11 +1,10 @@
-import { applyAction, deserialize } from '$app/forms';
-import { invalidateAll } from '$app/navigation';
-import type { ActionResult } from '@sveltejs/kit';
 import type { schema } from './server/db';
-import type { ModerationActionDetailsType } from './server/moderation';
+import type { ModerationActionDetailsType } from './server/db/app.schema';
 
 export type ENV_TYPE = 'development' | 'production' | 'staging' | 'testing';
 export const DAY_MS = 24 * 60 * 60 * 1000;
+export const SEND_REMINDER_AFTER_DAYS = 14;
+export const SEND_REMINDER_AFTER = SEND_REMINDER_AFTER_DAYS * DAY_MS;
 
 export class HTMLModerationActions {
 	public value: ModerationActionDetailsType[];
@@ -16,36 +15,20 @@ export class HTMLModerationActions {
 }
 
 export class HTMLAnswers {
-	public value: typeof schema.answer.$inferSelect[];
+	public value: (typeof schema.answer.$inferSelect)[];
 
-	constructor(value: typeof schema.answer.$inferSelect[]) {
+	constructor(value: (typeof schema.answer.$inferSelect)[]) {
 		this.value = value;
 	}
 }
 
-export const submitDirectly = async (
-	currentTarget: HTMLFormElement,
-	submitter: HTMLElement | null,
-	addFields: { [key: string]: string } = {}
-) => {
-	const formData = new FormData(currentTarget, submitter);
-	for (const [k, v] of Object.entries(addFields)) {
-		formData.append(k, v);
+export class HTMLInboxRows {
+	public value: (typeof schema.inbox.$inferSelect)[];
+
+	constructor(value: (typeof schema.inbox.$inferSelect)[]) {
+		this.value = value;
 	}
-
-	const response = await fetch('', {
-		method: 'POST',
-		body: formData
-	});
-
-	const result: ActionResult = deserialize(await response.text());
-	if (result.type === 'success') {
-		// rerun all `load` functions, following the successful update
-		await invalidateAll();
-	}
-
-	applyAction(result);
-};
+}
 
 export const safeReturnTo = (urlString: string | null) => {
 	if (!urlString) return undefined;
@@ -57,4 +40,4 @@ export const safeReturnTo = (urlString: string | null) => {
 	} else {
 		return undefined;
 	}
-}
+};

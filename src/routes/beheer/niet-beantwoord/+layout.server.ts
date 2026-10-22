@@ -1,4 +1,4 @@
-import { SEND_REMINDER_AFTER } from '$lib/server/reminders';
+import { SEND_REMINDER_AFTER } from '$lib/general';
 import { reminderStats } from '$lib/server/reminders';
 import type { LayoutServerLoad } from './$types';
 

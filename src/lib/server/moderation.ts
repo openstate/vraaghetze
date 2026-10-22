@@ -27,10 +27,22 @@ import {
 	enqueueRejectionMail,
 	enqueueQuestionNotificationMail
 } from '$lib/server/email/templates';
-import { getQuestion, getStatus, newerAnswer, updatePolitician, type QuestionType } from '$lib/server/questions';
+import {
+	getQuestion,
+	getStatus,
+	newerAnswer,
+	updatePolitician,
+	type QuestionType
+} from '$lib/server/questions';
 import { hasPermission } from '$lib/permissions';
 import type { Pagination } from '$lib/pagination';
-import type { MetaType, ModerationAction, OutboxKind, OutboxStatus } from './db/app.schema';
+import type {
+	MetaType,
+	ModerationAction,
+	ModerationActionDetailsType,
+	OutboxKind,
+	OutboxStatus
+} from './db/app.schema';
 import { getPolitician, type PoliticianType } from './politicians';
 import { validateForm } from './utils/forms';
 import { getBasicUserInfoById, type UserType } from './auth';
@@ -195,29 +207,29 @@ export async function listAnswerQueue() {
 		.where(eq(schema.answer.status, 'pending'))
 		.orderBy(asc(schema.answer.createdAt));
 
-		// rows contain answer-moderationAction pairs ({answer: answer, moderationAction: moderationAction}).
-		// If an answer has multiple moderationActions there are multiple rows with the same answer but different moderationAction.
-		// The rewrite to results keeps the ordering of both answer and moderationActions intact.
-		const results: {
-			answer: ListAnswerType;
-			moderationActions: (typeof schema.moderationAction.$inferSelect)[];
-		}[] = [];
-		let answerId = '';
-		let index = -1;
-		for (const row of rows) {
-			const { answer, moderationAction } = row;
-			if (answerId !== answer.id) {
-				answerId = answer.id;
-				index += 1;
-				results.push({ answer, moderationActions: [] });
-			}
-			if (moderationAction) {
-				results[index].moderationActions.push(moderationAction);
-			}
+	// rows contain answer-moderationAction pairs ({answer: answer, moderationAction: moderationAction}).
+	// If an answer has multiple moderationActions there are multiple rows with the same answer but different moderationAction.
+	// The rewrite to results keeps the ordering of both answer and moderationActions intact.
+	const results: {
+		answer: ListAnswerType;
+		moderationActions: (typeof schema.moderationAction.$inferSelect)[];
+	}[] = [];
+	let answerId = '';
+	let index = -1;
+	for (const row of rows) {
+		const { answer, moderationAction } = row;
+		if (answerId !== answer.id) {
+			answerId = answer.id;
+			index += 1;
+			results.push({ answer, moderationActions: [] });
 		}
-
-		return results;
+		if (moderationAction) {
+			results[index].moderationActions.push(moderationAction);
+		}
 	}
+
+	return results;
+}
 
 export function getAnswerEnriched(answerId: string) {
 	return db
@@ -288,9 +300,12 @@ export type ListQuestionType = {
 	rejectionReason: string | null;
 	note: string | null;
 	verifiedAt: Date | null;
-}
+};
 
-export function listQuestions({ page, perPage }: Pagination, statusSelect: QuestionStatus | null | '') {
+export function listQuestions(
+	{ page, perPage }: Pagination,
+	statusSelect: QuestionStatus | null | ''
+) {
 	// TODO this sq does not work
 	const sq = db
 		.select({
@@ -343,27 +358,25 @@ export function listQuestions({ page, perPage }: Pagination, statusSelect: Quest
 	});
 }
 
-export type ModerationActionDetailsType = (typeof schema.moderationAction.$inferSelect & {
-	moderatorName: string | null;
-});
-
 export type QuestionDetailsType = {
 	id: string;
 	title: string;
 	body: string;
 	slug: string;
+	emailToken: string;
 	status: QuestionStatus;
 	authorName: string;
 	politicianName: string;
 	politicianSlug: string | null;
 	createdAt: Date;
-	answers: typeof schema.answer.$inferSelect[];
+	answers: (typeof schema.answer.$inferSelect)[];
 	moderationActions: ModerationActionDetailsType[];
+	inboxRows: (typeof schema.inbox.$inferSelect)[];
 	verifiedAt: Date | null;
 	remindedAt: Date | null;
 	answeredAt: Date | null;
 	answerStatus: AnswerStatus | null;
-}
+};
 
 export const getQuestionDetails = async (questionId: string) => {
 	const [question] = await db
@@ -372,6 +385,7 @@ export const getQuestionDetails = async (questionId: string) => {
 			title: schema.question.title,
 			body: schema.question.body,
 			slug: schema.question.slug,
+			emailToken: schema.question.emailToken,
 			status: schema.question.status,
 			authorName: schema.user.name,
 			politicianName: politicianUser.name,
@@ -405,9 +419,20 @@ export const getQuestionDetails = async (questionId: string) => {
 		.where(eq(schema.answer.questionId, questionId))
 		.orderBy(desc(schema.answer.createdAt));
 
-	const questionWithDetails = { ...question, moderationActions, answers } as QuestionDetailsType;
+	const inboxRows = await db
+		.select()
+		.from(schema.inbox)
+		.where(
+			and(
+				eq(schema.inbox.token, question.emailToken ?? ''),
+				eq(schema.inbox.status, 'ignored_different_sender')
+			)
+		)
+		.orderBy(desc(schema.inbox.receivedAt));
+
+	const questionWithDetails = { ...question, moderationActions, answers, inboxRows } as QuestionDetailsType;
 	return questionWithDetails;
-}
+};
 
 export type ListInboxType = {
 	id: string;
@@ -458,7 +483,7 @@ export type ListOutboxType = {
 	subject: string;
 	body: string;
 	status: OutboxStatus;
-	attempts: number
+	attempts: number;
 	lastError: string | null;
 	sentAt: Date | null;
 	createdAt: Date;
@@ -674,7 +699,7 @@ type ModeratedPoliticianChangeType = {
 
 type ModeratedPoliticianChangeResultType = {
 	error?: string;
-}
+};
 
 // Runs when moderator selects a different politician for an approved question
 export async function moderatedPoliticianChange({
@@ -704,13 +729,19 @@ export async function moderatedPoliticianChange({
 			questionId,
 			action: 'politician-changed',
 			note: `Kamerlid door moderator aangepast van ${currentPolitician?.slug} naar ${selectedPolitician.slug}.`,
-			meta: { currentSlug: currentPolitician?.slug, newSlug: selectedPolitician.slug },
+			meta: { currentSlug: currentPolitician?.slug, newSlug: selectedPolitician.slug }
 		});
 
 		if (sendEmail) {
 			const asker = await getBasicUserInfoById(updatedQuestion.userId, tx);
 			const politician = await getBasicUserInfoById(updatedQuestion.assigneeId, tx);
-			await enqueueQuestionNotificationMail(tx, updatedQuestion, asker.name, politician.name, politician.email);
+			await enqueueQuestionNotificationMail(
+				tx,
+				updatedQuestion,
+				asker.name,
+				politician.name,
+				politician.email
+			);
 		}
 
 		return {};
@@ -941,12 +972,12 @@ export const defaultAnswerModerationAction = async ({
 
 	const message =
 		action == 'approved'
-		? 'Je hebt het antwoord goedgekeurd'
-		: action == 'rejected'
-			? 'Je hebt het antwoord afgewezen'
-			: action == 'update-asker'
-				? 'Het antwoord kan door de vraagsteller ingezien worden'
-				: '';
+			? 'Je hebt het antwoord goedgekeurd'
+			: action == 'rejected'
+				? 'Je hebt het antwoord afgewezen'
+				: action == 'update-asker'
+					? 'Het antwoord kan door de vraagsteller ingezien worden'
+					: '';
 	const flashType = action == 'approved' || action == 'update-asker' ? 'success' : 'neutral';
 
 	return {

@@ -9,14 +9,14 @@
 	import Button from '$lib/components/button.svelte';
 	import SelectPolitician from '$lib/components/select-politician.svelte';
 	import type { CommissionsType, PoliticiansType } from '$lib/politicians';
-	import type { ModerationActionDetailsType } from '$lib/server/moderation';
+	import type { ModerationActionDetailsType } from '$lib/server/db/app.schema';
 
 	// TODO: This is just ListQuestionQueueType
 	type Question = {
 		id: string;
 		title: string;
 		body: string;
-		status: QuestionStatus,
+		status: QuestionStatus;
 		createdAt: Date;
 		authorName: string;
 		politicianName: string;
@@ -27,9 +27,9 @@
 
 	type Props = {
 		question: Question;
-		moderationActions: ModerationActionDetailsType[],
-    politicians: PoliticiansType[];
-    commissions: CommissionsType[];
+		moderationActions: ModerationActionDetailsType[];
+		politicians: PoliticiansType[];
+		commissions: CommissionsType[];
 	};
 
 	// eslint-disable-next-line svelte/no-unused-props
@@ -47,7 +47,7 @@
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const hrefForPolitician = (slug: string) => {
-		return "#top";
+		return '#top';
 	};
 
 	let selectedPolitician = $derived(question.politicianSlug);
@@ -97,9 +97,9 @@
 			</div>
 
 			{#if moderationActions.length > 0}
-				<hr class="border-osf-canvas-200 mt-4" />
-				<p class="text-sm font-medium mt-4">Moderatie geschiedenis</p>
-				<table class="table-auto text-sm history">
+				<hr class="mt-4 border-osf-canvas-200" />
+				<p class="mt-4 text-sm font-medium">Moderatie geschiedenis</p>
+				<table class="history table-auto text-sm">
 					<tbody>
 						{#each moderationActions as moderationAction (moderationAction.id)}
 							<OneModerationAction {moderationAction} />
@@ -110,7 +110,6 @@
 		</div>
 
 		<hr class="mx-5 border-osf-canvas-200" />
-
 
 		<form method="POST" use:enhance class="grid gap-4 p-5">
 			<input type="hidden" name="questionId" value={question.id} />
@@ -144,12 +143,19 @@
 						{#each Object.entries(rejectionReasons) as [key, title], index (key)}
 							<label>
 								<input type="checkbox" name="reasons" value={key} bind:group={selectedRejections} />
-								<span class="min-w-0 flex-1 ml-2" {title}>{index + 1}. {title}</span>
+								<span class="ml-2 min-w-0 flex-1" {title}>{index + 1}. {title}</span>
 							</label>
 						{/each}
 					</ModerationDialog>
 				{/if}
-				<Button type="submit" name="action" value="note-added" variant="secondary" disabled={saveDisabled} class={saveDisabled ? 'disabled:opacity-40' : ''}>Notitie opslaan</Button>
+				<Button
+					type="submit"
+					name="action"
+					value="note-added"
+					variant="secondary"
+					disabled={saveDisabled}
+					class={saveDisabled ? 'disabled:opacity-40' : ''}>Notitie opslaan</Button
+				>
 				{#if saveDisabled}
 					<ModerationDialog
 						title="Selecteer ander Kamerlid"
@@ -162,8 +168,8 @@
 						{#if changePoliticianState == 'select'}
 							<div class="max-h-[73vh] overflow-y-auto">
 								<SelectPolitician
-									politicians={politicians}
-									commissions={commissions}
+									{politicians}
+									{commissions}
 									politiciansPerPage={150}
 									slugChosenPolitician={question.politicianSlug}
 									{selectedHandler}
@@ -171,7 +177,7 @@
 								/>
 							</div>
 						{:else}
-							<input type="hidden" name="proposedPoliticianSlug" value={selectedPolitician}/>
+							<input type="hidden" name="proposedPoliticianSlug" value={selectedPolitician} />
 							<p>Bevestig het aanpassen van het Kamerlid naar {selectedPolitician}:</p>
 						{/if}
 					</ModerationDialog>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Dialog } from 'bits-ui';
 	import { formatDateTime } from '$lib/date-time';
-	import { HTMLModerationActions, HTMLAnswers } from '$lib/general';
+	import { HTMLModerationActions, HTMLAnswers, HTMLInboxRows } from '$lib/general';
 	import DetailsDialogDifferentSender from './details-dialog-different-sender.svelte';
 	import DetailsDialogChangePolitician from './details-dialog-change-politician.svelte';
 	import { type Detail } from '$lib/questions';
@@ -9,6 +9,7 @@
 	import OneAnswer from '$routes/modereren/vragen/one_answer.svelte';
 	import { resolve } from '$app/paths';
 	import type { ListInboxType, ListOutboxType, QuestionDetailsType } from '$lib/server/moderation';
+	import OneInboxRow from '$routes/modereren/vragen/one_inbox_row.svelte';
 
 	type Props = {
 		title: string;
@@ -106,6 +107,16 @@
 									<tbody>
 										{#each value.value as answer (answer.id)}
 											<OneAnswer {answer} />
+										{/each}
+									</tbody>
+								</table>
+							{/if}
+						{:else if value instanceof HTMLInboxRows}
+							{#if value.value.length > 0}
+								<table class="history table-auto text-sm">
+									<tbody>
+										{#each value.value as inboxRow (inboxRow.id)}
+											<OneInboxRow {inboxRow} />
 										{/each}
 									</tbody>
 								</table>
