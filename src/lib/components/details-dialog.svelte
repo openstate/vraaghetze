@@ -85,46 +85,54 @@
 
 			<dl class="grid overflow-y-auto p-6 pt-0 text-sm sm:grid-cols-[minmax(0,1fr)_4fr]">
 				{#each details.filter(([, value, hidden]) => value && !hidden) as [label, value] (label)}
-					<dt class={[cellClass, 'border-t pt-2 pr-6 first-of-type:border-t-0 sm:pb-2']}>
-						{label}
-					</dt>
-					<dd
-						class={[cellClass, valueClass, 'pb-2 sm:border-t sm:pt-2 sm:first-of-type:border-t-0']}
-					>
-						{#if value instanceof HTMLModerationActions}
-							{#if value.value.length > 0}
-								<table class="history table-auto text-sm">
-									<tbody>
-										{#each value.value as moderationAction (moderationAction.id)}
-											<OneModerationAction {moderationAction} />
-										{/each}
-									</tbody>
-								</table>
+					{@const isArray =
+						value instanceof HTMLModerationActions
+							|| value instanceof HTMLAnswers
+							|| value instanceof HTMLInboxRows
+					}
+					{@const doShow = isArray && value.value.length > 0 || !isArray}
+					{#if doShow}
+						<dt class={[cellClass, 'border-t pt-2 pr-6 first-of-type:border-t-0 sm:pb-2']}>
+							{label}
+						</dt>
+						<dd
+							class={[cellClass, valueClass, 'pb-2 sm:border-t sm:pt-2 sm:first-of-type:border-t-0']}
+						>
+							{#if value instanceof HTMLModerationActions}
+								{#if value.value.length > 0}
+									<table class="history table-auto text-sm">
+										<tbody>
+											{#each value.value as moderationAction (moderationAction.id)}
+												<OneModerationAction {moderationAction} />
+											{/each}
+										</tbody>
+									</table>
+								{/if}
+							{:else if value instanceof HTMLAnswers}
+								{#if value.value.length > 0}
+									<table class="history table-auto text-sm">
+										<tbody>
+											{#each value.value as answer (answer.id)}
+												<OneAnswer {answer} />
+											{/each}
+										</tbody>
+									</table>
+								{/if}
+							{:else if value instanceof HTMLInboxRows}
+								{#if value.value.length > 0}
+									<table class="history table-auto text-sm">
+										<tbody>
+											{#each value.value as inboxRow (inboxRow.id)}
+												<OneInboxRow {inboxRow} />
+											{/each}
+										</tbody>
+									</table>
+								{/if}
+							{:else}
+								{value instanceof Date ? formatDateTime(value) : value}
 							{/if}
-						{:else if value instanceof HTMLAnswers}
-							{#if value.value.length > 0}
-								<table class="history table-auto text-sm">
-									<tbody>
-										{#each value.value as answer (answer.id)}
-											<OneAnswer {answer} />
-										{/each}
-									</tbody>
-								</table>
-							{/if}
-						{:else if value instanceof HTMLInboxRows}
-							{#if value.value.length > 0}
-								<table class="history table-auto text-sm">
-									<tbody>
-										{#each value.value as inboxRow (inboxRow.id)}
-											<OneInboxRow {inboxRow} />
-										{/each}
-									</tbody>
-								</table>
-							{/if}
-						{:else}
-							{value instanceof Date ? formatDateTime(value) : value}
-						{/if}
-					</dd>
+						</dd>
+					{/if}
 				{/each}
 			</dl>
 			{#if actionableDifferentSender}
