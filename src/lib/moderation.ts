@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const rejectionKeys = [
 	'spam_promotion',
 	'duplicate',
+	'duplicate_pending',
 	'no_question',
 	'personal_attack',
 	'defamation',
@@ -20,20 +21,21 @@ export const rejectionKeys = [
 export type rejectionKeyType = (typeof rejectionKeys)[number];
 type rejectionReasonsType = Record<rejectionKeyType, string>;
 export const rejectionReasons: rejectionReasonsType = {
-	spam_promotion: 'Je vraag is als spam beoordeeld.',
-	duplicate: 'Deze vraag is eerder gesteld en beantwoord.',
-	no_question: 'Het bericht bevat geen beantwoordbare vraag.',
-	personal_attack: 'Je vraag bevat beledigende taal.',
-	defamation: 'Je vraag bevat niet-onderbouwde beschuldigingen.',
-	threatening: 'Je vraag bevat een dreiging met geweld.',
-	offensive: 'Je vraag bevat elementen van haat, onderdrukking of discriminatie.',
-	victimizing: 'Je vraag bevat negatieve bejegening van slachtoffers van ernstig leed.',
-	professional_secrecy: 'Je vraag bevat vertrouwelijke informatie en schendt het beroepsgeheim.',
-	not_relevant: 'Je vraag heeft geen betrekking op het Kamerlidmaatschap.',
-	privacy_others: 'Je vraag bevat details over het privéleven van anderen.',
-	personal_data: 'Je vraag bevat gevoelige persoons- of contactgegevens.',
-	no_author: 'De vraag is niet vanuit een persoonlijk account gesteld.',
-	invitation: 'De vraag is een uitnodiging voor een gesprek, bezoek of bijeenkomst.'
+	spam_promotion: '1. Je vraag is als spam beoordeeld.',
+	duplicate: '2a. Deze vraag is eerder gesteld en beantwoord.',
+	duplicate_pending: '2b. Deze vraag is eerder gesteld (maar nog niet beantwoord).',
+	no_question: '3. Het bericht bevat geen beantwoordbare vraag.',
+	personal_attack: '4. Je vraag bevat beledigende taal.',
+	defamation: '5. Je vraag bevat niet-onderbouwde beschuldigingen.',
+	threatening: '6. Je vraag bevat een dreiging met geweld.',
+	offensive: '7. Je vraag bevat elementen van haat, onderdrukking of discriminatie.',
+	victimizing: '8. Je vraag bevat negatieve bejegening van slachtoffers van ernstig leed.',
+	professional_secrecy: '9. Je vraag bevat vertrouwelijke informatie en schendt het beroepsgeheim.',
+	not_relevant: '10. Je vraag heeft geen betrekking op het Kamerlidmaatschap.',
+	privacy_others: '11. Je vraag bevat details over het privéleven van anderen.',
+	personal_data: '12. Je vraag bevat gevoelige persoons- of contactgegevens.',
+	no_author: '13. De vraag is niet vanuit een persoonlijk account gesteld.',
+	invitation: '14. De vraag is een uitnodiging voor een gesprek, bezoek of bijeenkomst.'
 };
 
 export const hiddenRejectionKeys = ['politician_change_rejected'] as const;

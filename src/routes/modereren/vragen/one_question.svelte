@@ -140,10 +140,10 @@
 						actionValue="rejected"
 						buttonDisabled={selectedRejections.length == 0}
 					>
-						{#each Object.entries(rejectionReasons) as [key, title], index (key)}
+						{#each Object.entries(rejectionReasons) as [key, title] (key)}
 							<label>
 								<input type="checkbox" name="reasons" value={key} bind:group={selectedRejections} />
-								<span class="ml-2 min-w-0 flex-1" {title}>{index + 1}. {title}</span>
+								<span class="ml-2 min-w-0 flex-1" {title}>{title}</span>
 							</label>
 						{/each}
 					</ModerationDialog>
