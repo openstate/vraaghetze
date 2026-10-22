@@ -164,11 +164,6 @@
 
 	<div class="relative mx-auto max-w-7xl px-6 py-24 md:py-32">
 		<h2 class="text-center font-serif text-3xl md:text-4xl">VraagHetZe in cijfers</h2>
-		<!-- TODO: remove -->
-		<p class="mt-2 text-center">
-			Aantallen hieronder staan nu op 0 en worden na de opstartfase gedeeld.
-		</p>
-
 		<div class="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-4">
 			{#each stats as stat (stat.label)}
 				<div>
