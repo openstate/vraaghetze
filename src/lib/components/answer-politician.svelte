@@ -4,6 +4,7 @@
 	import type { AnswerType, QuestionType } from '$lib/server/questions';
 	import type { Snippet } from 'svelte';
 	import Avatar from './avatar.svelte';
+	import { getRemindedLabel } from '$lib/questions';
 
   type Props = {
     answer: AnswerType;
@@ -11,9 +12,12 @@
     politicianHref: ResolvedPathname;
     followButton?: Snippet;
     statusLine: Snippet;
+    showReminded?: boolean;
   }
 
-  const { answer, question, politicianHref, followButton, statusLine }: Props = $props();
+  const { answer, question, politicianHref, followButton, statusLine, showReminded = false }: Props = $props();
+
+	const remindedLabel = $derived(showReminded && getRemindedLabel(question));
 </script>
 
 <div class="p-6 sm:p-8">
@@ -31,7 +35,14 @@
         />
       </a>
 
-      {@render statusLine()}
+      <div class="flex flex-col gap-1">
+        {@render statusLine()}
+        {#if remindedLabel}
+          <p class="text-balance text-osf-canvas-600">
+            {remindedLabel}
+          </p>
+        {/if}
+      </div>
     </div>
 
     {#if followButton}

@@ -79,7 +79,9 @@ export const nestAnswer = <Row extends AnswerRowLimited>(rows: Row[]) =>
 export const cardColumns = {
 	slug: schema.question.slug,
 	title: schema.question.title,
+	status: schema.question.status,
 	createdAt: schema.question.createdAt,
+	remindedAt: schema.question.remindedAt,
 	authorName: schema.user.name,
 	politicianName: politicianUser.name,
 	politicianSlug: schema.politician.slug,
@@ -334,6 +336,7 @@ export type QuestionType = {
 	body: string;
 	status: QuestionStatus;
 	createdAt: Date;
+	remindedAt: Date | null;
 	authorName: string;
 	isAsker: boolean;
 	assigneeName: string;
@@ -362,6 +365,7 @@ export async function forSlugPage(slug: string, viewerId: string | null) {
 			body: schema.question.body,
 			status: schema.question.status,
 			createdAt: schema.question.createdAt,
+			remindedAt: schema.question.remindedAt,
 			authorName: schema.user.name,
 			// the asker is mailed anyway and so never follows, but their id stays on the server
 			isAsker: sql<boolean>`coalesce(${schema.question.userId} = ${viewerId}, false)`,

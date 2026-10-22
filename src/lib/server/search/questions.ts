@@ -2,7 +2,7 @@ import { and, asc, count, desc, eq, inArray, isNotNull, isNull, sql, type SQL } 
 import { type PgSelect } from 'drizzle-orm/pg-core';
 import { db, schema } from '$lib/server/db';
 import {
-	answerColumns,
+	cardColumns,
 	isVisibleTo,
 	latestAnswer,
 	nestAnswer,
@@ -86,17 +86,7 @@ export function searchQuestions(
 	return db.transaction(async (tx) => {
 		const rows = await joinSearchTables(
 			tx
-				.select({
-					slug: schema.question.slug,
-					title: schema.question.title,
-					createdAt: schema.question.createdAt,
-					authorName: schema.user.name,
-					politicianName: politicianUser.name,
-					politicianSlug: schema.politician.slug,
-					fraction: schema.fraction.abbreviation,
-					fractionName: schema.fraction.name,
-					...answerColumns
-				})
+				.select(cardColumns)
 				.from(schema.question)
 				.$dynamic(), // so joinSearchTables can keep building on this query
 			viewerId

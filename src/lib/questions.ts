@@ -1,4 +1,5 @@
 import { questionStatusPills } from './components/status-pill.svelte';
+import { formatDateLong } from './date-time';
 import { HTMLModerationActions, HTMLAnswers, HTMLInboxRows } from './general';
 import { type QuestionStatus } from './moderation';
 import type { QuestionDetailsType } from './server/moderation';
@@ -53,3 +54,9 @@ export function question2Details(row: QuestionDetailsType) {
 	const details = [...details1, ...extra, ...details2] satisfies Detail[];
 	return details;
 }
+
+export const getRemindedLabel = <T extends { status?: QuestionStatus, remindedAt: Date | null }>(question: T) => {
+	return question.status == 'approved' && question.remindedAt
+		? `Herinnering gestuurd op ${formatDateLong(question.remindedAt)}`
+		: ''
+};

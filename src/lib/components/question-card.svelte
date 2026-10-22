@@ -4,11 +4,13 @@
 	import Avatar from '$lib/components/avatar.svelte';
 	import { formatDateLong } from '$lib/date-time';
 	import type { QuestionStatus } from '$lib/moderation';
+	import { getRemindedLabel } from '$lib/questions';
 
 	type Question = {
 		slug: string;
 		title: string;
 		createdAt: Date;
+		remindedAt: Date | null;
 		status?: QuestionStatus;
 		authorName: string;
 		politicianName: string;
@@ -31,6 +33,8 @@
 						? 'Antwoord van'
 						: 'Wacht op antwoord van'
 	);
+
+	const remindedLabel = $derived(getRemindedLabel(question));
 
 	const fractionLabel = $derived(question.fraction ?? question.fractionName);
 	const questionHref = $derived(resolve('/vragen/[slug]', { slug: question.slug }));
@@ -104,14 +108,21 @@
 							src={resolve('/politici/[slug]/foto', { slug: question.politicianSlug })}
 						/>
 					</a>
-					<p class="text-sm text-balance text-osf-canvas-600">
-						{recipientLabel}
-						<a href={politicianHref} class="font-medium hover:underline">
-							{question.politicianName}
-							{#if fractionLabel}({fractionLabel}){/if}
-						</a>
-						{#if question.answer}op {formatDateLong(question.answer.createdAt)}{/if}
-					</p>
+					<div class="flex flex-col gap-1">
+						<p class="text-sm text-balance text-osf-canvas-600">
+							{recipientLabel}
+							<a href={politicianHref} class="font-medium hover:underline">
+								{question.politicianName}
+								{#if fractionLabel}({fractionLabel}){/if}
+							</a>
+							{#if question.answer}op {formatDateLong(question.answer.createdAt)}{/if}
+						</p>
+						{#if remindedLabel}
+							<p class="text-sm text-balance text-osf-canvas-600">
+								{remindedLabel}
+							</p>
+						{/if}
+					</div>
 				</div>
 
 				<a

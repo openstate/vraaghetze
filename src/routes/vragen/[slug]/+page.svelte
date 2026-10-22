@@ -153,6 +153,7 @@
 				politicianHref={politicianHref}
 				followButton={followButton}
 				statusLine={statusLine}
+				showReminded={true}
 			/>
 		</article>
 
