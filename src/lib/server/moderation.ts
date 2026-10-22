@@ -28,6 +28,7 @@ import {
 	enqueueQuestionNotificationMail
 } from '$lib/server/email/templates';
 import {
+	getEmailToken,
 	getQuestion,
 	getStatus,
 	newerAnswer,
@@ -363,7 +364,6 @@ export type QuestionDetailsType = {
 	title: string;
 	body: string;
 	slug: string;
-	emailToken: string;
 	status: QuestionStatus;
 	authorName: string;
 	politicianName: string;
@@ -385,7 +385,6 @@ export const getQuestionDetails = async (questionId: string) => {
 			title: schema.question.title,
 			body: schema.question.body,
 			slug: schema.question.slug,
-			emailToken: schema.question.emailToken,
 			status: schema.question.status,
 			authorName: schema.user.name,
 			politicianName: politicianUser.name,
@@ -419,12 +418,14 @@ export const getQuestionDetails = async (questionId: string) => {
 		.where(eq(schema.answer.questionId, questionId))
 		.orderBy(desc(schema.answer.createdAt));
 
+	const emailToken = await getEmailToken(questionId); // Do not include in question query - should not be exposed
+
 	const inboxRows = await db
 		.select()
 		.from(schema.inbox)
 		.where(
 			and(
-				eq(schema.inbox.token, question.emailToken ?? ''),
+				eq(schema.inbox.token, emailToken ?? ''),
 				eq(schema.inbox.status, 'ignored_different_sender')
 			)
 		)
@@ -632,6 +633,7 @@ async function moderateQuestionImplementation({
 	else if (action === 'pending-wrong-politician' && proposedPolitician)
 		await enqueueProposedPoliticianMail(tx, question, proposedPolitician);
 
+	// Note: question contains emailToken - do not return from this function
 	return { action };
 }
 

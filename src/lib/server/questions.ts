@@ -554,6 +554,15 @@ export async function getQuestion(questionId: string) {
 	return result[0];
 }
 
+export const getEmailToken = async (questionId: string) => {
+	const result = await db
+		.select({ emailToken: schema.question.emailToken })
+		.from(schema.question)
+		.where(eq(schema.question.id, questionId));
+
+	return result[0].emailToken;
+};
+
 export async function updatePolitician(
 	questionId: string,
 	userId: string,
