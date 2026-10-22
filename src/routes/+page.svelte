@@ -22,22 +22,13 @@
 
 	const QUESTION_MAX_LENGTH = 200;
 
-	// TODO: use actual numbers instead of 0's
-	// const stats = $derived.by(() => {
-	// 	const [waitValue, waitTitle] = readableSeconds(data.statValues.averageAnswerTime);
-	// 	return [
-	// 		{ icon: 'mdi--help-circle', value: data.statValues.questionsAsked, title: '', label: 'Vragen gesteld' },
-	// 		{ icon: 'mdi--account-group', value: data.statValues.questionsAnswered, title: '', label: 'Vragen beantwoord' },
-	// 		{ icon: 'mdi--bullhorn', value: data.statValues.politicians, title: '', label: 'Kamerleden' },
-	// 		{ icon: 'mdi--message-text', value: waitValue, title: waitTitle, label: 'Gemiddelde wachttijd' }
-	// 	];
-	// });
 	const stats = $derived.by(() => {
+		const [waitValue, waitTitle] = readableSeconds(data.statValues.averageAnswerTime);
 		return [
-			{ icon: 'mdi--help-circle', value: '0', title: '', label: 'Vragen gesteld' },
-			{ icon: 'mdi--account-group', value: '0', title: '', label: 'Vragen beantwoord' },
-			{ icon: 'mdi--bullhorn', value: '0', title: '', label: 'Kamerleden' },
-			{ icon: 'mdi--message-text', value: '0', title: '', label: 'Gemiddelde wachttijd' }
+			{ icon: 'mdi--help-circle', value: data.statValues.questionsAsked, title: '', label: 'Vragen gesteld' },
+			{ icon: 'mdi--account-group', value: data.statValues.questionsAnswered, title: '', label: 'Vragen beantwoord' },
+			{ icon: 'mdi--bullhorn', value: data.statValues.politicians, title: '', label: 'Kamerleden' },
+			{ icon: 'mdi--message-text', value: waitValue, title: waitTitle, label: 'Gemiddelde wachttijd' }
 		];
 	});
 
