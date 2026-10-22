@@ -7,7 +7,6 @@ import type { ModerationAction } from './server/db/app.schema';
 import { getStatus } from './server/questions';
 import { actionToStatus } from './server/moderation';
 import { createAnswer, createQuestion } from '$e2e/test-utils';
-import { getPolitician, type PoliticianType } from './server/politicians';
 
 export async function createUser(
 	name: string,

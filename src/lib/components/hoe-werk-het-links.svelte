@@ -8,6 +8,7 @@
 		{ id: 'who', label: 'Aan wie moet ik mijn vraag stellen?', href: resolve('/aan-wie') },
 		{ id: 'tips', label: 'Tips voor het stellen van je vraag', href: resolve('/tips') }
 	] as const;
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const optionIds = options.map((h) => h.id);
 	type optionIdType = (typeof optionIds)[number];
 
@@ -28,7 +29,7 @@
 		value={selected}
 		onchange={navigate}
 	>
-		{#each options as option}
+		{#each options as option (option.id)}
 			<option value={option.id} data-link={option.href}>{option.label}</option>
 		{/each}
 	</select>
