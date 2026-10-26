@@ -72,7 +72,7 @@
 					<span class="iconify size-5 mdi--close"></span>
 				</Dialog.Close>
 			</div>
-			<div class="flex flex-col items-start gap-1 ps-6 pt-7 pb-11">
+			<div class="flex flex-col items-start gap-1 ps-6 pe-6 pt-7 pb-11 overflow-y-auto">
 				{@render children()}
 				{#if !hideActionButton}
 					<Button

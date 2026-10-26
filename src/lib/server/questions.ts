@@ -226,7 +226,10 @@ async function rankedByTerms(terms: Set<string>, scope: SQL, limit: number) {
 	const query = sql`to_tsquery('dutch', ${[...terms].join(' | ')})`;
 
 	const rows = await db
-		.select(cardColumns)
+		.select({
+			...cardColumns,
+			body: schema.question.body
+		})
 		.from(schema.question)
 		.innerJoin(schema.user, eq(schema.question.userId, schema.user.id))
 		.innerJoin(politicianUser, eq(schema.question.assigneeId, politicianUser.id))

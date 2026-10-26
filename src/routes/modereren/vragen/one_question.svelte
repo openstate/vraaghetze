@@ -21,7 +21,6 @@
 		commissions: CommissionsType[];
 	};
 
-	// eslint-disable-next-line svelte/no-unused-props
 	const { question, moderationActions, politicians, commissions }: Props = $props();
 	let note = $state('');
 	const inputClass =
