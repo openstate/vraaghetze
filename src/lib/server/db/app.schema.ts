@@ -288,7 +288,9 @@ export const commissionMembership = pgTable(
 		commissionId: text()
 			.references(() => commission.id, { onDelete: 'cascade' })
 			.notNull(),
-		startedAt: timestamp().notNull()
+		startedAt: timestamp().notNull(),
+		function: text().default('Lid').notNull(),
+		permanent: boolean().default(true).notNull()
 	},
 	(table) => [
 		index('commission_membership_politician_id_idx').on(table.politicianId),
