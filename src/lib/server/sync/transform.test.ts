@@ -21,6 +21,7 @@ function makeCommissieZetel(overrides: Partial<CommissieZetelPersoon> = {}): Com
 	return {
 		Id: 'commissiezetel-1',
 		Van: '2025-01-01T00:00:00+01:00',
+		Functie: 'Lid',
 		CommissieZetel: {
 			Commissie: {
 				Id: 'commissie-1',
@@ -46,6 +47,7 @@ function makePersoon(overrides: Partial<Persoon> = {}): Persoon {
 		FractieZetelPersoon: [makeSeat()],
 		PersoonContactinformatie: [{ Soort: 'E-mail', Waarde: 'j.jansen@tweedekamer.nl' }],
 		CommissieZetelVastPersoon: [],
+		CommissieZetelVervangerPersoon: [],
 		...overrides
 	};
 }
@@ -170,7 +172,7 @@ describe('transformPoliticians', () => {
 		]);
 	});
 
-	test('maps a seat to a commission and a membership row', () => {
+	test('maps a permanent seat to a commission and a membership row', () => {
 		const person = makePersoon({ CommissieZetelVastPersoon: [makeCommissieZetel()] });
 
 		const [result] = transformPoliticians(NOTHING_SYNCED_YET, [person]);
@@ -187,6 +189,31 @@ describe('transformPoliticians', () => {
 			id: 'commissiezetel-1',
 			politicianId: 'persoon-1',
 			commissionId: 'commissie-1',
+			function: 'Lid',
+			permanent: true,
+			startedAt: new Date('2025-01-01T00:00:00+01:00')
+		});
+	});
+
+	test('maps a replacement seat to a commission and a membership row', () => {
+		const person = makePersoon({ CommissieZetelVervangerPersoon: [makeCommissieZetel()] });
+
+		const [result] = transformPoliticians(NOTHING_SYNCED_YET, [person]);
+
+		expect(result.memberships).toHaveLength(1);
+		expect(result.memberships[0].commission).toEqual({
+			id: 'commissie-1',
+			name: 'Vaste commissie voor Onderwijs, Cultuur en Wetenschap',
+			shortName: 'Onderwijs, Cultuur en Wetenschap',
+			abbreviation: 'OCW',
+			kind: 'Vaste commissies'
+		});
+		expect(result.memberships[0].membership).toEqual({
+			id: 'commissiezetel-1',
+			politicianId: 'persoon-1',
+			commissionId: 'commissie-1',
+			function: 'Lid',
+			permanent: false,
 			startedAt: new Date('2025-01-01T00:00:00+01:00')
 		});
 	});

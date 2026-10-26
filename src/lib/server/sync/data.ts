@@ -15,6 +15,7 @@ const FractieZetelPersoonSchema = z.object({
 const CommissieZetelPersoonSchema = z.object({
 	Id: z.string(),
 	Van: z.string(),
+	Functie: z.string(),
 	CommissieZetel: z.object({
 		Commissie: z.object({
 			Id: z.string(),
@@ -36,7 +37,8 @@ const PersoonSchema = z.object({
 	Verwijderd: z.boolean(),
 	FractieZetelPersoon: z.array(FractieZetelPersoonSchema),
 	PersoonContactinformatie: z.array(z.object({ Soort: z.string(), Waarde: z.string() })),
-	CommissieZetelVastPersoon: z.array(CommissieZetelPersoonSchema)
+	CommissieZetelVastPersoon: z.array(CommissieZetelPersoonSchema),
+	CommissieZetelVervangerPersoon: z.array(CommissieZetelPersoonSchema)
 });
 
 const ResponseSchema = z.object({ value: z.array(PersoonSchema) });
@@ -57,7 +59,8 @@ export async function fetchPoliticians() {
 		[
 			'FractieZetelPersoon($expand=FractieZetel($expand=Fractie))',
 			"PersoonContactinformatie($filter=Soort eq 'E-mail')",
-			`CommissieZetelVastPersoon($filter=Verwijderd eq false and TotEnMet eq null;$expand=CommissieZetel($expand=Commissie))`
+			`CommissieZetelVastPersoon($filter=Verwijderd eq false and TotEnMet eq null;$expand=CommissieZetel($expand=Commissie))`,
+			`CommissieZetelVervangerPersoon($filter=Verwijderd eq false and TotEnMet eq null;$expand=CommissieZetel($expand=Commissie))`
 		].join(',')
 	);
 

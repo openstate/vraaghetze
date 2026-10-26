@@ -44,7 +44,7 @@ export function transformPoliticians(existing: Existing, fetched: Persoon[]) {
 		return slug;
 	}
 
-	function toMembership(politicianId: string, seat: CommissieZetelPersoon): Membership {
+	function toMembership(politicianId: string, seat: CommissieZetelPersoon, permanent: boolean): Membership {
 		const commission = seat.CommissieZetel.Commissie;
 
 		return {
@@ -59,7 +59,9 @@ export function transformPoliticians(existing: Existing, fetched: Persoon[]) {
 				id: seat.Id,
 				politicianId,
 				commissionId: commission.Id,
-				startedAt: new Date(seat.Van)
+				startedAt: new Date(seat.Van),
+				function: seat.Functie,
+				permanent: permanent
 			}
 		};
 	}
@@ -91,6 +93,10 @@ export function transformPoliticians(existing: Existing, fetched: Persoon[]) {
 		const userId = prior?.userId ?? crypto.randomUUID();
 		const slug = prior?.slug ?? slugifyUnique(name, takenSlugs);
 		const fractionSlug = slugifyFraction(fraction);
+		const memberships = [
+			...person.CommissieZetelVastPersoon.map((seat) => toMembership(person.Id, seat, true)),
+			...person.CommissieZetelVervangerPersoon.map((seat) => toMembership(person.Id, seat, false))
+		];
 
 		return [
 			{
@@ -116,7 +122,7 @@ export function transformPoliticians(existing: Existing, fetched: Persoon[]) {
 					abbreviation: fraction.Afkorting ?? null,
 					isActive: true
 				},
-				memberships: person.CommissieZetelVastPersoon.map((seat) => toMembership(person.Id, seat))
+				memberships: memberships
 			} satisfies Politician
 		];
 	});
