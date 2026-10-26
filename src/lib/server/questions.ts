@@ -292,6 +292,8 @@ export async function similarForFraction(text: string, politicianId: string, lim
 	return rankedByTerms(terms, inArray(schema.question.assigneeFractionId, askableFraction), limit);
 }
 
+export type SimilarType = Awaited<ReturnType<typeof similarForFraction>>[0];
+
 // a public figure about a politician, so it counts approved rows only, whoever is looking
 export async function statsForPolitician(slug: string) {
 	const [stats] = await db

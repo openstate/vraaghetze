@@ -47,7 +47,7 @@ export type MetaType = {
 };
 
 export type ModerationActionDetailsType = typeof schema.moderationAction.$inferSelect & {
-	moderatorName: string | null;
+	moderatorName?: string | null;
 };
 
 const postColumns = {

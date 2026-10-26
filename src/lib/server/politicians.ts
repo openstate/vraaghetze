@@ -105,13 +105,13 @@ export async function bySlug(slug: string) {
 	return politician;
 }
 
-export async function getPolitician(id: string) {
+export async function getPolitician(userId: string) {
 	const [politician] = await db
 		.select(politicianFields)
 		.from(schema.politician)
 		.innerJoin(schema.user, eq(schema.politician.userId, schema.user.id))
 		.innerJoin(schema.fraction, eq(schema.politician.fractionId, schema.fraction.id))
-		.where(eq(schema.user.id, id))
+		.where(eq(schema.user.id, userId))
 		.limit(1);
 
 	return politician;

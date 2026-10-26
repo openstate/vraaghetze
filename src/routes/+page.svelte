@@ -278,7 +278,7 @@
 				<div style="position: absolute; left: -5000px;" aria-hidden="true">
 					<input type="text" name="b_03355fd4f1a7935cae63b21aa_2f09e8274d" tabindex="-1" value="" />
 				</div>
-				<div id="mce-responses" class="clear mt-[8px]">
+				<div id="mce-responses" class="clear mt-2">
 					<div class="response text-white" id="mce-error-response" style="display:none"></div>
 					<div class="response text-white" id="mce-success-response" style="display:none"></div>
 				</div>

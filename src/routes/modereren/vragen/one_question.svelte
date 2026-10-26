@@ -2,7 +2,7 @@
 	import Avatar from '$lib/components/avatar.svelte';
 	import ModerationDialog from '$lib/components/moderation-dialog.svelte';
 	import OneModerationAction from './one_moderation_action.svelte';
-	import { rejectionReasons, type QuestionStatus } from '$lib/moderation.js';
+	import { rejectionReasons } from '$lib/moderation.js';
 	import { formatDateLong } from '$lib/date-time';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
@@ -10,23 +10,12 @@
 	import SelectPolitician from '$lib/components/select-politician.svelte';
 	import type { CommissionsType, PoliticiansType } from '$lib/politicians';
 	import type { ModerationActionDetailsType } from '$lib/server/db/app.schema';
-
-	// TODO: This is just ListQuestionQueueType
-	type Question = {
-		id: string;
-		title: string;
-		body: string;
-		status: QuestionStatus;
-		createdAt: Date;
-		authorName: string;
-		politicianName: string;
-		politicianSlug: string;
-		fraction: string | null;
-		fractionName: string | null;
-	};
+	import SimilarQuestion from './[id]/vergelijkbaar/similar-question.svelte';
+	import type { ListQuestionQueueType } from '$lib/server/moderation';
+	import type { SimilarType } from '$lib/server/questions';
 
 	type Props = {
-		question: Question;
+		question: ListQuestionQueueType;
 		moderationActions: ModerationActionDetailsType[];
 		politicians: PoliticiansType[];
 		commissions: CommissionsType[];
@@ -51,6 +40,21 @@
 	};
 
 	let selectedPolitician = $derived(question.politicianSlug);
+
+	let isOpenApproved = $state(false);
+
+	let similarQuestions: SimilarType[] = $state([]);
+
+	$effect(() => {
+		if (isOpenApproved) {
+			const url = resolve(`/modereren/vragen/${question.id}/vergelijkbaar`);
+			fetch(url).then((response) => {
+				response.json().then((value) => {
+					similarQuestions = value;
+				});
+			});
+		}
+	});
 
 	const selectedHandler = (slug: string) => {
 		selectedPolitician = slug;
@@ -127,8 +131,18 @@
 						triggerTitle="Keur goed"
 						triggerVariant="primary"
 						actionValue="approved"
+						wide={true}
+						bind:isOpen={isOpenApproved}
 					>
-						<p>
+						{#if similarQuestions.length > 0}
+							<h2 class="mb-2 font-serif text-xl">Let op: er zijn vergelijkbare vragen gevonden</h2>
+							<ul class="grid gap-3">
+								{#each similarQuestions as similarQuestion (similarQuestion.slug)}
+									<SimilarQuestion question={similarQuestion} />
+								{/each}
+							</ul>
+						{/if}
+						<p class="mt-4">
 							Na goedkeuren zal de vraag naar het Kamerlid gestuurd worden. Weet je zeker dat je
 							deze vraag wilt goedkeuren?
 						</p>

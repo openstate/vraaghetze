@@ -51,7 +51,6 @@
 			value={currentTab}
 			onValueChange={(value) => {
 				const href = tabs.find((tab) => tab.value === value)?.href ?? tabs[0].href;
-				// eslint-disable-next-line svelte/no-navigation-without-resolve
 				goto(href, { keepFocus: true, noScroll: true });
 			}}
 		>
