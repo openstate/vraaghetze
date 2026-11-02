@@ -95,3 +95,9 @@
 		</header>
 	{/snippet}
 </Collapsible.Root>
+<p class="mx-auto w-full px-6 text-center pt-3 pb-3"
+    style="background-color:var(--color-osf-blue-200);color:var(--color-osf-blue-800)">
+		Door het succes van VraagHetZe is de spamdetectie van de Tweede Kamer getriggerd en werden mails niet meer afgeleverd.
+		Hierdoor is het aantal beantwoordde vragen achtergebleven bij de verwachtingen.
+		Het probleem is inmiddels verholpen en we werken hard aan de opvolging.
+</p>
