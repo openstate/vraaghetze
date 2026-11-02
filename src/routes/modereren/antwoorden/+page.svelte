@@ -13,7 +13,7 @@
 {:else}
 	<ul class="grid gap-6">
 		{#each data.queue as entry (entry.answer.id)}
-			<li>
+			<li class="overflow-auto">
 				<Answer answer={entry.answer} moderationActions={entry.moderationActions} {form} />
 			</li>
 		{/each}
