@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Answer from '$lib/components/answer.svelte';
+	import { flip } from 'svelte/animate';
 
 	let { data, form } = $props();
 </script>
@@ -13,7 +14,7 @@
 {:else}
 	<ul class="grid gap-6">
 		{#each data.queue as entry (entry.answer.id)}
-			<li class="overflow-auto">
+			<li class="overflow-auto" animate:flip={{ duration: 1000 }}>
 				<Answer answer={entry.answer} moderationActions={entry.moderationActions} {form} />
 			</li>
 		{/each}
