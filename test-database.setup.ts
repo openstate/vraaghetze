@@ -28,8 +28,9 @@ export async function ensureTestTemplate(databaseUrl: string, force = false) {
 		const templateUrl = testDatabaseUrl(databaseUrl, 'template');
 		const templateSql = postgres(templateUrl);
 		try {
-			// Drizzle push does not create the extension used by the search operators.
+			// Drizzle push does not create the extension used by the search operators, nor the f_regexp_escape function
 			await templateSql`CREATE EXTENSION IF NOT EXISTS pg_trgm`;
+			await templateSql`CREATE OR REPLACE FUNCTION f_regexp_escape(text) RETURNS text LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE AS $func$ SELECT regexp_replace($1, '([!$()*+.:<=>?[\\\\\\]^{|}-])', '\\\\\\1', 'g') $func$`;
 		} finally {
 			await templateSql.end();
 		}

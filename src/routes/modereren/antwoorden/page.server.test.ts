@@ -101,3 +101,47 @@ describe('default action', () => {
 		expect(await getQuestion(question.id)).toMatchObject({ status: 'approved' });
 	});
 });
+
+describe('redacting', () => {
+	test('redacts when replacement is normal text', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const text = "Please replace part of me";
+		const expectedText = "Please replace <verwijderd> of me";
+		const { answer, question } = await createAnswerAndQuestion({ body: text });
+		const event = myMakeActionEvent(moderator, {
+			answerId: answer.id,
+			action: 'redact',
+			searchTexts: JSON.stringify(['part']),
+			replaceTexts: JSON.stringify(['<verwijderd>'])
+		});
+
+		const result = await page.actions.default(event);
+
+		expect(result).toEqual({ answerId: answer.id, redacted: true });
+		const redactedAnswer = await getAnswer(answer.id);
+		expect(redactedAnswer.status).toEqual('pending');
+		expect(redactedAnswer.body).toEqual(expectedText)
+		expect(await getQuestion(question.id)).toMatchObject({ status: 'approved'});
+	});
+
+	test('redacts when replacement contains regexp characters', async () => {
+		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
+		const text = "Please replace this telephone number (+31)  06 38040052 for me";
+		const expectedText = "Please replace this telephone number <verwijderd> for me";
+		const { answer, question } = await createAnswerAndQuestion({ body: text });
+		const event = myMakeActionEvent(moderator, {
+			answerId: answer.id,
+			action: 'redact',
+			searchTexts: JSON.stringify(['(+31)  06 38040052']),
+			replaceTexts: JSON.stringify(['<verwijderd>'])
+		});
+
+		const result = await page.actions.default(event);
+
+		expect(result).toEqual({ answerId: answer.id, redacted: true });
+		const redactedAnswer = await getAnswer(answer.id);
+		expect(redactedAnswer.status).toEqual('pending');
+		expect(redactedAnswer.body).toEqual(expectedText)
+		expect(await getQuestion(question.id)).toMatchObject({ status: 'approved'});
+	});
+});

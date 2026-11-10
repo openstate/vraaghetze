@@ -1005,7 +1005,7 @@ const calculateRedactedBody = async ({
 		for (const [index, searchText] of searchTexts.entries()) {
 			if (!searchText) continue;
 			const replaceText = replaceTexts[index];
-			const segment = sql<string>`regexp_replace(${toChange}, ${searchText},${replaceText},'g')`;
+			const segment = sql<string>`regexp_replace(${toChange}, f_regexp_escape(${searchText}), ${replaceText}, 'g')`;
 			toChange = segment;
 			query = segment;
 		}

@@ -47,6 +47,18 @@ keep formatting consistent.
    docker compose -f docker-compose.dev.yml exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm"'
    ```
 
+1. Create the `f_regexp_escape` function (current Drizzle version does not support adding functions):
+
+   ```bash
+   sudo docker exec -it vraaghetze-db-1 psql -U postgres -d vraaghetze
+CREATE OR REPLACE FUNCTION f_regexp_escape(text)
+  RETURNS text
+  LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE AS
+$func$
+SELECT regexp_replace($1, '([!$()*+.:<=>?[\\\]^{|}-])', '\\\1', 'g')
+$func$;
+   ```
+
 1. Create `static/fonts/azurio.woff2`.
 
 1. Start the development server:
