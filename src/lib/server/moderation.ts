@@ -295,6 +295,7 @@ export type ListQuestionType = {
 	politicianSlug: string | null;
 	createdAt: Date;
 	answeredAt: Date | null;
+	remindedAt?: Date | null;
 	answerStatus: AnswerStatus | null;
 	moderatorName: string | null;
 	moderatedAt: Date | null;

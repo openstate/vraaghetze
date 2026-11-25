@@ -11,13 +11,14 @@
 	import SnippetAnsweredCell from '$lib/components/snippet-answered-cell.svelte';
 
   type Props = {
-    questions: ListQuestionType[]
+    questions: ListQuestionType[],
+		remindedAtColumn?: boolean
   }
-	const { questions }: Props = $props();
+	const { questions, remindedAtColumn }: Props = $props();
 
 	const helper = createColumnHelper<typeof features, ListQuestionType>();
 
-	const columns = helper.columns([
+	const columnDefs1 = [
 		helper.display({
 			id: 'details',
 			header: '',
@@ -52,7 +53,18 @@
 					StatusPill,
 					questionStatusPills[cell.row.original.verifiedAt ? cell.getValue() : 'unverified']
 				)
-		}),
+	})];
+
+	// svelte-ignore state_referenced_locally
+	const columnDefs2 = remindedAtColumn
+		? [helper.accessor('remindedAt', {
+				header: 'Herinnerd op',
+				meta: { class: 'w-44' },
+				cell: (cell) => renderComponent(DateTime, { value: cell.getValue(), time: true })
+			})]
+		: [];
+
+	const columnDefs3 = [
 		helper.accessor('createdAt', {
 			header: 'Aangemaakt',
 			meta: { class: 'w-44' },
@@ -63,7 +75,9 @@
 			meta: { class: 'w-44' },
 			cell: (cell) => renderComponent(SnippetAnsweredCell, cell.row.original)
 		})
-	]);
+	];
+
+	const columns = helper.columns(columnDefs1.concat(columnDefs2).concat(columnDefs3));
 </script>
 
 <DataTable {columns} rows={questions} />

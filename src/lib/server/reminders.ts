@@ -81,6 +81,7 @@ const questionStatFields = {
 	politicianSlug: schema.politician.slug,
 	createdAt: schema.question.createdAt,
 	answeredAt: schema.answer.createdAt,
+	remindedAt: schema.question.remindedAt,
 	answerStatus: schema.answer.status,
 	moderatorName: sql<null>`null`,
 	moderatedAt: sql<null>`null`,

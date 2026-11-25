@@ -5,4 +5,4 @@
 
 </script>
 
-<StatPage questions={data.questions}/>
+<StatPage questions={data.questions} remindedAtColumn={true} />
