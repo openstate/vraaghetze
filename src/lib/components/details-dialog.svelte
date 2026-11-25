@@ -14,6 +14,7 @@
 	type Props = {
 		title: string;
 		detailId?: string;
+		rowForDetails?: ListInboxType | ListOutboxType;
 		questionDetails?:
 			| ((row: QuestionDetailsType) => Detail[])
 			| ((row: ListInboxType) => Detail[])
@@ -23,7 +24,7 @@
 		allowActionable?: boolean;
 	};
 
-	let { title, detailId, questionDetails, data, allowActionable = true }: Props = $props();
+	let { title, detailId, rowForDetails, questionDetails, data, allowActionable = true }: Props = $props();
 	// svelte-ignore state_referenced_locally
 	let details: Detail[] = $state(typeof questionDetails === 'object' ? questionDetails : []);
 
@@ -39,11 +40,15 @@
 	if (typeof questionDetails === 'function') {
 		$effect(() => {
 			if (isOpen) {
-				fetch(`${resolve('/modereren/vragen')}/${detailId}`).then((response) => {
-					response.json().then((value) => {
-						details = questionDetails(value);
+				if (rowForDetails) {
+					details = questionDetails(rowForDetails as unknown as never);
+				} else {
+					fetch(`${resolve('/modereren/vragen')}/${detailId}`).then((response) => {
+						response.json().then((value) => {
+							details = questionDetails(value);
+						});
 					});
-				});
+				}
 			}
 		});
 	} else if (!detailId) {

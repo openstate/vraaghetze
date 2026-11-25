@@ -34,7 +34,9 @@
 			cell: (cell) =>
 				renderComponent(DetailsDialog, {
 					title: cell.row.original.status === 'sent' ? 'Verzonden e-mail' : 'Niet-verzonden e-mail',
-					questionDetails: details(cell.row.original)
+					detailId: cell.row.original.id,
+					rowForDetails: cell.row.original,
+					questionDetails: details
 				})
 		}),
 		helper.accessor('recipient', {

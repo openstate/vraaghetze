@@ -25,7 +25,9 @@
 			cell: (cell) =>
 				renderComponent(DetailsDialog, {
 					title: titles[cell.row.original.status],
-					questionDetails: details(cell.row.original)
+					detailId: cell.row.original.id,
+					rowForDetails: cell.row.original,
+					questionDetails: details
 				})
 		}),
 		helper.accessor('fromAddress', {
