@@ -26,7 +26,8 @@
 					detailId: cell.row.original.id,
 					questionDetails: question2Details,
 					data: {
-						question: cell.row.original,
+						questionSlug: cell.row.original.slug,
+						politicianSlug: cell.row.original.politicianSlug,
 			 			politicians: data.politicians,
 			 			commissions: data.commissions
 					}

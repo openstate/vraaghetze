@@ -6,6 +6,8 @@
 	import type { ListAnswerType } from '$lib/server/moderation';
 	import type { ActionData as AnswerListActionData } from '../../routes/modereren/antwoorden/$types';
 	import type { schema } from '$lib/server/db';
+	import DetailsDialogChangePolitician from './details-dialog-change-politician.svelte';
+	import type { CommissionsType, PoliticiansType } from '$lib/politicians';
 
 	export type BasicAnswerProps = {
 		answer: ListAnswerType;
@@ -16,14 +18,25 @@
 	}
 
 	type RedactionAnswerProps = {
-		form: AnswerListActionData
+		form: AnswerListActionData;
+		politicians?: PoliticiansType[];
+		commissions?: CommissionsType[];
 	}
 
 	export type AnswerProps = BasicAnswerProps & ShowAnswerProps & RedactionAnswerProps;
 
-	let { answer, moderationActions, form }: AnswerProps = $props();
+	let { answer, moderationActions, form, politicians, commissions }: AnswerProps = $props();
 
 	let redacting = $state(false);
+
+	let isOpen = $state(false);
+	const changePoliticianData = $derived({
+		questionSlug: answer.questionSlug,
+		politicianSlug: answer.politicianSlug,
+		politicians,
+		commissions
+	});
+	const actionableChangePolitician = $derived(!!politicians && !!commissions);
 
 	const redactStart = (event: Event) => {
 		event.preventDefault();
@@ -41,6 +54,7 @@
 	let redactedBody = $derived(formRelevant ? form?.redactedBody : answer.body);
 	let searchTexts = $derived((formRelevant && form?.searchTexts) ? form?.searchTexts : startSearchTexts);
 	let replaceTexts = $derived((formRelevant && form?.replaceTexts) ? form?.replaceTexts : startReplaceTexts);
+	let errorText = $derived(form?.answerId == answer.id && form?.error);
 </script>
 
 <article class="overflow-hidden rounded bg-osf-canvas-100">
@@ -72,11 +86,17 @@
 			<li><strong>Informeer vraagsteller</strong> Het antwoord wordt niet gepubliceerd maar de vraagsteller kan het antwoord zien (en krijgt een e-mail).</li>
 			<li><strong>Negeer</strong> Het antwoord wordt genegeerd.</li>
 			</ul>
+			{#if errorText}
+				<p class="mb-4 text-sm text-osf-shocking-pink">{errorText}</p>
+			{/if}
 			<div class="flex flex-row gap-2">
 				<Button type="submit" name="action" value="approved" variant="primary">Keur goed</Button>
 				<Button type="submit" name="action" value="update-asker" variant="primary">Informeer vraagsteller</Button>
 				<Button type="submit" name="action" value="rejected" variant="secondary">Negeer</Button>
 				<Button type="submit" name="action" value="redactStart" variant="secondary" onclick={redactStart}>Redigeren...</Button>
+				{#if actionableChangePolitician}
+					<DetailsDialogChangePolitician bind:isOpen buttonOnly={true} data={changePoliticianData} />
+				{/if}
 			</div>
 		{/if}
 	</form>

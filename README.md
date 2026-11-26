@@ -81,6 +81,12 @@ $func$;
    pnpm test:setup
    ```
 
+   To run a single test file, e.g.:
+
+   ```bash
+   SETUP=1 npx vitest run src/lib/server/moderation.test.ts
+   ```
+
 1. Install Chromium and run the end-to-end tests:
 
    ```bash

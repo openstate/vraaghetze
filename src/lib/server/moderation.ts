@@ -30,6 +30,7 @@ import {
 import {
 	getEmailToken,
 	getQuestion,
+	getQuestionBySlug,
 	getStatus,
 	newerAnswer,
 	updatePolitician,
@@ -44,7 +45,7 @@ import type {
 	OutboxKind,
 	OutboxStatus
 } from './db/app.schema';
-import { getPolitician, type PoliticianType } from './politicians';
+import { getPolitician, bySlug, type PoliticianType } from './politicians';
 import { validateForm } from './utils/forms';
 import { getBasicUserInfoById, type UserType } from './auth';
 import { jsonCodec } from './utils/zod';
@@ -694,25 +695,35 @@ export async function automatedPoliticianChange({
 }
 
 type ModeratedPoliticianChangeType = {
-	questionId: string;
+	questionSlug: string;
+	selectedPoliticianSlug: string;
 	moderatorId: string;
-	selectedPolitician: PoliticianType;
 	sendEmail?: boolean;
 };
 
 type ModeratedPoliticianChangeResultType = {
 	error?: string;
+	message?: string;
 };
 
 // Runs when moderator selects a different politician for an approved question
 export async function moderatedPoliticianChange({
-	questionId,
+	questionSlug,
+	selectedPoliticianSlug,
 	moderatorId,
-	selectedPolitician,
 	sendEmail
 }: ModeratedPoliticianChangeType): Promise<ModeratedPoliticianChangeResultType> {
+	// Check that politician exists and accepts questions
+	const selectedPolitician = await bySlug(selectedPoliticianSlug);
+	if (!selectedPolitician) {
+		return { error: 'Kamerlid bestaat niet.' };
+	}
+	if (!selectedPolitician.acceptsQuestions) {
+		return { error: 'Dit Kamerlid heeft ervoor gekozen niet openbaar antwoord te geven via VraagHetZe.' };
+	}
+
 	return await db.transaction(async (tx) => {
-		const question = await getQuestion(questionId);
+		const question = await getQuestionBySlug(questionSlug);
 		if (question.status != 'approved') {
 			return { error: 'Vraag heeft niet de juiste status.' };
 		}
@@ -720,7 +731,7 @@ export async function moderatedPoliticianChange({
 		const currentPolitician = await getPolitician(question.assigneeId);
 
 		const updatedQuestion = await updatePolitician(
-			questionId,
+			question.id,
 			selectedPolitician.userId,
 			selectedPolitician.fractionId,
 			tx
@@ -729,7 +740,7 @@ export async function moderatedPoliticianChange({
 		await tx.insert(schema.moderationAction).values({
 			id: crypto.randomUUID(),
 			moderatorId,
-			questionId,
+			questionId: question.id,
 			action: 'politician-changed',
 			note: `Kamerlid door moderator aangepast van ${currentPolitician?.slug} naar ${selectedPolitician.slug}.`,
 			meta: { currentSlug: currentPolitician?.slug, newSlug: selectedPolitician.slug }
@@ -747,7 +758,15 @@ export async function moderatedPoliticianChange({
 			);
 		}
 
-		return {};
+		const base = `Kamerlid is aangepast naar ${selectedPoliticianSlug}`;
+		let message: string;
+		if (sendEmail){
+			message = `${base} en de vraag is gemaild naar het nieuwe Kamerlid.`
+		} else {
+			message = `${base}.`
+		}
+
+		return { message };
 	});
 }
 
@@ -883,6 +902,12 @@ export const answerModerationSchema = z.discriminatedUnion('action', [
 		answerId: z.string().min(1),
 		searchTexts: jsonCodec(z.array(z.string())),
 		replaceTexts: jsonCodec(z.array(z.string()))
+	}),
+	z.object({
+		action: z.literal('change-politician'),
+		answerId: z.string().min(1),
+		selectedPoliticianSlug: z.string().min(1),
+		sendEmail: z.coerce.boolean().default(false)
 	})
 ]);
 export type AnswerModerationType = z.infer<typeof answerModerationSchema>['action'];
@@ -891,6 +916,7 @@ type RedactModerationType = Pick<
 	Extract<z.infer<typeof answerModerationSchema>, { action: 'redact' }>,
 	'answerId' | 'searchTexts' | 'replaceTexts'
 >;
+type ChangePoliticianModerationType = Extract<z.infer<typeof answerModerationSchema>, { action: 'change-politician' }>;
 
 type defaultAnswerModerationActionType = {
 	request: Request;
@@ -902,11 +928,16 @@ type defaultAnswerModerationActionResult = {
 	action: AnswerModerationType;
 	statusCode?: number;
 	message?: string;
-	flashType?: 'success' | 'neutral';
+	flashType?: 'success' | 'neutral' | 'error';
 	answerId?: string;
 	searchTexts?: string[];
 	replaceTexts?: string[];
 	redactedBody?: string;
+};
+
+type DefaultReturnValues = {
+	action: AnswerModerationType,
+	answerId: string;
 };
 
 export const defaultAnswerModerationAction = async ({
@@ -914,13 +945,49 @@ export const defaultAnswerModerationAction = async ({
 	user
 }: defaultAnswerModerationActionType): Promise<defaultAnswerModerationActionResult> => {
 	const result = await validateForm(request, answerModerationSchema);
-	const ret = { action: result.data.action as AnswerModerationType };
+	const defaultReturnValues: DefaultReturnValues = { action: result.data.action as AnswerModerationType, answerId: '' };
 	if (!result.valid || !user)
-		return { ...ret, success: false, statusCode: 400, message: 'Ongeldige aanvraag.' };
+		return { ...defaultReturnValues, success: false, statusCode: 400, message: 'Ongeldige aanvraag.' };
 
-	const action = result.data.action as AnswerModerationType;
+	defaultReturnValues.answerId = result.data.answerId;
 
-	if (['redact', 'preview', 'addRedaction'].includes(action)) {
+	const processed = await processTemporaryModerationAction(defaultReturnValues, user.id, result);
+	if (processed) return processed;
+
+	const outcome = await moderateAnswer({
+		answerId: result.data.answerId,
+		moderatorId: user.id,
+		action: defaultReturnValues.action as AnswerStatus
+	});
+
+	if ('error' in outcome)
+		return { ...defaultReturnValues, success: false, statusCode: 409, message: 'Dit antwoord is al behandeld.' };
+
+	const message =
+		defaultReturnValues.action == 'approved'
+			? 'Je hebt het antwoord goedgekeurd'
+			: defaultReturnValues.action == 'rejected'
+				? 'Je hebt het antwoord afgewezen'
+				: defaultReturnValues.action == 'update-asker'
+					? 'Het antwoord kan door de vraagsteller ingezien worden'
+					: '';
+	const flashType = defaultReturnValues.action == 'approved' || defaultReturnValues.action == 'update-asker' ? 'success' : 'neutral';
+
+	return {
+		...defaultReturnValues,
+		success: true,
+		statusCode: 200,
+		message,
+		flashType
+	};
+};
+
+const processTemporaryModerationAction = async (
+	defaultReturnValues: DefaultReturnValues,
+	userId: string,
+	result: Awaited<ReturnType<typeof validateForm<typeof answerModerationSchema>>>
+): Promise<defaultAnswerModerationActionResult | undefined> => {
+	if (['redact', 'preview', 'addRedaction'].includes(defaultReturnValues.action)) {
 		const data = result.data as RedactModerationType;
 		const redactedBody = await calculateRedactedBody({
 			answerId: data.answerId,
@@ -928,69 +995,59 @@ export const defaultAnswerModerationAction = async ({
 			replaceTexts: data.replaceTexts
 		});
 
-		if (action == 'redact') {
+		if (defaultReturnValues.action == 'redact') {
 			await commitRedaction(
-				user.id,
+				userId,
 				data.answerId,
 				data.searchTexts,
 				data.replaceTexts,
 				redactedBody
 			);
 
-			const message = 'Het antwoord is geredigeerd.';
-			const flashType = 'success';
 			return {
-				...ret,
+				...defaultReturnValues,
 				success: true,
-				message,
-				flashType,
-				answerId: result.data.answerId
+				message: 'Het antwoord is geredigeerd.',
+				flashType: 'success'
 			};
 		} else {
 			const searchTexts = data.searchTexts;
 			const replaceTexts = data.replaceTexts;
-			if (action === 'addRedaction') {
+			if (defaultReturnValues.action === 'addRedaction') {
 				searchTexts.push('');
 				replaceTexts.push('<verwijderd>');
 			}
 			return {
-				...ret,
+				...defaultReturnValues,
 				success: true,
-				answerId: result.data.answerId,
 				redactedBody,
 				searchTexts: searchTexts,
 				replaceTexts: replaceTexts
 			};
 		}
+	} else if (defaultReturnValues.action == 'change-politician') {
+		const data = result.data as ChangePoliticianModerationType;
+		const answer = await getAnswer(data.answerId);
+		const question = await getQuestion(answer.questionId);
+		const changed = await moderatedPoliticianChange({
+			questionSlug: question.slug,
+			selectedPoliticianSlug: data.selectedPoliticianSlug,
+			moderatorId: userId,
+			sendEmail: data.sendEmail
+		});
+
+		const success = !changed.error;
+		const statusCode = changed.error ? 400 : 200;
+		const message = changed.error ?? changed.message;
+		const flashType = changed.error ? 'error' : 'success';
+		return {
+			...defaultReturnValues,
+			success,
+			statusCode,
+			message,
+			flashType
+		};
 	}
-
-	const outcome = await moderateAnswer({
-		answerId: result.data.answerId,
-		moderatorId: user.id,
-		action: action as AnswerStatus
-	});
-
-	if ('error' in outcome)
-		return { ...ret, success: false, statusCode: 409, message: 'Dit antwoord is al behandeld.' };
-
-	const message =
-		action == 'approved'
-			? 'Je hebt het antwoord goedgekeurd'
-			: action == 'rejected'
-				? 'Je hebt het antwoord afgewezen'
-				: action == 'update-asker'
-					? 'Het antwoord kan door de vraagsteller ingezien worden'
-					: '';
-	const flashType = action == 'approved' || action == 'update-asker' ? 'success' : 'neutral';
-
-	return {
-		...ret,
-		success: true,
-		statusCode: 200,
-		message,
-		flashType,
-		answerId: result.data.answerId
-	};
 };
 
 // Given arrays of searchTexts and replaceTexts, replace each searchText with replaceText using the PostgreSQL

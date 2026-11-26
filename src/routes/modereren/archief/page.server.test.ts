@@ -46,7 +46,7 @@ describe('default action, proposing other politician', () => {
 		const { question, politician } = await createQuestionAndUsers({ status: 'approved' });
 		const otherPolitician = (await createPolitician('Other Politician')).politician;
 		const event = myMakeActionEvent(moderator, {
-			questionId: question.id,
+			questionSlug: question.slug,
 			selectedPoliticianSlug: otherPolitician.slug,
 			action: 'change-politician'
 		});
@@ -58,7 +58,7 @@ describe('default action, proposing other politician', () => {
 
 		const result = await page.actions.default(event);
 
-		expect(result).toEqual({ moderated: question.id });
+		expect(result).toEqual({ moderated: `testvraag-${question.id}` });
 		expect(await getQuestion(question.id)).toMatchObject({
 			status: 'approved',
 			assigneeId: otherPolitician.userId,
@@ -78,14 +78,14 @@ describe('default action, proposing other politician', () => {
 		const { question } = await createQuestionAndUsers({ status: 'approved' });
 		const otherPolitician = (await createPolitician('Other Politician')).politician;
 		const event = myMakeActionEvent(moderator, {
-			questionId: question.id,
+			questionSlug: question.slug,
 			selectedPoliticianSlug: otherPolitician.slug,
 			action: 'change-politician'
 		});
 
 		const result = await page.actions.default(event);
 
-		expect(result).toEqual({ moderated: question.id });
+		expect(result).toEqual({ moderated: `testvraag-${question.id}` });
 		expect(enqueueMail).not.toHaveBeenCalled();
 	});
 
@@ -94,7 +94,7 @@ describe('default action, proposing other politician', () => {
 		const { asker, question } = await createQuestionAndUsers({ status: 'approved' });
 		const { politician: otherPolitician, politicianUser: otherPoliticianUser} = await createPolitician('Other Politician');
 		const event = myMakeActionEvent(moderator, {
-			questionId: question.id,
+			questionSlug: question.slug,
 			selectedPoliticianSlug: otherPolitician.slug,
 			action: 'change-politician',
 			sendEmail: '1'
@@ -102,7 +102,7 @@ describe('default action, proposing other politician', () => {
 
 		const result = await page.actions.default(event);
 
-		expect(result).toEqual({ moderated: question.id });
+		expect(result).toEqual({ moderated: `testvraag-${question.id}` });
 		expect(enqueueMail).toHaveBeenCalled();
 
 		const { kind, questionId, recipient, replyTo, subject } = enqueueMail.mock.calls[0][0]
@@ -117,7 +117,7 @@ describe('default action, proposing other politician', () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const { question } = await createQuestionAndUsers({ status: 'approved' });
 		const event = myMakeActionEvent(moderator, {
-			questionId: question.id,
+			questionSlug: question.slug,
 			action: 'change-politician'
 		});
 
@@ -131,7 +131,7 @@ describe('default action, proposing other politician', () => {
 		const moderator = await createUser('Mo Moderator', { role: 'moderator' });
 		const { question } = await createQuestionAndUsers({ status: 'approved' });
 		const event = myMakeActionEvent(moderator, {
-			questionId: question.id,
+			questionSlug: question.slug,
 			selectedPoliticianSlug: 'just a non-existing slug',
 			action: 'change-politician'
 		});
@@ -147,7 +147,7 @@ describe('default action, proposing other politician', () => {
 		const { question } = await createQuestionAndUsers({ status: 'answered' });
 		const otherPolitician = (await createPolitician('Other Politician')).politician;
 		const event = myMakeActionEvent(moderator, {
-			questionId: question.id,
+			questionSlug: question.slug,
 			selectedPoliticianSlug: otherPolitician.slug,
 			action: 'change-politician'
 		});
@@ -166,7 +166,7 @@ describe('default action, proposing other politician', () => {
 			await createPolitician('Other Politician', { acceptsQuestions: false })
 		).politician;
 		const event = myMakeActionEvent(moderator, {
-			questionId: question.id,
+			questionSlug: question.slug,
 			selectedPoliticianSlug: otherPolitician.slug,
 			action: 'change-politician'
 		});

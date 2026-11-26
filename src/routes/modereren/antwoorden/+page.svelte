@@ -15,7 +15,7 @@
 	<ul class="grid gap-6">
 		{#each data.queue as entry (entry.answer.id)}
 			<li class="overflow-auto" animate:flip={{ duration: 1000 }}>
-				<Answer answer={entry.answer} moderationActions={entry.moderationActions} {form} />
+				<Answer answer={entry.answer} moderationActions={entry.moderationActions} politicians={data.politicians} commissions={data.commissions} {form} />
 			</li>
 		{/each}
 	</ul>

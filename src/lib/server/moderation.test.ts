@@ -12,7 +12,6 @@ import {
 } from '$lib/test-utils';
 import { createAnswer, timeDiff } from '$e2e/test-utils';
 import { DAY_MS } from '$lib/general';
-import { bySlug } from './politicians';
 
 const testEnv = vi.hoisted(() => ({
 	DIVERSION_EMAIL: '',
@@ -405,9 +404,9 @@ describe('moderatedPoliticianChange', () => {
 		expect(timeDiff(question.referenceDate, start)).toBeLessThan(100);
 
 		await moderation.moderatedPoliticianChange({
-			questionId: question.id,
-			moderatorId: moderator.id,
-			selectedPolitician: await bySlug(selectedPolitician.slug)
+			questionSlug: question.slug,
+			selectedPoliticianSlug: selectedPolitician.slug,
+			moderatorId: moderator.id
 		})
 
 		const stored = await getQuestion(question.id);

@@ -10,7 +10,7 @@ import { setFlash } from 'sveltekit-flash-message/server';
 const moderationSchema = z.discriminatedUnion('action', [
 	z.object({
 		action: z.literal('change-politician'),
-		questionId: z.string().min(1),
+		questionSlug: z.string().min(1),
 		selectedPoliticianSlug: z.string().min(1),
 		sendEmail: z.coerce.boolean().default(false)
 	}),
@@ -31,36 +31,16 @@ export const actions = {
 		const result = await validateForm(request, moderationSchema);
 		if (!result.valid || !locals.user) return fail(400, { error: 'Ongeldige aanvraag.' });
 
-		const selectedPoliticianSlug = ("selectedPoliticianSlug" in result.data) ? result.data.selectedPoliticianSlug: 'non-existing-slug';
-		const selectedPolitician = await politicians.bySlug(selectedPoliticianSlug);
-
-		// Check that politician exists and accepts questions
-		if (!selectedPolitician) {
-			return fail(400, { error: 'Kamerlid bestaat niet.' })
-		}
-		if (!selectedPolitician.acceptsQuestions) {
-			return fail(400, { error: 'Dit Kamerlid heeft ervoor gekozen niet openbaar antwoord te geven via VraagHetZe.' })
-		}
-
 		const changed = await moderation.moderatedPoliticianChange({
-			questionId: result.data.questionId,
+			questionSlug: result.data.questionSlug,
+			selectedPoliticianSlug: result.data.selectedPoliticianSlug,
 			moderatorId: locals.user.id,
-			selectedPolitician,
 			sendEmail: result.data.sendEmail
 		});
 
-		if (changed.error) {
-			return fail(400, { error: changed.error })
-		}
+		if (changed.error) return fail(400, { error: changed.error })
 
-		const base = `Kamerlid is aangepast naar ${selectedPoliticianSlug}`;
-		let message: string;
-		if (result.data.sendEmail){
-			message = `${base} en de vraag is gemaild naar het nieuwe Kamerlid.`
-		} else {
-			message = `${base}.`
-		}
-		setFlash({ type: 'neutral', message }, cookies);
-		return { moderated: result.data.questionId };
+		setFlash({ type: 'neutral', message: changed.message ?? '' }, cookies);
+		return { moderated: result.data.questionSlug };
 	}
 } satisfies Actions;

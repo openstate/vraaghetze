@@ -36,7 +36,7 @@ async function insertQuestion(
 	politician: typeof schema.user.$inferInsert,
 	overrides: Partial<typeof schema.question.$inferInsert> = {}
 ) {
-	return createQuestion(asker, politician, { status: 'approved', ...overrides });
+	return await createQuestion(asker, politician, { status: 'approved', ...overrides });
 }
 
 async function insertQuestionAndModerationAction(
