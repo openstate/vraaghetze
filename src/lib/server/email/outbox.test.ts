@@ -5,6 +5,7 @@ import { deliverOutbox, enqueueMail, sendMail, sendReminders } from './outbox';
 import { createQuestionApproved } from '../reminders.test';
 import { createPolitician, createUser, getQuestion, updateQuestion } from '$lib/test-utils';
 import { env } from '$env/dynamic/private';
+import { countForQuestion, follow } from '../follows';
 
 vi.mock('$app/environment', () => ({ dev: false }));
 
@@ -266,5 +267,65 @@ describe('sendReminders', () => {
 			.select()
 			.from(schema.outbox);
 		expect(rows).toHaveLength(0);
+	});
+
+	test('does not include follower information if no followers', async () => {
+		const { politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const moderator = await createUser('Mo Moderator');
+
+		const { question } = await createQuestionApproved({ asker, politicianUser, moderator, overdue: true });
+
+		expect(await countForQuestion(question.id, null)).toMatchObject({ followers: 1 });
+
+		await sendReminders();
+
+		const reminder = (await db
+			.select()
+			.from(schema.outbox)
+			.where(eq(schema.outbox.recipient, politicianUser.email)))[0];
+		expect(reminder.body).not.toContain('mensen geïnteresseerd in het antwoord op deze vraag.');
+	});
+
+	test('includes follower information if there is 1', async () => {
+		const { politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const moderator = await createUser('Mo Moderator');
+
+		const { question } = await createQuestionApproved({ asker, politicianUser, moderator, overdue: true });
+
+		const follower = await createUser('Fatima Volger');
+		await follow(question.slug, follower.id);
+		expect(await countForQuestion(question.id, null)).toMatchObject({ followers: 2 });
+
+		await sendReminders();
+
+		const reminder = (await db
+			.select()
+			.from(schema.outbox)
+			.where(eq(schema.outbox.recipient, politicianUser.email)))[0];
+		expect(reminder.body).toContain('Er zijn 2 mensen geïnteresseerd in het antwoord op deze vraag.');
+	});
+
+	test('includes follower information if there is more than 1', async () => {
+		const { politicianUser } = await createPolitician();
+		const asker = await createUser('Vera Vraagsteller');
+		const moderator = await createUser('Mo Moderator');
+
+		const { question } = await createQuestionApproved({ asker, politicianUser, moderator, overdue: true });
+
+		const follower1 = await createUser('Fatima1 Volger');
+		await follow(question.slug, follower1.id);
+		const follower2 = await createUser('Fatima2 Volger');
+		await follow(question.slug, follower2.id);
+		expect(await countForQuestion(question.id, null)).toMatchObject({ followers: 3 });
+
+		await sendReminders();
+
+		const reminder = (await db
+			.select()
+			.from(schema.outbox)
+			.where(eq(schema.outbox.recipient, politicianUser.email)))[0];
+		expect(reminder.body).toContain('Er zijn 3 mensen geïnteresseerd in het antwoord op deze vraag.');
 	});
 });

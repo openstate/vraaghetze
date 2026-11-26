@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import { convert } from 'html-to-text';
 import { env } from '$env/dynamic/private';
 import { schema, type Transaction } from '$lib/server/db';
 import { enqueueMail, sendMail } from './outbox';
@@ -23,6 +24,7 @@ import type { PoliticianType } from '../politicians';
 import type { ListQuestionType } from '../moderation';
 import { getQuestion } from '../questions';
 import { formatDate } from '$lib/date-time';
+import { countForQuestion } from '../follows';
 
 // pre-launch safety: when DIVERSION_EMAIL is set, all politician-facing mail goes to
 // that address and replies from it are accepted as if from the assigned politician
@@ -330,6 +332,7 @@ export async function enqueueReminderMail(
 	const fullQuestion = await getQuestion(question.id); // emailToken and assigneeId not in question
 	const politician = await getBasicUserInfoById(fullQuestion.assigneeId, tx);
 	if (fullQuestion.remindedAt) return;
+	const { followers } = await countForQuestion(question.id, null);
 
 	const result = render(QuestionReminder, {
 		props: {
@@ -339,9 +342,14 @@ export async function enqueueReminderMail(
 			questionBody: fullQuestion.body,
 			questionUrl: `${env.ORIGIN}/vragen/${fullQuestion.slug}`,
 			questionDate: formatDate(fullQuestion.createdAt),
-			replyTo: replyToForToken(fullQuestion.emailToken!)
+			replyTo: replyToForToken(fullQuestion.emailToken!),
+			followers
 		}
 	});
+	// The question-reminder template contains conditionals which swallow whitespace when rendered as text template.
+	// Therefore this template was converted to a HTML template and here converted to a text template which outputs
+	// whitespace correctly. Use convert for other templates when required.
+	const text = convert(result.body);
 
 	return enqueueMail({
 		kind: 'question-reminder',
@@ -349,7 +357,7 @@ export async function enqueueReminderMail(
 		recipient: resolveMailAddress(politician.email),
 		replyTo: replyToForToken(fullQuestion.emailToken!),
 		subject: `Herinnering: de vraag van ${question.authorName} op VraagHetZe is nog onbeantwoord`,
-		body: stripComments(result.body),
+		body: stripComments(text),
 		transaction: tx
 	});
 }

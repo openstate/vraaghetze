@@ -129,6 +129,7 @@ $func$;
 | `pnpm db:generate` | Make a migration file from a schema change. For production.     |
 | `pnpm db:studio`   | Open Drizzle Studio on the database. For local use only.        |
 | `pnpm auth:schema` | Make `auth.schema.ts` again from the Better Auth configuration. |
+| `pnpm runscript`   | Run a script, e.g. `pnpm runscript bin/send_reminders.ts`       |
 
 Vitest tests are colocated with the code as `src/**/*.test.ts`. Playwright tests live in `e2e`
 and exercise the running application through a browser.

@@ -8,22 +8,35 @@
     questionUrl: string;
     questionDate: string;
     replyTo: string;
+    followers: number;
   };
-	let { askerName, politicianName, questionTitle, questionBody, questionUrl, questionDate, replyTo }: Props = $props();
+	let { askerName, politicianName, questionTitle, questionBody, questionUrl, questionDate, replyTo, followers }: Props = $props();
 </script>
+<p>
 Beste {politicianName},
+</p>
 
+<p>
 Hierbij een vriendelijke herinnering aan de onbeantwoorde vraag van {askerName}, die u via VraagHetZe de volgende vraag heeft gesteld op {questionDate}:
+</p>
 
+<p>
+----------<br>
+Onderwerp: {questionTitle}<br>
+{questionBody}<br>
 ----------
-Onderwerp: {questionTitle}
-{questionBody}
-----------
+</p>
 
-U kunt antwoorden door simpelweg deze e-mail te beantwoorden of door uw antwoord te sturen naar {replyTo}
+{#if followers > 1}
+<p>
+Er zijn {followers} mensen geïnteresseerd in het antwoord op deze vraag.
+</p>
+{/if}
 
-Uw antwoord wordt eerst door onze moderatoren gecontroleerd en verschijnt daarna openbaar bij de vraag op VraagHetZe ({@html questionUrl}).
+<p>U kunt antwoorden door simpelweg deze e-mail te beantwoorden of door uw antwoord te sturen naar {replyTo}</p>
 
-Met vriendelijke groet,
+<p>Uw antwoord wordt eerst door onze moderatoren gecontroleerd en verschijnt daarna openbaar bij de vraag op VraagHetZe ({@html questionUrl}).</p>
 
-Het VraagHetZe-team
+<p>Met vriendelijke groet,</p>
+
+<p>Het VraagHetZe-team</p>
