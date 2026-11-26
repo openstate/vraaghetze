@@ -76,6 +76,7 @@ function searchConditions(query: QuestionSearchQuery, viewerId: string | null, s
 function searchOrderBy(query: QuestionSearchQuery) {
 	if (query.sort === 'oudste') return [asc(schema.question.createdAt)];
 	if (query.sort === 'nieuwste') return [desc(schema.question.createdAt)];
+	if (query.sort === 'volgers') return [desc(sql`followers`)];
 	return [desc(relevance(query.term)), desc(schema.question.createdAt)];
 }
 
@@ -89,7 +90,7 @@ export function searchQuestions(
 			tx
 				.select( {
 					...cardColumns,
-					followers: tx.$count(questionFollow, eq(questionFollow.questionId, question.id))
+					followers: tx.$count(questionFollow, eq(questionFollow.questionId, question.id)).as('followers')
 				})
 				.from(schema.question)
 				.$dynamic(), // so joinSearchTables can keep building on this query

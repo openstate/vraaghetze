@@ -5,7 +5,7 @@ export const QUESTIONS_PER_PAGE = 10;
 export const POLITICIANS_PER_PAGE = 24;
 
 export const STATUS_OPTIONS = ['alles', 'beantwoord', 'onbeantwoord'] as const;
-export const SORT_OPTIONS = ['relevantie', 'nieuwste', 'oudste'] as const;
+export const SORT_OPTIONS = ['relevantie', 'volgers', 'nieuwste', 'oudste'] as const;
 
 export type SearchStatus = (typeof STATUS_OPTIONS)[number];
 export type SearchSort = (typeof SORT_OPTIONS)[number];

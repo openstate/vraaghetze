@@ -17,6 +17,7 @@
 
 	const sortLabels = {
 		relevantie: 'Relevantie',
+		volgers: 'Aantal volgers',
 		nieuwste: 'Nieuwste eerst',
 		oudste: 'Oudste eerst'
 	} satisfies Record<SearchSort, string>;
