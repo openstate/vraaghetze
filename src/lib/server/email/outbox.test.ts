@@ -284,7 +284,7 @@ describe('sendReminders', () => {
 			.select()
 			.from(schema.outbox)
 			.where(eq(schema.outbox.recipient, politicianUser.email)))[0];
-		expect(reminder.body).not.toContain('mensen geïnteresseerd in het antwoord op deze vraag.');
+		expect(reminder.body).not.toContain('personen geïnteresseerd in het antwoord op deze vraag.');
 	});
 
 	test('includes follower information if there is 1', async () => {
@@ -304,7 +304,7 @@ describe('sendReminders', () => {
 			.select()
 			.from(schema.outbox)
 			.where(eq(schema.outbox.recipient, politicianUser.email)))[0];
-		expect(reminder.body).toContain('Er zijn 2 mensen geïnteresseerd in het antwoord op deze vraag.');
+		expect(reminder.body).toContain('Er zijn 2 personen geïnteresseerd in het antwoord op deze vraag.');
 	});
 
 	test('includes follower information if there is more than 1', async () => {
@@ -326,6 +326,6 @@ describe('sendReminders', () => {
 			.select()
 			.from(schema.outbox)
 			.where(eq(schema.outbox.recipient, politicianUser.email)))[0];
-		expect(reminder.body).toContain('Er zijn 3 mensen geïnteresseerd in het antwoord op deze vraag.');
+		expect(reminder.body).toContain('Er zijn 3 personen geïnteresseerd in het antwoord op deze vraag.');
 	});
 });

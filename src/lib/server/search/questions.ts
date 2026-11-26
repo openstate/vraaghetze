@@ -12,6 +12,7 @@ import { type QuestionSearchQuery } from '$lib/search';
 import type { Pagination } from '$lib/pagination';
 import { TIME_ZONE } from '$lib/date-time';
 import { activeFractions, matchesTerm } from './index';
+import { question, questionFollow } from '../db/app.schema';
 
 const columns = [
 	{ column: schema.question.title, weight: 3 },
@@ -86,7 +87,10 @@ export function searchQuestions(
 	return db.transaction(async (tx) => {
 		const rows = await joinSearchTables(
 			tx
-				.select(cardColumns)
+				.select( {
+					...cardColumns,
+					followers: tx.$count(questionFollow, eq(questionFollow.questionId, question.id))
+				})
 				.from(schema.question)
 				.$dynamic(), // so joinSearchTables can keep building on this query
 			viewerId

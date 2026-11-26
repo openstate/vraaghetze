@@ -29,7 +29,7 @@ Onderwerp: {questionTitle}<br>
 
 {#if followers > 1}
 <p>
-Er zijn {followers} mensen geïnteresseerd in het antwoord op deze vraag.
+Er zijn {followers} personen geïnteresseerd in het antwoord op deze vraag.
 </p>
 {/if}
 

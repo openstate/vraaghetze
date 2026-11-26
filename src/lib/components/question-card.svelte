@@ -18,6 +18,7 @@
 		fraction: string | null;
 		fractionName: string | null;
 		answer: { body: string; createdAt: Date } | null;
+		followers: number;
 	};
 
 	let { question, featured = false }: { question: Question; featured?: boolean } = $props();
@@ -39,6 +40,9 @@
 	const fractionLabel = $derived(question.fraction ?? question.fractionName);
 	const questionHref = $derived(resolve('/vragen/[slug]', { slug: question.slug }));
 	const politicianHref = $derived(resolve('/politici/[slug]', { slug: question.politicianSlug }));
+
+	const followers = $derived(Number.isNaN(question.followers) ? 0 : question.followers + 1);
+	const followersTitle = $derived(`Er zijn ${followers} personen geïnteresseerd in het antwoord op deze vraag`);
 </script>
 
 <article class="@container h-full overflow-hidden rounded bg-osf-canvas-100">
@@ -100,7 +104,7 @@
 			{/if}
 
 			<div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-				<div class="flex min-w-0 flex-1 items-center gap-3 @max-2xl:basis-full">
+				<div class="flex min-w-0 flex-1 items-center gap-3">
 					<a href={politicianHref} class="shrink-0" aria-hidden="true" tabindex="-1">
 						<Avatar
 							size={40}
@@ -124,11 +128,16 @@
 						{/if}
 					</div>
 				</div>
-
+				{#if followers > 1}
+					<span class="px-2 hover:bg-opacity-50 hover:bg-white hover:border" title="{followersTitle}">
+						<span class="iconify align-middle size-5 mdi--user-outline"></span>
+						<span class="align-middle">{followers}</span>
+					</span>
+				{/if}
 				<a
 					href={questionHref}
 					tabindex="-1"
-					class="flex w-fit items-center gap-1 text-sm font-medium text-osf-violet-500 hover:underline @max-2xl:ml-auto"
+					class="flex w-fit items-center gap-1 text-sm font-medium text-osf-violet-500 hover:underline"
 				>
 					Lees meer <span class="iconify size-4 mdi--arrow-right"></span>
 				</a>
